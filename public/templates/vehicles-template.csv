@@ -1,0 +1,2 @@
+name,vehicleType,engineType,vehicleAgeYears,odometerKm,kilometersPerFleet,vehicleLifetimeYears,expectedLifetimeKm,maintenanceCostUnit,lastMaintenanceDate,nextMaintenanceDate,maintenanceIntervalKm,notes
+Demo Unit 99,car,gasoline,5,88000,17600,12,280000,295,2026-01-15,2026-08-15,10000,Sample import row

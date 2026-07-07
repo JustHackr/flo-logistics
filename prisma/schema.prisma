@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Vehicle {
+  id                    String         @id @default(cuid())
+  name                  String
+  vehicleType           String
+  engineType            String
+  vehicleAgeYears       Float
+  odometerKm            Float
+  kilometersPerFleet      Float
+  vehicleLifetimeYears  Float
+  expectedLifetimeKm    Float
+  maintenanceCostUnit   Float
+  lastMaintenanceDate   DateTime?
+  nextMaintenanceDate   DateTime?
+  maintenanceIntervalKm Float
+  notes                 String?
+  dataSource            String         @default("manual")
+  connectorId           String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  connector             DataConnector? @relation(fields: [connectorId], references: [id], onDelete: SetNull)
+}
+
+model DataConnector {
+  id          String    @id @default(cuid())
+  name        String
+  type        String
+  status      String    @default("disabled")
+  config      String?
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  vehicles    Vehicle[]
+}
