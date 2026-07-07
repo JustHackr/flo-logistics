@@ -22,6 +22,13 @@ export interface VehicleWithAnalysis {
   updatedAt: string;
   vqi: number;
   riskLevel: "low" | "medium" | "high";
+  penalties: {
+    age: number;
+    odometer: number;
+    cost: number;
+    planning: number;
+    total: number;
+  };
   predictedNextMaintenance: string | null;
   estimatedCost: number;
   recommendedAction: string;

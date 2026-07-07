@@ -8,6 +8,7 @@ import {
   Upload,
   FileBarChart,
   Plug,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ const navItems = [
   { href: "/vehicles", label: "Vehicles", icon: Car },
   { href: "/vehicles/import", label: "Import CSV", icon: Upload },
   { href: "/reports", label: "Reports", icon: FileBarChart },
+  { href: "/methodology", label: "Metrics & Guide", icon: BookOpen },
   {
     href: "/connectors",
     label: "Connectors",

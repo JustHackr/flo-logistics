@@ -30,6 +30,7 @@ export function enrichVehicle(
     engineType: vehicle.engineType as VehicleWithAnalysis["engineType"],
     vqi: vqiResult.score,
     riskLevel: vqiResult.riskLevel,
+    penalties: vqiResult.penalties,
     predictedNextMaintenance:
       prediction.predictedNextMaintenance?.toISOString() ?? null,
     estimatedCost: prediction.estimatedCost,

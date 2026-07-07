@@ -1,13 +1,27 @@
 import type { Vehicle } from "@/generated/prisma/client";
 import type { EngineType } from "./types";
 
-const ENGINE_ODOMETER_MODIFIERS: Record<EngineType, number> = {
+export const VQI_WEIGHTS = {
+  age: 30,
+  odometer: 30,
+  cost: 20,
+  planning: 20,
+} as const;
+
+export const PLANNING_PENALTY_PER_DAY = 0.5;
+
+export const RISK_THRESHOLDS = {
+  highBelow: 40,
+  lowAbove: 70,
+} as const;
+
+export const ENGINE_ODOMETER_MODIFIERS: Record<EngineType, number> = {
   ev: 0.85,
   gasoline: 1,
   diesel: 1.05,
 };
 
-const ENGINE_COST_MODIFIERS: Record<EngineType, number> = {
+export const ENGINE_COST_MODIFIERS: Record<EngineType, number> = {
   ev: 0.9,
   gasoline: 1,
   diesel: 1.1,
@@ -32,8 +46,8 @@ function cap(value: number, max: number) {
 }
 
 function getRiskLevel(score: number): RiskLevel {
-  if (score < 40) return "high";
-  if (score <= 70) return "medium";
+  if (score < RISK_THRESHOLDS.highBelow) return "high";
+  if (score <= RISK_THRESHOLDS.lowAbove) return "medium";
   return "low";
 }
 
@@ -51,15 +65,17 @@ export function calculateVqi(
   fleetAvgMaintenanceCost = 300
 ): VqiResult {
   const agePenalty = cap(
-    (vehicle.vehicleAgeYears / vehicle.vehicleLifetimeYears) * 30,
-    30
+    (vehicle.vehicleAgeYears / vehicle.vehicleLifetimeYears) * VQI_WEIGHTS.age,
+    VQI_WEIGHTS.age
   );
 
   const odometerModifier =
     ENGINE_ODOMETER_MODIFIERS[vehicle.engineType as EngineType] ?? 1;
   const odometerPenalty = cap(
-    (vehicle.odometerKm / vehicle.expectedLifetimeKm) * 30 * odometerModifier,
-    30
+    (vehicle.odometerKm / vehicle.expectedLifetimeKm) *
+      VQI_WEIGHTS.odometer *
+      odometerModifier,
+    VQI_WEIGHTS.odometer
   );
 
   const costModifier =
@@ -68,7 +84,7 @@ export function calculateVqi(
     fleetAvgMaintenanceCost > 0
       ? (vehicle.maintenanceCostUnit * costModifier) / fleetAvgMaintenanceCost
       : 1;
-  const costPenalty = cap(normalizedCost * 20, 20);
+  const costPenalty = cap(normalizedCost * VQI_WEIGHTS.cost, VQI_WEIGHTS.cost);
 
   let planningPenalty = 0;
   if (vehicle.nextMaintenanceDate) {
@@ -80,7 +96,10 @@ export function calculateVqi(
       0,
       Math.floor((today.getTime() - nextDate.getTime()) / (1000 * 60 * 60 * 24))
     );
-    planningPenalty = cap(daysOverdue * 0.5, 20);
+    planningPenalty = cap(
+      daysOverdue * PLANNING_PENALTY_PER_DAY,
+      VQI_WEIGHTS.planning
+    );
   }
 
   const total = agePenalty + odometerPenalty + costPenalty + planningPenalty;
