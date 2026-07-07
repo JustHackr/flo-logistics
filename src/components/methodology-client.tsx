@@ -7,6 +7,8 @@ import {
   CalendarClock,
   ShieldAlert,
   Gauge,
+  ExternalLink,
+  Library,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +58,42 @@ const BENEFITS = [
     icon: ShieldAlert,
     title: "Prioritize by Risk",
     body: "A single 0-100 score ranks the whole fleet, so limited workshop capacity goes where it matters.",
+  },
+];
+
+const INDUSTRY_REFERENCES = [
+  {
+    title: "APWA Fleet Replacement Scoring Standard (RTA Fleet)",
+    note: "Scores vehicles on age, mileage, maintenance cost vs. purchase price, service count, and condition — the same factor family as the VQI.",
+    url: "https://docs.rtafleet.com/rta-manual/vehicle-replacement-scoring-report/",
+  },
+  {
+    title: "AssetWorks M5 — Replacement Model Prioritization",
+    note: "Weighted factors summing to 100 and normalized against the fleet/category average, directly analogous to the VQI weights and cost-vs-fleet-average logic.",
+    url: "https://fleetfocus.assetworks.com/m5help/webhelp/Asset_Management/Unit_Replacement/Replacement_Model_Prioritization.htm",
+  },
+  {
+    title: "San Bernardino Municipal Water Dept. — Vehicle & Equipment Replacement Policy",
+    note: "Public policy: one point per 20% of expected service life; reliability scored against average maintenance cost per mile of the class.",
+    url: "https://sbmwd.org/DocumentCenter/View/267/Policy-51-035-Vehicle-and-Equipment-Replacement-Policy-PDF",
+  },
+];
+
+const ACADEMIC_REFERENCES = [
+  {
+    title: "Predictive Maintenance in the Automotive Sector: A Literature Review (2021)",
+    note: "Surveys health-index construction, health-stage division, and Remaining Useful Life (RUL) estimation for vehicles.",
+    url: "https://www.researchgate.net/publication/357557268_Predictive_Maintenance_in_the_Automotive_Sector_A_Literature_Review",
+  },
+  {
+    title: "Baraldi et al. — Multi-objective optimization for a health indicator (Polimi)",
+    note: "Formal method for defining a component health indicator with desirable properties such as monotonicity and trendability.",
+    url: "https://re.public.polimi.it/bitstream/11311/1077977/2/11311-1077977_Baraldi.pdf",
+  },
+  {
+    title: "A Deep Learning Feature Fusion Based Health Index Construction Method (IEEE Trans. Reliability, 2022)",
+    note: "Machine-learning composite health index for prognostics and RUL — the direction a future ML-based VQI could take.",
+    url: "https://doi.org/10.1109/tr.2022.3215757",
   },
 ];
 
@@ -415,6 +453,71 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
             </CardContent>
           </Card>
         )}
+      </section>
+
+      <section className="space-y-3">
+        <h3 className="flex items-center gap-2 text-lg font-semibold">
+          <Library className="h-5 w-5 text-primary" />
+          References &amp; basis
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          The VQI is a rule-based scoring model adapted from established fleet
+          replacement-scoring practice (inverted so a higher score means a
+          healthier vehicle). It is a demo heuristic, not a copy of any single
+          standard; machine-learning health indexing is the roadmap for a future
+          phase.
+        </p>
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Industry scoring models</CardTitle>
+              <CardDescription>
+                Fleet replacement-scoring systems that use the same factor family.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {INDUSTRY_REFERENCES.map((ref) => (
+                <div key={ref.url} className="space-y-1">
+                  <a
+                    href={ref.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-1.5 text-sm font-medium text-primary hover:underline"
+                  >
+                    <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    {ref.title}
+                  </a>
+                  <p className="text-xs text-muted-foreground">{ref.note}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Academic literature</CardTitle>
+              <CardDescription>
+                Prognostics &amp; Health Management research on health indices and RUL.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {ACADEMIC_REFERENCES.map((ref) => (
+                <div key={ref.url} className="space-y-1">
+                  <a
+                    href={ref.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-1.5 text-sm font-medium text-primary hover:underline"
+                  >
+                    <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    {ref.title}
+                  </a>
+                  <p className="text-xs text-muted-foreground">{ref.note}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
       </section>
     </div>
   );
