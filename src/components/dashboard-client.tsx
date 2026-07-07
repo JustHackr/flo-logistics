@@ -33,7 +33,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RiskBadge } from "@/components/risk-badge";
-import { formatNumber } from "@/lib/format";
+import { formatCurrency, formatCurrencyShort, formatNumber } from "@/lib/format";
 import type { VehicleWithAnalysis } from "@/lib/types";
 
 const RISK_COLORS = {
@@ -150,7 +150,7 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">
-              {formatNumber(summary.totalMaintenanceCost)}
+              {formatCurrencyShort(summary.totalMaintenanceCost)}
             </p>
           </CardContent>
         </Card>
@@ -210,8 +210,10 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
               <BarChart data={summary.costByVehicleType}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="vehicleType" />
-                <YAxis />
-                <Tooltip />
+                <YAxis tickFormatter={(value) => formatCurrencyShort(Number(value))} width={80} />
+                <Tooltip
+                  formatter={(value) => [formatCurrency(Number(value)), "Total cost"]}
+                />
                 <Bar dataKey="totalCost" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>

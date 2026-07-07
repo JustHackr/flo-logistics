@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RiskBadge } from "@/components/risk-badge";
-import { formatDate, formatNumber } from "@/lib/format";
+import { formatCurrency, formatCurrencyShort, formatDate } from "@/lib/format";
 import type { VehicleWithAnalysis } from "@/lib/types";
 
 type ReportsClientProps = {
@@ -96,7 +96,7 @@ export function ReportsClient({
       "vqi",
       "riskLevel",
       "predictedNextMaintenance",
-      "estimatedCost",
+      "estimatedCostIDR",
       "recommendedAction",
     ];
     const rows = sorted.map((v) =>
@@ -160,8 +160,10 @@ export function ReportsClient({
               <BarChart data={timelineChart}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
+                <YAxis tickFormatter={(value) => formatCurrencyShort(Number(value))} width={80} />
+                <Tooltip
+                  formatter={(value) => [formatCurrency(Number(value)), "Est. cost"]}
+                />
                 <Bar dataKey="cost" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -204,7 +206,7 @@ export function ReportsClient({
                 </TableHead>
                 <TableHead>
                   <button type="button" onClick={() => toggleSort("estimatedCost")}>
-                    Est. Cost{" "}
+                    Est. Cost (Rp){" "}
                     {sortKey === "estimatedCost" && (sortDir === "asc" ? "↑" : "↓")}
                   </button>
                 </TableHead>
@@ -220,7 +222,7 @@ export function ReportsClient({
                     <RiskBadge risk={v.riskLevel} />
                   </TableCell>
                   <TableCell>{formatDate(v.predictedNextMaintenance)}</TableCell>
-                  <TableCell>{formatNumber(v.estimatedCost)}</TableCell>
+                  <TableCell>{formatCurrency(v.estimatedCost)}</TableCell>
                   <TableCell className="max-w-md text-sm text-muted-foreground">
                     {v.recommendedAction}
                   </TableCell>

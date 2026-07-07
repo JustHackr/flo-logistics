@@ -30,7 +30,7 @@ const defaultValues = {
   kilometersPerFleet: "0",
   vehicleLifetimeYears: "12",
   expectedLifetimeKm: "250000",
-  maintenanceCostUnit: "300",
+  maintenanceCostUnit: "450000",
   lastMaintenanceDate: "",
   nextMaintenanceDate: "",
   maintenanceIntervalKm: "10000",
@@ -219,11 +219,11 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="maintenanceCostUnit">Maintenance Cost (unit)</Label>
+            <Label htmlFor="maintenanceCostUnit">Maintenance Cost (Rp)</Label>
             <Input
               id="maintenanceCostUnit"
               type="number"
-              step="0.01"
+              step="1000"
               required
               value={form.maintenanceCostUnit}
               onChange={(e) => updateField("maintenanceCostUnit", e.target.value)}

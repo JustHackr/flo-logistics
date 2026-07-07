@@ -100,6 +100,9 @@ async function main() {
     await prisma.vehicle.create({
       data: {
         ...v,
+        // Cost values are expressed in thousands of Rupiah in the source data;
+        // store them as full IDR amounts (e.g. 450 -> Rp 450.000).
+        maintenanceCostUnit: v.maintenanceCostUnit * 1000,
         dataSource: "manual",
         lastMaintenanceDate: daysAgo(lastDaysAgo),
         nextMaintenanceDate: daysFromNow(nextDays),
