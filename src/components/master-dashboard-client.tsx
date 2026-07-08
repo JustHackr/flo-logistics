@@ -29,7 +29,6 @@ const PIPELINE_LABELS: Record<string, string> = {
   RECEIVED: "Received",
   PREPARING: "Preparing",
   ON_ROUTE: "On route",
-  ETA: "ETA",
   DELIVERED: "Delivered",
 };
 
@@ -110,7 +109,7 @@ const METRIC_HELP = {
   deliveryProgress:
     "Delivered stops ÷ total stops across all active routes × 100. A stop counts as delivered when its order status is DELIVERED.",
   ordersOnRoute:
-    "Orders with status ON_ROUTE or ETA — picked up and en route but not yet delivered.",
+    "Orders with status ON_ROUTE — assigned to a route, departed, and not yet delivered.",
   totalOrders: "Sum of orders across all pipeline stages (Received through Delivered).",
   activeDistance:
     "Σ totalDistanceKm for IN_PROGRESS routes. Distance comes from optimized nearest-neighbor TSP legs (warehouse → stops → warehouse).",
@@ -128,8 +127,8 @@ const METRIC_HELP = {
     "Σ fuel savings vs naive baseline for IN_PROGRESS routes. Baseline = separate warehouse round-trip per stop (2 × distance × 1.35). Savings = baseline cost − optimized route cost.",
   pipelineReceived: "Orders with status RECEIVED — accepted, awaiting warehouse prep.",
   pipelinePreparing: "Orders with status PREPARING — being packed at the warehouse.",
-  pipelineOnRoute: "Orders with status ON_ROUTE — assigned to a route and departed.",
-  pipelineEta: "Orders with status ETA — driver is within the estimated arrival window.",
+  pipelineOnRoute:
+    "Orders with status ON_ROUTE — assigned to a route and en route to the recipient.",
   pipelineDelivered: "Orders with status DELIVERED — confirmed handover to recipient.",
   totalVehicles: "Total vehicles registered in the fleet database.",
   avgVqi:
@@ -144,13 +143,12 @@ const METRIC_HELP = {
 } as const;
 
 const PIPELINE_HELP: Record<
-  "RECEIVED" | "PREPARING" | "ON_ROUTE" | "ETA" | "DELIVERED",
+  "RECEIVED" | "PREPARING" | "ON_ROUTE" | "DELIVERED",
   string
 > = {
   RECEIVED: METRIC_HELP.pipelineReceived,
   PREPARING: METRIC_HELP.pipelinePreparing,
   ON_ROUTE: METRIC_HELP.pipelineOnRoute,
-  ETA: METRIC_HELP.pipelineEta,
   DELIVERED: METRIC_HELP.pipelineDelivered,
 };
 
@@ -228,7 +226,7 @@ export function MasterDashboardClient({ data }: { data: MasterOverview }) {
           <MetricCard
             title="Orders On Route"
             value={data.operations.ordersOnRoute}
-            detail="ON_ROUTE + ETA status"
+            detail="ON_ROUTE status"
             helpText={METRIC_HELP.ordersOnRoute}
           />
           <MetricCard
@@ -311,13 +309,12 @@ export function MasterDashboardClient({ data }: { data: MasterOverview }) {
           href="/routing/orders"
           linkLabel="View orders"
         />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {(
             [
               ["RECEIVED", "Received"],
               ["PREPARING", "Preparing"],
               ["ON_ROUTE", "On route"],
-              ["ETA", "ETA"],
               ["DELIVERED", "Delivered"],
             ] as const
           ).map(([key, label]) => (

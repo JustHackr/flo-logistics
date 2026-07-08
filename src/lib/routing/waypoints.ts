@@ -5,7 +5,6 @@ export type OrderStatus =
   | "RECEIVED"
   | "PREPARING"
   | "ON_ROUTE"
-  | "ETA"
   | "DELIVERED";
 
 export type MapCoordinate = {

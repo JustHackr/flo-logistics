@@ -290,7 +290,6 @@ async function main() {
         data: [
           { orderId: order.id, status: "PREPARING", timestamp: new Date(routeStartAt.getTime() + 15 * 60_000) },
           { orderId: order.id, status: "ON_ROUTE", timestamp: new Date(routeStartAt.getTime() + 25 * 60_000) },
-          { orderId: order.id, status: "ETA", timestamp: etaAt },
           { orderId: order.id, status: "DELIVERED", timestamp: deliveredAt },
         ],
       });

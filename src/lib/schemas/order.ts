@@ -4,7 +4,6 @@ export const orderStatusValues = [
   "RECEIVED",
   "PREPARING",
   "ON_ROUTE",
-  "ETA",
   "DELIVERED",
 ] as const;
 

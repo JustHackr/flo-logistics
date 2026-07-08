@@ -34,9 +34,6 @@ export async function POST(request: Request, context: RouteContext) {
         case "ON_ROUTE":
           onRouteAt = timestamp;
           break;
-        case "ETA":
-          etaAt = timestamp;
-          break;
         case "DELIVERED":
           deliveredAt = timestamp;
           break;

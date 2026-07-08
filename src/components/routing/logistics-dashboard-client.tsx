@@ -287,13 +287,12 @@ export function LogisticsDashboardClient() {
 
           <LogisticsChartsPanel charts={data.report.charts} compact />
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {(
               [
                 ["RECEIVED", "Received"],
                 ["PREPARING", "Preparing"],
                 ["ON_ROUTE", "On route"],
-                ["ETA", "ETA"],
                 ["DELIVERED", "Delivered"],
               ] as const
             ).map(([key, label]) => (
@@ -431,7 +430,7 @@ export function LogisticsDashboardClient() {
                                   variant={
                                     wp.orderStatus === "DELIVERED"
                                       ? "default"
-                                      : wp.orderStatus === "ETA"
+                                      : wp.orderStatus === "ON_ROUTE"
                                       ? "secondary"
                                       : "outline"
                                   }

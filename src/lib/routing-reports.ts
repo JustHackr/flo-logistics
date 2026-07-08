@@ -10,7 +10,6 @@ const PIPELINE_LABELS: Record<keyof OrderPipeline, string> = {
   RECEIVED: "Received",
   PREPARING: "Preparing",
   ON_ROUTE: "On route",
-  ETA: "ETA",
   DELIVERED: "Delivered",
 };
 

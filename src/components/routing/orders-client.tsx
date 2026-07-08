@@ -40,7 +40,6 @@ type OrderStatus =
   | "RECEIVED"
   | "PREPARING"
   | "ON_ROUTE"
-  | "ETA"
   | "DELIVERED";
 
 type NullableISO = string | null;
@@ -63,7 +62,6 @@ const STATUS_OPTIONS: Array<{ value: OrderStatus; label: string }> = [
   { value: "RECEIVED", label: "Received" },
   { value: "PREPARING", label: "Preparing" },
   { value: "ON_ROUTE", label: "On route" },
-  { value: "ETA", label: "ETA" },
   { value: "DELIVERED", label: "Delivered" },
 ];
 

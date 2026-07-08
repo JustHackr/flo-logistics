@@ -91,7 +91,6 @@ const ORDER_STATUSES = [
   { status: "RECEIVED", label: "Diterima" },
   { status: "PREPARING", label: "Disiapkan" },
   { status: "ON_ROUTE", label: "Dalam perjalanan" },
-  { status: "ETA", label: "Estimasi tiba" },
   { status: "DELIVERED", label: "Terkirim" },
 ];
 

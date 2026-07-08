@@ -18,7 +18,6 @@ export type OrderPipeline = {
   RECEIVED: number;
   PREPARING: number;
   ON_ROUTE: number;
-  ETA: number;
   DELIVERED: number;
 };
 
@@ -212,7 +211,6 @@ export async function getRoutingLogisticsOverview(): Promise<RoutingLogisticsOve
     RECEIVED: pipelineCounts.filter((o) => o.status === "RECEIVED").length,
     PREPARING: pipelineCounts.filter((o) => o.status === "PREPARING").length,
     ON_ROUTE: pipelineCounts.filter((o) => o.status === "ON_ROUTE").length,
-    ETA: pipelineCounts.filter((o) => o.status === "ETA").length,
     DELIVERED: pipelineCounts.filter((o) => o.status === "DELIVERED").length,
   };
 
@@ -403,7 +401,7 @@ export async function getRoutingLogisticsOverview(): Promise<RoutingLogisticsOve
     totalEmissionsKg: Math.round(
       inProgressRoutes.reduce((sum, r) => sum + r.totals.estimatedEmissionsKg, 0) * 10
     ) / 10,
-    ordersOnRoute: pipeline.ON_ROUTE + pipeline.ETA,
+    ordersOnRoute: pipeline.ON_ROUTE,
   };
 
   const deliveredMetrics = await prisma.order.findMany({

@@ -26,7 +26,6 @@ export type MasterOverview = {
     RECEIVED: number;
     PREPARING: number;
     ON_ROUTE: number;
-    ETA: number;
     DELIVERED: number;
   };
   routeCounts: {
