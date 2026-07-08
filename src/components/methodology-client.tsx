@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import {
   TrendingDown,
   Wallet,
@@ -9,6 +10,8 @@ import {
   Gauge,
   ExternalLink,
   Library,
+  Route,
+  Truck,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -221,8 +224,8 @@ export function MethodologyClient({
           Metrics &amp; Methodology
         </h2>
         <p className="text-muted-foreground">
-          How the Vehicle Quality Index (VQI) works and why it helps you manage a
-          logistics fleet.
+          How the Vehicle Quality Index (VQI) works, why it helps manage a logistics
+          fleet, and how scores feed routing driver dispatch (BALON v0.2).
         </p>
       </div>
 
@@ -351,6 +354,44 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
               EVs have fewer wear parts (lower odometer penalty); diesel units
               trend slightly higher on both wear and cost.
             </p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="space-y-3">
+        <h3 className="flex items-center gap-2 text-lg font-semibold">
+          <Truck className="h-5 w-5 text-primary" />
+          VQI in routing dispatch
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          The same VQI score powers driver selection on Plan Route: for each route
+          chunk, the highest-VQI available driver of the matching vehicle type
+          (car or motorcycle) is ranked first. Dispatch shows all candidates with
+          selection reason. Manage drivers at{" "}
+          <Link href="/routing/drivers" className="font-medium text-primary hover:underline">
+            Routing → Drivers
+          </Link>
+          ; full routing formulas at{" "}
+          <Link href="/routing/methodology" className="font-medium text-primary hover:underline">
+            Routing Metrics &amp; Guide
+          </Link>
+          .
+        </p>
+        <Card>
+          <CardContent className="flex items-start gap-3 pt-6 text-sm">
+            <Route className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+            <div className="space-y-1 text-muted-foreground">
+              <p>
+                <span className="font-medium text-foreground">Selection rule:</span>{" "}
+                sort by VQI descending within vehicle type; skip drivers already
+                assigned or inactive.
+              </p>
+              <p>
+                <span className="font-medium text-foreground">Demo EV fleet:</span>{" "}
+                Polytron Galvani (mobil listrik) and Polytron Fox (motor listrik)
+                receive lower odometer/cost penalties and higher CFI scores on routes.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </section>

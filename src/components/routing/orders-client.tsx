@@ -14,7 +14,7 @@ import {
   Navigation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +33,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { GoogleMapsStatusBanner } from "./google-maps-status-banner";
 
 type StopAccess = "CAR_ONLY" | "MOTORCYCLE_ONLY" | "BOTH";
 type OrderStatus =
@@ -86,6 +87,12 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
     lng: "",
     accessRequirement: "BOTH",
   });
+
+  const [importing, setImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState<{
+    imported: number;
+    failed: number;
+  } | null>(null);
 
   const selectedCount = selectedOrderIds.length;
 
@@ -178,6 +185,36 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleCsvFile(file: File) {
+    setError(null);
+    setImportSummary(null);
+    Papa.parse<Record<string, string>>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: async (result) => {
+        try {
+          setImporting(true);
+          const res = await fetch("/api/routing/orders/import", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ rows: result.data }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data?.error ?? "Failed to import orders");
+          setImportSummary({
+            imported: data.imported ?? 0,
+            failed: data.failed ?? 0,
+          });
+          void refreshOrders();
+        } catch (e) {
+          setError(e instanceof Error ? e.message : "Failed to import orders");
+        } finally {
+          setImporting(false);
+        }
+      },
+    });
   }
 
   async function deleteOrder(orderId: string) {
@@ -281,35 +318,14 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Routing Orders</h2>
-          <p className="text-muted-foreground">
-            Input recipients (address + lat/lng) and update delivery timestamps. Select orders
-            to run batch route optimization for Jakarta (warehouse → sorted stops → warehouse).
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={exportSelectedCsv}
-            disabled={selectedCount === 0}
-          >
-            Export Selected
-          </Button>
-          <Button
-            onClick={() => {
-              const orderIds = selectedOrderIds;
-              const qs = new URLSearchParams();
-              qs.set("orderIds", orderIds.join(","));
-              router.push(`/routing/plan?${qs.toString()}`);
-            }}
-            disabled={selectedCount === 0}
-          >
-            <Navigation className="mr-2 h-4 w-4" />
-            Optimize Selected
-          </Button>
-        </div>
+      <GoogleMapsStatusBanner />
+
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Routing Orders</h2>
+        <p className="text-muted-foreground">
+          Input recipients (address + lat/lng) and update delivery timestamps. Select orders
+          to run batch route optimization for Jakarta (warehouse → sorted stops → warehouse).
+        </p>
       </div>
 
       {error && <div className="rounded-md border border-destructive/30 p-3 text-sm text-destructive">{error}</div>}
@@ -331,7 +347,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                     recipientAddress: e.target.value,
                   }))
                 }
-                placeholder="e.g. Jl. Sudirman Block A"
+                placeholder="e.g. Jl. Sudirman Blok A, Jakarta"
               />
             </div>
 
@@ -393,22 +409,97 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Orders & Status Timeline</CardTitle>
+            <CardTitle>Bulk Import (CSV)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-sm text-muted-foreground">
-              Select orders to optimize. Use status buttons to set timestamps.
+            <p className="text-sm text-muted-foreground">
+              Upload a CSV file with columns{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-xs">
+                recipientAddress, lat, lng, accessRequirement
+              </code>{" "}
+              to create many routing orders at once.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <a
+                href="/templates/routing-orders-template.csv"
+                download
+                className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
+              >
+                Download template
+              </a>
+              <Label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-dashed px-4 py-2 text-sm text-muted-foreground hover:bg-muted/50">
+                <span>Choose CSV file…</span>
+                <input
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleCsvFile(file);
+                  }}
+                />
+              </Label>
             </div>
+            {importing && (
+              <p className="text-xs text-muted-foreground">
+                Importing orders from CSV…
+              </p>
+            )}
+            {importSummary && (
+              <p className="text-xs text-muted-foreground">
+                Imported {importSummary.imported} orders.
+                {importSummary.failed > 0 &&
+                  ` ${importSummary.failed} rows failed validation.`}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <CardTitle>Orders & Status Timeline</CardTitle>
+              <CardDescription>
+                Select orders to optimize. Use status buttons to set timestamps.
+                {selectedCount > 0 && (
+                  <span className="ml-1 font-medium text-foreground">
+                    · {selectedCount} selected
+                  </span>
+                )}
+              </CardDescription>
+            </div>
+            <div className="flex shrink-0 flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={exportSelectedCsv}
+                disabled={selectedCount === 0}
+              >
+                Export Selected
+              </Button>
+              <Button
+                onClick={() => {
+                  const qs = new URLSearchParams();
+                  qs.set("orderIds", selectedOrderIds.join(","));
+                  router.push(`/routing/plan?${qs.toString()}`);
+                }}
+                disabled={selectedCount === 0}
+              >
+                <Navigation className="mr-2 h-4 w-4" />
+                Optimize Selected
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="max-h-[640px] overflow-auto rounded-lg border">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10"></TableHead>
-                    <TableHead>Recipient</TableHead>
-                    <TableHead className="w-40">Access</TableHead>
-                    <TableHead className="w-28">Status</TableHead>
-                    <TableHead className="w-40">Timestamps</TableHead>
-                    <TableHead className="w-36 text-right">Actions</TableHead>
+                    <TableHead className="min-w-[220px]">Recipient</TableHead>
+                    <TableHead className="min-w-[120px]">Access</TableHead>
+                    <TableHead className="min-w-[100px]">Status</TableHead>
+                    <TableHead className="min-w-[160px]">Timestamps</TableHead>
+                    <TableHead className="min-w-[200px] text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -421,7 +512,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                           onChange={() => toggleSelected(o.id)}
                         />
                       </TableCell>
-                      <TableCell className="max-w-[240px]">
+                      <TableCell className="min-w-[220px]">
                         <div className="flex items-start gap-2">
                           <MapPin className="mt-0.5 h-3.5 w-3.5 text-muted-foreground" />
                           <div>
@@ -505,7 +596,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
               </Table>
             </div>
             <div className="text-xs text-muted-foreground">
-              Routing demo: traffic estimation and emissions are mock-based; Jakarta validation uses a coordinate bounding box.
+              Uses Google Maps live traffic when connected. Jakarta validation uses a coordinate bounding box.
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={refreshOrders} disabled={loading}>

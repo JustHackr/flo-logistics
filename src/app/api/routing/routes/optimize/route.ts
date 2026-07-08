@@ -10,11 +10,29 @@ import {
   optimizeRoundTripByNearestNeighbor,
   type RoutableStop,
 } from "@/lib/routing/optimizer";
+import {
+  buildRouteWaypoints,
+  waypointsToRoutePath,
+  type RouteWaypoint,
+} from "@/lib/routing/waypoints";
+import { computeRoutePolyline } from "@/lib/routing/google-maps";
 import { estimateEmissionsKg } from "@/lib/routing/emissions";
+import {
+  describeTrafficSource,
+  type TrafficSource,
+} from "@/lib/routing/estimator";
+import {
+  rankDriversByVqi,
+  pickBestDriverFromRanking,
+  type DriverMatchingResult,
+} from "@/lib/routing/driver-matching";
+import { ensureFuelPriceSnapshot } from "@/lib/fuel-price-service";
+import { calculateTripFuelSavings } from "@/lib/routing/fuel-cost";
 import {
   enrichVehicle,
   getFleetAvgMaintenanceCost,
 } from "@/lib/vehicle-service";
+import type { EngineType, VehicleType } from "@/lib/types";
 
 export async function POST(request: Request) {
   try {
@@ -34,6 +52,8 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    const fuelPrices = await ensureFuelPriceSnapshot();
 
     const orders = await prisma.order.findMany({
       where: { id: { in: orderIds } },
@@ -110,37 +130,71 @@ export async function POST(request: Request) {
       );
     }
 
-    function pickBestDriver(vehicleType: "car" | "motorcycle") {
-      const candidates =
-        vehicleType === "car" ? enrichedDrivers.filter((d) => d.vehicle.vehicleType === "car") : enrichedDrivers.filter((d) => d.vehicle.vehicleType === "motorcycle");
+    const carMatching = rankDriversByVqi(enrichedDrivers, "car");
+    const motorcycleMatching = rankDriversByVqi(enrichedDrivers, "motorcycle");
 
-      return candidates.sort((a, b) => b.vehicleEnriched.vqi - a.vehicleEnriched.vqi)[0];
-    }
+    const dispatchMatching: {
+      car: DriverMatchingResult | null;
+      motorcycle: DriverMatchingResult | null;
+    } = {
+      car: carMatching,
+      motorcycle: motorcycleMatching,
+    };
 
     const orderById = new Map(activeOrders.map((o) => [o.id, o]));
 
     const planPreviews: Array<{
-      driverId: string;
+      driver: {
+        id: string;
+        name: string;
+        phone: string | null;
+        employeeId: string | null;
+        licenseNumber: string | null;
+        status: string;
+      };
       vehicle: {
         id: string;
+        name: string;
         vehicleType: string;
         engineType: string;
         odometerKm: number;
+        vehicleAgeYears: number;
+        maintenanceCostUnit: number;
         vqi: number;
         riskLevel: "low" | "medium" | "high";
+        recommendedAction: string | null;
       };
       totalDistanceKm: number;
       totalDurationMin: number;
       estimatedEmissionsKg: number;
+      trafficSource: TrafficSource;
+      fuelCostIdr: number;
+      baselineFuelCostIdr: number;
+      fuelCostSavingsIdr: number;
+      fuelCostSavingsPercent: number;
+      fuelProductName: string;
       stops: Array<{
         sequence: number;
         orderId: string;
         recipientAddress: string;
-        etaAt: string; // ISO
+        lat: number;
+        lng: number;
+        etaAt: string;
         distanceKm: number;
         durationMin: number;
+        serviceTimeMin?: number;
       }>;
+      waypoints: RouteWaypoint[];
+      encodedPolyline: string | null;
+      matching: {
+        vehicleType: "car" | "motorcycle";
+        selectedRank: number;
+        totalCandidates: number;
+        selectionReason: string;
+      };
     }> = [];
+
+    let routeTrafficSource: TrafficSource = "estimated";
 
     const persistResults: Array<{
       driverId: string;
@@ -157,13 +211,15 @@ export async function POST(request: Request) {
       vehicleId: string;
     }> = [];
 
-    const buildPlansForChunks = (
+    const buildPlansForChunks = async (
       vehicleType: "car" | "motorcycle",
       chunks: typeof routeChunks.carChunks
     ) => {
       for (const chunk of chunks) {
-        const driver = pickBestDriver(vehicleType);
-        if (!driver) continue;
+        const matching =
+          vehicleType === "car" ? carMatching : motorcycleMatching;
+        const driver = pickBestDriverFromRanking(matching, enrichedDrivers);
+        if (!driver || !matching) continue;
 
         const warehouseCoord = { lat: warehouse.lat, lng: warehouse.lng };
 
@@ -173,7 +229,7 @@ export async function POST(request: Request) {
           lng: c.lng,
         }));
 
-        const optimized = optimizeRoundTripByNearestNeighbor(
+        const optimized = await optimizeRoundTripByNearestNeighbor(
           warehouseCoord,
           routableStops,
           routeStartAt
@@ -181,6 +237,7 @@ export async function POST(request: Request) {
 
         const totalDistanceKm = optimized.totalDistanceKm;
         const totalDurationMin = optimized.totalDurationMin;
+        routeTrafficSource = optimized.trafficSource;
         const estimatedEmissionsKg = estimateEmissionsKg(
           driver.vehicle.engineType as any,
           totalDistanceKm
@@ -192,26 +249,86 @@ export async function POST(request: Request) {
             sequence: s.sequence,
             orderId: s.orderId,
             recipientAddress: order?.recipientAddress ?? "Unknown address",
+            lat: order?.lat ?? 0,
+            lng: order?.lng ?? 0,
             etaAt: s.etaAt.toISOString(),
             distanceKm: s.distanceKm,
             durationMin: s.durationMin,
+            serviceTimeMin: s.serviceTimeMin,
           };
         });
 
+        const waypoints = buildRouteWaypoints(
+          {
+            name: warehouse.name,
+            address: warehouse.address ?? warehouse.name,
+            lat: warehouse.lat,
+            lng: warehouse.lng,
+          },
+          routeStartAt,
+          stops,
+          {
+            distanceKm: optimized.departureLegDistanceKm,
+            durationMin: optimized.departureLegDurationMin,
+          },
+          {
+            distanceKm: optimized.returnLegDistanceKm,
+            durationMin: optimized.returnLegDurationMin,
+          }
+        );
+
+        const routePath = waypointsToRoutePath(waypoints);
+        const encodedPolyline = await computeRoutePolyline(routePath, routeStartAt);
+
+        const fuelSavings = calculateTripFuelSavings({
+          optimizedDistanceKm: totalDistanceKm,
+          warehouse: { lat: warehouse.lat, lng: warehouse.lng },
+          stopCoordinates: stops.map((s) => ({ lat: s.lat, lng: s.lng })),
+          vehicleType: driver.vehicle.vehicleType as VehicleType,
+          engineType: driver.vehicle.engineType as EngineType,
+          fuelPrices: fuelPrices.items,
+          emissionsKg: estimatedEmissionsKg,
+        });
+
         planPreviews.push({
-          driverId: driver.id,
+          driver: {
+            id: driver.id,
+            name: driver.name,
+            phone: driver.phone,
+            employeeId: driver.employeeId,
+            licenseNumber: driver.licenseNumber,
+            status: driver.status,
+          },
           vehicle: {
             id: driver.vehicle.id,
+            name: driver.vehicle.name,
             vehicleType: driver.vehicle.vehicleType,
             engineType: driver.vehicle.engineType,
             odometerKm: driver.vehicle.odometerKm,
+            vehicleAgeYears: driver.vehicle.vehicleAgeYears,
+            maintenanceCostUnit: driver.vehicle.maintenanceCostUnit,
             vqi: driver.vehicleEnriched.vqi,
             riskLevel: driver.vehicleEnriched.riskLevel,
+            recommendedAction: driver.vehicleEnriched.recommendedAction,
           },
           totalDistanceKm,
           totalDurationMin,
           estimatedEmissionsKg,
+          trafficSource: optimized.trafficSource,
+          fuelCostIdr: fuelSavings.optimized.fuelCostIdr,
+          baselineFuelCostIdr: fuelSavings.baseline.fuelCostIdr,
+          fuelCostSavingsIdr: fuelSavings.fuelCostSavingsIdr,
+          fuelCostSavingsPercent: fuelSavings.fuelCostSavingsPercent,
+          fuelProductName: fuelSavings.optimized.productName,
           stops,
+          waypoints,
+          encodedPolyline,
+          matching: {
+            vehicleType,
+            selectedRank: 1,
+            totalCandidates: matching.candidates.length,
+            selectionReason: matching.selectionReason,
+          },
         });
 
         persistResults.push({
@@ -231,13 +348,22 @@ export async function POST(request: Request) {
       }
     };
 
-    buildPlansForChunks("car", eligibleCarRoutes);
-    buildPlansForChunks("motorcycle", eligibleMotorcycleRoutes);
+    await buildPlansForChunks("car", eligibleCarRoutes);
+    await buildPlansForChunks("motorcycle", eligibleMotorcycleRoutes);
 
     if (dryRun) {
       return NextResponse.json({
         dryRun: true,
         generatedAt: new Date().toISOString(),
+        routeStartAt: routeStartAt.toISOString(),
+        trafficSource: routeTrafficSource,
+        trafficSourceLabel: describeTrafficSource(routeTrafficSource),
+        fuelPrices: {
+          fetchedAt: fuelPrices.fetchedAt,
+          region: fuelPrices.region,
+          effectiveLabel: fuelPrices.effectiveLabel,
+        },
+        dispatchMatching,
         plans: planPreviews,
       });
     }
@@ -292,6 +418,10 @@ export async function POST(request: Request) {
     return NextResponse.json({
       dryRun: false,
       generatedAt: new Date().toISOString(),
+      routeStartAt: routeStartAt.toISOString(),
+      trafficSource: routeTrafficSource,
+      trafficSourceLabel: describeTrafficSource(routeTrafficSource),
+      dispatchMatching,
       createdPlans,
       plans: planPreviews,
     });

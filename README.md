@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BALON (blibliPU)
 
-## Getting Started
+Next.js logistics webapp with traffic-aware route optimization for Jakarta last-mile delivery.
 
-First, run the development server:
+## Quick start (no API keys required)
+
+Routing works out of the box using free OSRM road distances and a local Jakarta traffic model. No `.env.local` file is needed for local development.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000/routing/orders](http://localhost:3000/routing/orders) to view seeded demo orders, select several, and generate an optimized route plan.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The `build` script runs `prisma migrate deploy` and `db:seed` automatically, so production builds also include demo warehouse, drivers, and orders.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### How routing estimates work
 
-## Learn More
+| Priority | Source | Cost |
+|----------|--------|------|
+| 1 (default) | OSRM public API + Jakarta traffic model | Free |
+| 2 (fallback) | Local Jakarta Haversine model | Free, offline |
+| 3 (optional) | Google Maps live traffic | Paid — requires billing |
 
-To learn more about Next.js, take a look at the following resources:
+Set a departure time on the plan page to apply Jakarta rush-hour multipliers (e.g. weekday 08:00 vs 14:00).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Optional: Google Maps upgrade
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+To enable live Google traffic, copy `.env.example` to `.env.local` and add a `GOOGLE_MAPS_API_KEY`. See `.env.example` for setup steps. This is **not required** for the demo.
 
-## Deploy on Vercel
+To **visualize routes on Google Maps** (Plan Route and Logistics Dashboard), also set `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` and enable the Maps JavaScript API in Google Cloud Console.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Demo warehouse: **Blok M Square**. Order coordinates are validated against Greater Jakarta (Jabodetabek) bounds. Generate sample CSVs at `/admin/mockup-data`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Database
+
+SQLite is used by default (`DATABASE_URL` defaults to `file:./dev.db`). Reset and re-seed with:
+
+```bash
+npm run db:reset
+```
+
+### Production note
+
+The public OSRM demo server (`router.project-osrm.org`) has no SLA. For production at scale, consider self-hosting [OSRM](https://project-osrm.org/) (free, open source).
+
+## Development
+
+```bash
+npm run dev      # Start dev server
+npm run lint     # ESLint
+npm run test     # Unit tests (no network)
+npm run db:seed  # Seed demo data
+```
+
+## Learn more
+
+- [Next.js Documentation](https://nextjs.org/docs)

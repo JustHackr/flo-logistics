@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Predictive Maintenance",
-  description: "Fleet predictive maintenance demo with Vehicle Quality Index",
+  title: "BALON – Blibli Logistics Optimization & Maintenance",
+  description:
+    "BALON: Predictive maintenance and routing optimization for Blibli logistics fleets in Jakarta.",
 };
 
 export default function RootLayout({

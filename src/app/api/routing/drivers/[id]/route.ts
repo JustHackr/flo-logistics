@@ -27,6 +27,8 @@ export async function PUT(request: Request, context: RouteContext) {
       data: {
         name: parsed.name,
         phone: parsed.phone ?? null,
+        employeeId: parsed.employeeId ?? null,
+        licenseNumber: parsed.licenseNumber ?? null,
         vehicleId: parsed.vehicleId,
         status: parsed.status ?? "available",
       },
@@ -46,8 +48,15 @@ export async function DELETE(_request: Request, context: RouteContext) {
   try {
     await prisma.driver.delete({ where: { id } });
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Driver not found" }, { status: 404 });
+  } catch (error) {
+    const message =
+      error instanceof Error && error.message.includes("Foreign")
+        ? "Driver has route plans and cannot be deleted."
+        : "Driver not found";
+    return NextResponse.json(
+      { error: message },
+      { status: error instanceof Error && error.message.includes("Foreign") ? 409 : 404 }
+    );
   }
 }
 

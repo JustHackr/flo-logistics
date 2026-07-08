@@ -74,15 +74,17 @@ model Warehouse {
 }
 
 model Driver {
-  id        String   @id @default(cuid())
-  name      String
-  phone     String?
-  status    String   @default("available")
-  vehicleId String
-  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
-  routePlans RoutePlan[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  phone          String?
+  employeeId     String?
+  licenseNumber  String?
+  status         String   @default("available")
+  vehicleId      String
+  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  routePlans     RoutePlan[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model Order {
@@ -164,4 +166,31 @@ model RouteStop {
 
   @@unique([routePlanId, sequence])
   @@index([routePlanId])
+}
+
+model FuelPriceSnapshot {
+  id             String   @id @default(cuid())
+  region         String
+  effectiveLabel String?
+  sourceUrl      String
+  fetchMethod    String   @default("pertamina_fallback")
+  fetchedAt      DateTime @default(now())
+  items          FuelPriceItem[]
+
+  @@index([fetchedAt])
+}
+
+model FuelPriceItem {
+  id            String @id @default(cuid())
+  snapshotId    String
+  snapshot      FuelPriceSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  productCode   String
+  productName   String
+  pricePerLiter Float
+  subsidy       Boolean @default(false)
+  engineTypes   String
+  vehicleTypes  String
+
+  @@index([snapshotId])
+  @@unique([snapshotId, productCode])
 }

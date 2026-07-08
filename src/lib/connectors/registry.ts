@@ -62,4 +62,24 @@ export const CONNECTOR_TYPE_REGISTRY: Record<
       { key: "pollingIntervalMinutes", label: "Import Interval (minutes)", type: "number", placeholder: "1440" },
     ],
   },
+  oms: {
+    label: "Order Management System (OMS)",
+    description: "Sync orders, fulfillment status, and delivery events from your OMS.",
+    adapterClass: "OmsConnector",
+    configFields: [
+      { key: "endpointUrl", label: "OMS API URL", type: "url", placeholder: "https://oms.example.com/api/v1" },
+      { key: "apiKey", label: "API Key", type: "password" },
+      { key: "pollingIntervalMinutes", label: "Sync Interval (minutes)", type: "number", placeholder: "15" },
+    ],
+  },
+  wms: {
+    label: "Warehouse Management System (WMS)",
+    description: "Sync inventory, pick lists, and warehouse operations from your WMS.",
+    adapterClass: "WmsConnector",
+    configFields: [
+      { key: "endpointUrl", label: "WMS API URL", type: "url", placeholder: "https://wms.example.com/api/v1" },
+      { key: "apiKey", label: "API Key", type: "password" },
+      { key: "pollingIntervalMinutes", label: "Sync Interval (minutes)", type: "number", placeholder: "30" },
+    ],
+  },
 };

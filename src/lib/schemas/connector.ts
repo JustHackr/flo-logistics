@@ -6,6 +6,8 @@ export const connectorTypes = [
   "webhook",
   "telematics",
   "csv_scheduled",
+  "oms",
+  "wms",
 ] as const;
 
 export const connectorStatuses = ["disabled", "planned", "active"] as const;

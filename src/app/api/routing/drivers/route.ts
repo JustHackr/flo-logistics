@@ -19,6 +19,8 @@ export async function POST(request: Request) {
       data: {
         name: parsed.name,
         phone: parsed.phone ?? null,
+        employeeId: parsed.employeeId ?? null,
+        licenseNumber: parsed.licenseNumber ?? null,
         vehicleId: parsed.vehicleId,
         status: parsed.status ?? "available",
       },

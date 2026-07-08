@@ -169,7 +169,8 @@ export function ConnectorsClient({
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Data Connectors</h2>
           <p className="text-muted-foreground">
-            Configure IoT and external data sources for future fleet integration.
+            Configure IoT, OMS, WMS, and other external data sources. Planned connectors are
+            shown as inactive to demonstrate future expansion.
           </p>
         </div>
         <Button onClick={openCreate}>
@@ -184,8 +185,13 @@ export function ConnectorsClient({
             CONNECTOR_TYPE_REGISTRY[
               connector.type as keyof typeof CONNECTOR_TYPE_REGISTRY
             ];
+          const isInactive =
+            connector.status === "planned" || connector.status === "disabled";
           return (
-            <Card key={connector.id}>
+            <Card
+              key={connector.id}
+              className={cn(isInactive && "opacity-60")}
+            >
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -194,9 +200,16 @@ export function ConnectorsClient({
                       {meta?.label ?? connector.type}
                     </CardDescription>
                   </div>
-                  <Badge variant={statusVariant(connector.status)} className="capitalize">
-                    {connector.status}
-                  </Badge>
+                  <div className="flex flex-col items-end gap-1">
+                    {isInactive && (
+                      <Badge variant="outline" className="text-xs">
+                        Coming soon
+                      </Badge>
+                    )}
+                    <Badge variant={statusVariant(connector.status)} className="capitalize">
+                      {connector.status}
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
