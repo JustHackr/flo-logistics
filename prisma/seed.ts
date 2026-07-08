@@ -48,6 +48,15 @@ function daysFromNow(days: number) {
 }
 
 async function main() {
+  // Routing tables must be cleared before vehicles because Driver -> Vehicle uses
+  // `onDelete: Restrict`.
+  await prisma.routeStop.deleteMany();
+  await prisma.routePlan.deleteMany();
+  await prisma.orderStatusEvent.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.driver.deleteMany();
+  await prisma.warehouse.deleteMany();
+
   await prisma.vehicle.deleteMany();
   await prisma.dataConnector.deleteMany();
 
@@ -110,7 +119,100 @@ async function main() {
     });
   }
 
-  console.log(`Seeded ${vehicles.length} vehicles and 3 connectors.`);
+  // Routing demo seed
+  const warehouse = await prisma.warehouse.create({
+    data: {
+      name: "Jakarta Main Warehouse",
+      address: "Jakarta, Indonesia",
+      // Center-ish location within Jakarta bounds (mock routing uses lat/lng directly).
+      lat: -6.200000,
+      lng: 106.816666,
+    },
+  });
+
+  const carVehicle = await prisma.vehicle.findFirst({
+    where: { vehicleType: "car" },
+  });
+  const motorcycleVehicle = await prisma.vehicle.findFirst({
+    where: { vehicleType: "motorcycle" },
+  });
+
+  if (!carVehicle || !motorcycleVehicle) {
+    throw new Error("Seed requires at least one car and one motorcycle vehicle");
+  }
+
+  const driverCar = await prisma.driver.create({
+    data: {
+      name: "Pak Andi (Car)",
+      phone: "0812-0000-0001",
+      status: "available",
+      vehicleId: carVehicle.id,
+    },
+  });
+
+  const driverMotorcycle = await prisma.driver.create({
+    data: {
+      name: "Mas Bima (Motorcycle)",
+      phone: "0812-0000-0002",
+      status: "available",
+      vehicleId: motorcycleVehicle.id,
+    },
+  });
+
+  const now = new Date();
+  const orders: Array<{
+    recipientAddress: string;
+    lat: number;
+    lng: number;
+    accessRequirement: "CAR_ONLY" | "MOTORCYCLE_ONLY" | "BOTH";
+    receivedAtOffsetDays: number;
+  }> = [
+    { recipientAddress: "Jl. Sudirman Block A", lat: -6.2148, lng: 106.8270, accessRequirement: "CAR_ONLY", receivedAtOffsetDays: 0.2 },
+    { recipientAddress: "Jl. Gatot Subroto Rt 05", lat: -6.1946, lng: 106.8124, accessRequirement: "CAR_ONLY", receivedAtOffsetDays: 0.4 },
+    { recipientAddress: "Jl. Thamrin Gang 2", lat: -6.1915, lng: 106.8343, accessRequirement: "MOTORCYCLE_ONLY", receivedAtOffsetDays: 0.1 },
+    { recipientAddress: "Jl. Kuningan Raya", lat: -6.2245, lng: 106.8319, accessRequirement: "BOTH", receivedAtOffsetDays: 0.3 },
+    { recipientAddress: "Jl. Menteng Lorong", lat: -6.1987, lng: 106.8331, accessRequirement: "MOTORCYCLE_ONLY", receivedAtOffsetDays: 0.6 },
+    { recipientAddress: "Jl. Casablanca Dalam", lat: -6.2384, lng: 106.8605, accessRequirement: "CAR_ONLY", receivedAtOffsetDays: 0.7 },
+    { recipientAddress: "Jl. Cikini Raya", lat: -6.2120, lng: 106.8432, accessRequirement: "BOTH", receivedAtOffsetDays: 0.25 },
+    { recipientAddress: "Jl. Pancoran Gang Kecil", lat: -6.2662, lng: 106.8479, accessRequirement: "MOTORCYCLE_ONLY", receivedAtOffsetDays: 0.35 },
+    { recipientAddress: "Jl. Kebon Sirih", lat: -6.1875, lng: 106.8237, accessRequirement: "CAR_ONLY", receivedAtOffsetDays: 0.8 },
+    { recipientAddress: "Jl. Palmerah Dalam", lat: -6.2142, lng: 106.7937, accessRequirement: "BOTH", receivedAtOffsetDays: 0.45 },
+    { recipientAddress: "Jl. Kebayoran Lama 11", lat: -6.2428, lng: 106.7859, accessRequirement: "CAR_ONLY", receivedAtOffsetDays: 0.55 },
+    { recipientAddress: "Jl. Kelapa Gading Alley", lat: -6.1310, lng: 106.9050, accessRequirement: "MOTORCYCLE_ONLY", receivedAtOffsetDays: 0.15 },
+  ];
+
+  // Create orders + a single initial status event each.
+  for (const [idx, o] of orders.entries()) {
+    const receivedAt = new Date(now);
+    // Spread orders a bit across time so timestamps look realistic.
+    receivedAt.setHours(receivedAt.getHours() - Math.round(o.receivedAtOffsetDays * 24));
+
+    const order = await prisma.order.create({
+      data: {
+        recipientAddress: o.recipientAddress,
+        lat: o.lat,
+        lng: o.lng,
+        accessRequirement: o.accessRequirement,
+        status: "RECEIVED",
+        receivedAt,
+      },
+    });
+
+    await prisma.orderStatusEvent.create({
+      data: {
+        orderId: order.id,
+        status: "RECEIVED",
+        timestamp: receivedAt,
+      },
+    });
+
+    // Keep linter quiet if idx unused (demo seed).
+    void idx;
+  }
+
+  console.log(
+    `Seeded ${vehicles.length} vehicles, 3 connectors, 1 warehouse, 2 drivers, and ${orders.length} orders.`
+  );
 }
 
 main()

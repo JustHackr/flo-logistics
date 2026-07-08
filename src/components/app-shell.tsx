@@ -9,6 +9,9 @@ import {
   FileBarChart,
   Plug,
   BookOpen,
+  MapPinned,
+  Route,
+  Truck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +23,13 @@ const navItems = [
   { href: "/vehicles/import", label: "Import CSV", icon: Upload },
   { href: "/reports", label: "Reports", icon: FileBarChart },
   { href: "/methodology", label: "Metrics & Guide", icon: BookOpen },
+  {
+    href: "/routing/orders",
+    label: "Routing Orders",
+    icon: MapPinned,
+  },
+  { href: "/routing/plan", label: "Plan Route", icon: Route },
+  { href: "/routing/dashboard", label: "Logistics Dashboard", icon: Truck },
   {
     href: "/connectors",
     label: "Connectors",
