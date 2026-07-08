@@ -29,7 +29,7 @@ export default async function DashboardPage() {
       engineType: type,
       count: enriched.filter((v) => v.engineType === type).length,
     })),
-    byVehicleType: ["car", "motorcycle"].map((type) => ({
+    byVehicleType: ["van", "motorcycle"].map((type) => ({
       vehicleType: type,
       count: enriched.filter((v) => v.vehicleType === type).length,
     })),
@@ -41,7 +41,7 @@ export default async function DashboardPage() {
       },
       { range: "71-100", count: enriched.filter((v) => v.vqi > 70).length },
     ],
-    costByVehicleType: ["car", "motorcycle"].map((type) => ({
+    costByVehicleType: ["van", "motorcycle"].map((type) => ({
       vehicleType: type,
       totalCost: enriched
         .filter((v) => v.vehicleType === type)

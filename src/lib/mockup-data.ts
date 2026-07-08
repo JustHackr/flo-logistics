@@ -13,41 +13,55 @@ export const ORDER_CSV_HEADERS = [
 
 export type AccessRequirement = "CAR_ONLY" | "MOTORCYCLE_ONLY" | "BOTH";
 
-const VEHICLE_NAMES = {
-  car: [
-    "Van Pengiriman",
-    "Sedan Penjualan",
-    "Van Servis",
-    "Truk Gudang",
-    "Sedan Armada",
-    "Hatchback",
-    "SUV Eksekutif",
-    "Van Kargo",
+const MOTORCYCLE_MODELS = {
+  gasoline: [
+    "Honda Beat",
+    "Honda Vario 125",
+    "Honda Scoopy",
+    "Honda PCX 160",
+    "Yamaha NMAX 155",
+    "Yamaha Aerox 155",
+    "Suzuki Satria F150",
   ],
-  motorcycle: [
-    "Motor Kurir",
-    "Motor Patroli",
-    "Motor Kargo",
-    "Skuter Ekspres",
-    "Motor Last-Mile",
-  ],
-};
-
-const POLYTRON_EV_NAMES = {
-  car: "Polytron Galvani",
-  motorcycle: "Polytron Fox",
+  ev: ["Polytron Fox R", "Polytron Fox E", "Polytron Fox X"],
 } as const;
 
+const VAN_MODELS = {
+  gasoline: [
+    "Daihatsu Gran Max",
+    "Suzuki Carry",
+    "Toyota HiAce Commuter",
+  ],
+  diesel: [
+    "Suzuki Carry Diesel",
+    "Mitsubishi L300",
+    "Isuzu Traga",
+    "Toyota HiAce Commuter",
+  ],
+  ev: ["DFSK Gelora E", "Wuling Formo Max EV"],
+} as const;
+
+function randomPlateSuffix() {
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const nums = randomInt(1000, 9999);
+  const suffix =
+    letters[randomInt(0, 25)] +
+    letters[randomInt(0, 25)] +
+    letters[randomInt(0, 25)];
+  return `B ${nums} ${suffix}`;
+}
+
 function vehicleDisplayName(
-  vehicleType: "car" | "motorcycle",
-  engineType: string,
-  unitNumber: string
+  vehicleType: "van" | "motorcycle",
+  engineType: string
 ) {
-  if (engineType === "ev") {
-    return `${POLYTRON_EV_NAMES[vehicleType]} ${unitNumber}`;
-  }
-  const namePrefix = randomItem(VEHICLE_NAMES[vehicleType]);
-  return `${namePrefix} ${unitNumber}`;
+  const models =
+    vehicleType === "motorcycle"
+      ? MOTORCYCLE_MODELS[engineType as keyof typeof MOTORCYCLE_MODELS] ??
+        MOTORCYCLE_MODELS.gasoline
+      : VAN_MODELS[engineType as keyof typeof VAN_MODELS] ?? VAN_MODELS.gasoline;
+  const model = randomItem(models);
+  return `${randomPlateSuffix()} – ${model}`;
 }
 
 const ACCESS_REQUIREMENTS: AccessRequirement[] = [
@@ -90,7 +104,7 @@ function rowsToCsv(
 
 export function generateMockVehicles(count: number) {
   const rows = Array.from({ length: count }, (_, index) => {
-    const vehicleType = randomItem(["car", "motorcycle"] as const);
+    const vehicleType = randomItem(["van", "motorcycle"] as const);
     const engineType =
       vehicleType === "motorcycle"
         ? randomItem(["gasoline", "gasoline", "gasoline", "ev"] as const)
@@ -125,10 +139,8 @@ export function generateMockVehicles(count: number) {
       nextMaintenanceDate.getDate() + randomInt(5, 90)
     );
 
-    const unitNumber = String(index + 1).padStart(2, "0");
-
     return {
-      name: vehicleDisplayName(vehicleType, engineType, unitNumber),
+      name: vehicleDisplayName(vehicleType, engineType),
       vehicleType,
       engineType,
       vehicleAgeYears,

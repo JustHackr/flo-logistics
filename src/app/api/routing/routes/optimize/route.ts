@@ -89,14 +89,14 @@ export async function POST(request: Request) {
     const drivers = await prisma.driver.findMany({
       include: { vehicle: true },
     });
-    const driversCar = drivers.filter((d) => d.vehicle.vehicleType === "car");
+    const driversVan = drivers.filter((d) => d.vehicle.vehicleType === "van");
     const driversMotorcycle = drivers.filter(
       (d) => d.vehicle.vehicleType === "motorcycle"
     );
 
-    if (driversCar.length === 0 && driversMotorcycle.length === 0) {
+    if (driversVan.length === 0 && driversMotorcycle.length === 0) {
       return NextResponse.json(
-        { error: "No eligible drivers found (need car or motorcycle vehicles)." },
+        { error: "No eligible drivers found (need van or motorcycle vehicles)." },
         { status: 400 }
       );
     }
@@ -120,24 +120,24 @@ export async function POST(request: Request) {
       maxStopsPerRoute
     );
 
-    const eligibleCarRoutes = routeChunks.carChunks;
+    const eligibleVanRoutes = routeChunks.vanChunks;
     const eligibleMotorcycleRoutes = routeChunks.motorcycleChunks;
 
-    if (eligibleCarRoutes.length === 0 && eligibleMotorcycleRoutes.length === 0) {
+    if (eligibleVanRoutes.length === 0 && eligibleMotorcycleRoutes.length === 0) {
       return NextResponse.json(
         { error: "No eligible routes could be formed for the selected orders." },
         { status: 400 }
       );
     }
 
-    const carMatching = rankDriversByVqi(enrichedDrivers, "car");
+    const vanMatching = rankDriversByVqi(enrichedDrivers, "van");
     const motorcycleMatching = rankDriversByVqi(enrichedDrivers, "motorcycle");
 
     const dispatchMatching: {
-      car: DriverMatchingResult | null;
+      van: DriverMatchingResult | null;
       motorcycle: DriverMatchingResult | null;
     } = {
-      car: carMatching,
+      van: vanMatching,
       motorcycle: motorcycleMatching,
     };
 
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
       waypoints: RouteWaypoint[];
       encodedPolyline: string | null;
       matching: {
-        vehicleType: "car" | "motorcycle";
+        vehicleType: "van" | "motorcycle";
         selectedRank: number;
         totalCandidates: number;
         selectionReason: string;
@@ -212,12 +212,12 @@ export async function POST(request: Request) {
     }> = [];
 
     const buildPlansForChunks = async (
-      vehicleType: "car" | "motorcycle",
-      chunks: typeof routeChunks.carChunks
+      vehicleType: "van" | "motorcycle",
+      chunks: typeof routeChunks.vanChunks
     ) => {
       for (const chunk of chunks) {
         const matching =
-          vehicleType === "car" ? carMatching : motorcycleMatching;
+          vehicleType === "van" ? vanMatching : motorcycleMatching;
         const driver = pickBestDriverFromRanking(matching, enrichedDrivers);
         if (!driver || !matching) continue;
 
@@ -348,7 +348,7 @@ export async function POST(request: Request) {
       }
     };
 
-    await buildPlansForChunks("car", eligibleCarRoutes);
+    await buildPlansForChunks("van", eligibleVanRoutes);
     await buildPlansForChunks("motorcycle", eligibleMotorcycleRoutes);
 
     if (dryRun) {

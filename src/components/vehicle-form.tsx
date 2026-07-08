@@ -23,7 +23,7 @@ type VehicleFormProps = {
 
 const defaultValues = {
   name: "",
-  vehicleType: "car",
+  vehicleType: "van",
   engineType: "gasoline",
   vehicleAgeYears: "1",
   odometerKm: "0",
@@ -132,13 +132,13 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
             <Label>Vehicle Type</Label>
             <Select
               value={form.vehicleType}
-              onValueChange={(v) => updateField("vehicleType", v ?? "car")}
+              onValueChange={(v) => updateField("vehicleType", v ?? "van")}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="car">Car</SelectItem>
+                <SelectItem value="van">Van</SelectItem>
                 <SelectItem value="motorcycle">Motorcycle</SelectItem>
               </SelectContent>
             </Select>

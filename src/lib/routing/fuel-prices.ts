@@ -57,7 +57,7 @@ export const PERTAMINA_DKI_JAKARTA_FALLBACK: Omit<
       pricePerLiter: 16_250,
       subsidy: false,
       engineTypes: ["gasoline"],
-      vehicleTypes: ["car"],
+      vehicleTypes: ["van"],
     },
     {
       productCode: "pertamax_turbo",
@@ -65,7 +65,7 @@ export const PERTAMINA_DKI_JAKARTA_FALLBACK: Omit<
       pricePerLiter: 19_300,
       subsidy: false,
       engineTypes: ["gasoline"],
-      vehicleTypes: ["car"],
+      vehicleTypes: ["van"],
     },
     {
       productCode: "pertamax_green",
@@ -73,7 +73,7 @@ export const PERTAMINA_DKI_JAKARTA_FALLBACK: Omit<
       pricePerLiter: 17_000,
       subsidy: false,
       engineTypes: ["gasoline"],
-      vehicleTypes: ["car"],
+      vehicleTypes: ["van"],
     },
     {
       productCode: "dexlite",
@@ -81,7 +81,7 @@ export const PERTAMINA_DKI_JAKARTA_FALLBACK: Omit<
       pricePerLiter: 19_700,
       subsidy: false,
       engineTypes: ["diesel"],
-      vehicleTypes: ["car"],
+      vehicleTypes: ["van"],
     },
     {
       productCode: "pertamina_dex",
@@ -89,7 +89,7 @@ export const PERTAMINA_DKI_JAKARTA_FALLBACK: Omit<
       pricePerLiter: 21_150,
       subsidy: false,
       engineTypes: ["diesel"],
-      vehicleTypes: ["car"],
+      vehicleTypes: ["van"],
     },
     {
       productCode: "biosolar",
@@ -97,7 +97,7 @@ export const PERTAMINA_DKI_JAKARTA_FALLBACK: Omit<
       pricePerLiter: 6_800,
       subsidy: true,
       engineTypes: ["diesel"],
-      vehicleTypes: ["car", "motorcycle"],
+      vehicleTypes: ["van", "motorcycle"],
     },
     {
       productCode: "electricity",
@@ -105,7 +105,7 @@ export const PERTAMINA_DKI_JAKARTA_FALLBACK: Omit<
       pricePerLiter: 1_444,
       subsidy: false,
       engineTypes: ["ev"],
-      vehicleTypes: ["car", "motorcycle"],
+      vehicleTypes: ["van", "motorcycle"],
     },
   ],
 };

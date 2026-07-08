@@ -33,18 +33,18 @@ const VEHICLE_MAPPINGS = [
     engineType: "gasoline" as const,
   },
   {
-    label: "Car · gasoline",
-    vehicleType: "car" as const,
+    label: "Van · gasoline",
+    vehicleType: "van" as const,
     engineType: "gasoline" as const,
   },
   {
-    label: "Car · diesel",
-    vehicleType: "car" as const,
+    label: "Van · diesel",
+    vehicleType: "van" as const,
     engineType: "diesel" as const,
   },
   {
-    label: "Car · EV",
-    vehicleType: "car" as const,
+    label: "Van · EV",
+    vehicleType: "van" as const,
     engineType: "ev" as const,
   },
 ];

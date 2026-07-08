@@ -15,7 +15,7 @@ export const FUEL_CONSUMPTION_KM_PER_LITER: Record<
     diesel: 30,
     ev: null,
   },
-  car: {
+  van: {
     gasoline: 11,
     diesel: 10,
     ev: null,
@@ -24,7 +24,7 @@ export const FUEL_CONSUMPTION_KM_PER_LITER: Record<
 
 /** EV energy use (kWh/km) when fuel product is electricity. */
 export const EV_KWH_PER_KM: Record<VehicleType, number> = {
-  car: 0.18,
+  van: 0.18,
   motorcycle: 0.05,
 };
 

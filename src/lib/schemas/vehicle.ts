@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const vehicleTypes = ["car", "motorcycle"] as const;
+export const vehicleTypes = ["van", "motorcycle"] as const;
 export const engineTypes = ["gasoline", "diesel", "ev"] as const;
 export const dataSources = ["manual", "csv", "connector"] as const;
 

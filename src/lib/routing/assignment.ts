@@ -18,7 +18,7 @@ function chunkArray<T>(arr: T[], chunkSize: number) {
 }
 
 export interface AssignmentResult {
-  carChunks: OrderStopForRouting[][];
+  vanChunks: OrderStopForRouting[][];
   motorcycleChunks: OrderStopForRouting[][];
 }
 
@@ -34,18 +34,18 @@ export function assignOrdersToVehicleChunks(
   );
   const bothOrders = orders.filter((o) => o.accessRequirement === "BOTH");
 
-  const carSet: OrderStopForRouting[] = [...carMandatory];
+  const vanSet: OrderStopForRouting[] = [...carMandatory];
   const motorcycleSet: OrderStopForRouting[] = [...motorcycleMandatory];
 
   // For BOTH-access stops, assign to the currently smaller set so the routes
   // remain feasible for vehicle types.
   for (const o of bothOrders) {
-    if (carSet.length <= motorcycleSet.length) carSet.push(o);
+    if (vanSet.length <= motorcycleSet.length) vanSet.push(o);
     else motorcycleSet.push(o);
   }
 
   return {
-    carChunks: chunkArray(carSet, maxStopsPerRoute),
+    vanChunks: chunkArray(vanSet, maxStopsPerRoute),
     motorcycleChunks: chunkArray(motorcycleSet, maxStopsPerRoute),
   };
 }

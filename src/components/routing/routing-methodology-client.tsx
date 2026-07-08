@@ -96,9 +96,9 @@ const ORDER_STATUSES = [
 ];
 
 const ACCESS_ROWS = [
-  { access: "CAR_ONLY", vehicle: "Mobil", note: "Gang sempit tidak bisa, butuh mobil/van" },
+  { access: "CAR_ONLY", vehicle: "Van", note: "Gang sempit tidak bisa, butuh van" },
   { access: "MOTORCYCLE_ONLY", vehicle: "Motor", note: "Gang/perumahan padat, motor lebih lincah" },
-  { access: "BOTH", vehicle: "Mobil atau motor", note: "Dibagi ke set yang lebih ringan saat assignment" },
+  { access: "BOTH", vehicle: "Van atau motor", note: "Dibagi ke set yang lebih ringan saat assignment" },
 ];
 
 const TRAFFIC_SOURCES = [
@@ -118,17 +118,18 @@ const RUSH_ROWS = [
 
 const FUEL_PRODUCT_ROWS = [
   { vehicle: "Motor + bensin", product: "Pertalite", code: resolveFuelProductForVehicle("motorcycle", "gasoline") },
-  { vehicle: "Mobil + bensin", product: "Pertamax", code: resolveFuelProductForVehicle("car", "gasoline") },
-  { vehicle: "Motor/mobil diesel", product: "Biosolar", code: resolveFuelProductForVehicle("car", "diesel") },
-  { vehicle: "EV (Polytron Galvani / Fox)", product: "PLN EV charging", code: resolveFuelProductForVehicle("car", "ev") },
+  { vehicle: "Van + bensin", product: "Pertamax", code: resolveFuelProductForVehicle("van", "gasoline") },
+  { vehicle: "Van diesel", product: "Biosolar", code: resolveFuelProductForVehicle("van", "diesel") },
+  { vehicle: "Motor EV (Polytron Fox)", product: "PLN EV charging", code: resolveFuelProductForVehicle("motorcycle", "ev") },
+  { vehicle: "Van EV (DFSK / Wuling)", product: "PLN EV charging", code: resolveFuelProductForVehicle("van", "ev") },
 ];
 
 const CONSUMPTION_ROWS = [
   { vehicle: "Motor bensin", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.motorcycle.gasoline },
   { vehicle: "Motor diesel", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.motorcycle.diesel },
-  { vehicle: "Mobil bensin", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.car.gasoline },
-  { vehicle: "Mobil diesel", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.car.diesel },
-  { vehicle: "Mobil EV", kwhPerKm: EV_KWH_PER_KM.car },
+  { vehicle: "Van bensin", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.van.gasoline },
+  { vehicle: "Van diesel", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.van.diesel },
+  { vehicle: "Van EV", kwhPerKm: EV_KWH_PER_KM.van },
   { vehicle: "Motor EV", kwhPerKm: EV_KWH_PER_KM.motorcycle },
 ];
 
@@ -196,7 +197,7 @@ export function RoutingMethodologyClient({
   const selectedDriver =
     sortedDrivers.find((d) => d.id === selectedDriverId) ?? sortedDrivers[0];
 
-  const carDrivers = sortedDrivers.filter((d) => d.vehicleType === "car");
+  const vanDrivers = sortedDrivers.filter((d) => d.vehicleType === "van");
   const motorcycleDrivers = sortedDrivers.filter((d) => d.vehicleType === "motorcycle");
 
   return (
@@ -462,7 +463,7 @@ savings = baselineFuelCost − optimizedFuelCost`}
             <p className="text-xs text-muted-foreground">
               Naive baseline models a separate warehouse round-trip per stop (no
               route sharing). Optimized routes use nearest-neighbor TSP distance.
-              Demo EV fleet uses Polytron Galvani (mobil) and Polytron Fox (motor).
+              Demo EV fleet uses Polytron Fox (motor) and DFSK Gelora E / Wuling Formo Max EV (van).
             </p>
           </CardContent>
         </Card>
@@ -500,10 +501,10 @@ savings = baselineFuelCost − optimizedFuelCost`}
         <div className="grid gap-4 sm:grid-cols-2">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Mobil ({carDrivers.length})</CardTitle>
+              <CardTitle className="text-base">Van ({vanDrivers.length})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {carDrivers.map((d) => (
+              {vanDrivers.map((d) => (
                 <div key={d.id} className="flex items-center justify-between text-sm">
                   <span>{d.name}</span>
                   <RiskBadge risk={d.riskLevel} vqi={d.vqi} />

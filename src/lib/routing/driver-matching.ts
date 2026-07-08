@@ -6,7 +6,7 @@ export type DriverMatchCandidate = {
   employeeId: string | null;
   vehicleId: string;
   vehicleName: string;
-  vehicleType: "car" | "motorcycle";
+  vehicleType: "van" | "motorcycle";
   engineType: string;
   vqi: number;
   riskLevel: RiskLevel;
@@ -14,7 +14,7 @@ export type DriverMatchCandidate = {
 };
 
 export type DriverMatchingResult = {
-  vehicleType: "car" | "motorcycle";
+  vehicleType: "van" | "motorcycle";
   candidates: DriverMatchCandidate[];
   selectedDriverId: string;
   selectedDriverName: string;
@@ -46,7 +46,7 @@ export type EnrichedDriverForMatching = {
 
 export function rankDriversByVqi(
   enrichedDrivers: EnrichedDriverForMatching[],
-  vehicleType: "car" | "motorcycle"
+  vehicleType: "van" | "motorcycle"
 ): DriverMatchingResult | null {
   const filtered = enrichedDrivers.filter(
     (d) => d.vehicle.vehicleType === vehicleType

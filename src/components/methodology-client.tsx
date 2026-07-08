@@ -388,8 +388,8 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
               </p>
               <p>
                 <span className="font-medium text-foreground">Demo EV fleet:</span>{" "}
-                Polytron Galvani (mobil listrik) and Polytron Fox (motor listrik)
-                receive lower odometer/cost penalties and higher CFI scores on routes.
+                Polytron Fox (motor listrik) and DFSK Gelora E / Wuling Formo Max EV
+                (van listrik) receive lower odometer/cost penalties and higher CFI scores on routes.
               </p>
             </div>
           </CardContent>

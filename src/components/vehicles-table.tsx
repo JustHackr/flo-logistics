@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -23,12 +24,21 @@ import {
 } from "@/components/ui/dialog";
 import { RiskBadge } from "@/components/risk-badge";
 import { formatDate, formatNumber } from "@/lib/format";
+import { getVehicleFuelDisplay } from "@/lib/vehicle-fuel";
 import type { VehicleWithAnalysis } from "@/lib/types";
 
-type SortKey = keyof Pick<
-  VehicleWithAnalysis,
-  "name" | "vehicleAgeYears" | "odometerKm" | "vqi" | "engineType" | "vehicleType"
->;
+type SortKey =
+  | keyof Pick<
+      VehicleWithAnalysis,
+      "name" | "vehicleAgeYears" | "odometerKm" | "vqi" | "engineType" | "vehicleType"
+    >
+  | "fuel";
+
+function fuelBadgeClass(tier: ReturnType<typeof getVehicleFuelDisplay>["tier"]) {
+  if (tier === "zero") return "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
+  if (tier === "subsidized") return "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400";
+  return "";
+}
 
 export function VehiclesTable({
   vehicles: initialVehicles,
@@ -43,8 +53,17 @@ export function VehiclesTable({
 
   const sorted = useMemo(() => {
     return [...vehicles].sort((a, b) => {
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
+      let aVal: string | number;
+      let bVal: string | number;
+
+      if (sortKey === "fuel") {
+        aVal = getVehicleFuelDisplay(a.vehicleType, a.engineType).shortLabel;
+        bVal = getVehicleFuelDisplay(b.vehicleType, b.engineType).shortLabel;
+      } else {
+        aVal = a[sortKey];
+        bVal = b[sortKey];
+      }
+
       if (typeof aVal === "number" && typeof bVal === "number") {
         return sortDir === "asc" ? aVal - bVal : bVal - aVal;
       }
@@ -96,6 +115,11 @@ export function VehiclesTable({
                 </button>
               </TableHead>
               <TableHead>
+                <button type="button" onClick={() => toggleSort("fuel")}>
+                  {sortLabel("fuel", "Fuel")}
+                </button>
+              </TableHead>
+              <TableHead>
                 <button type="button" onClick={() => toggleSort("engineType")}>
                   {sortLabel("engineType", "Engine")}
                 </button>
@@ -120,36 +144,44 @@ export function VehiclesTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sorted.map((vehicle) => (
-              <TableRow key={vehicle.id}>
-                <TableCell className="font-medium">{vehicle.name}</TableCell>
-                <TableCell className="capitalize">{vehicle.vehicleType}</TableCell>
-                <TableCell className="uppercase">{vehicle.engineType}</TableCell>
-                <TableCell>{formatNumber(vehicle.vehicleAgeYears, 1)} yr</TableCell>
-                <TableCell>{formatNumber(vehicle.odometerKm)} km</TableCell>
-                <TableCell>
-                  <RiskBadge risk={vehicle.riskLevel} vqi={vehicle.vqi} />
-                </TableCell>
-                <TableCell>{formatDate(vehicle.nextMaintenanceDate)}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Link
-                      href={`/vehicles/${vehicle.id}/edit`}
-                      className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Link>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeleteId(vehicle.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {sorted.map((vehicle) => {
+              const fuel = getVehicleFuelDisplay(vehicle.vehicleType, vehicle.engineType);
+              return (
+                <TableRow key={vehicle.id}>
+                  <TableCell className="font-medium">{vehicle.name}</TableCell>
+                  <TableCell className="capitalize">{vehicle.vehicleType}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={cn("text-xs", fuelBadgeClass(fuel.tier))}>
+                      {fuel.shortLabel}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="uppercase">{vehicle.engineType}</TableCell>
+                  <TableCell>{formatNumber(vehicle.vehicleAgeYears, 1)} yr</TableCell>
+                  <TableCell>{formatNumber(vehicle.odometerKm)} km</TableCell>
+                  <TableCell>
+                    <RiskBadge risk={vehicle.riskLevel} vqi={vehicle.vqi} />
+                  </TableCell>
+                  <TableCell>{formatDate(vehicle.nextMaintenanceDate)}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Link
+                        href={`/vehicles/${vehicle.id}/edit`}
+                        className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeleteId(vehicle.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

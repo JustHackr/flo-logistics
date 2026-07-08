@@ -12,7 +12,7 @@ const drivers = [
     vehicle: {
       id: "v1",
       name: "Van A",
-      vehicleType: "car",
+      vehicleType: "van",
       engineType: "diesel",
       odometerKm: 50000,
       vehicleAgeYears: 3,
@@ -30,7 +30,7 @@ const drivers = [
     vehicle: {
       id: "v2",
       name: "Van B",
-      vehicleType: "car",
+      vehicleType: "van",
       engineType: "gasoline",
       odometerKm: 40000,
       vehicleAgeYears: 2,
@@ -59,14 +59,14 @@ const drivers = [
 ];
 
 describe("rankDriversByVqi", () => {
-  it("selects highest VQI car driver", () => {
-    const result = rankDriversByVqi(drivers, "car");
+  it("selects highest VQI van driver", () => {
+    const result = rankDriversByVqi(drivers, "van");
     expect(result?.selectedDriverId).toBe("d2");
     expect(result?.candidates[0].vqi).toBe(87);
     expect(result?.selectionReason).toContain("Highest VQI");
   });
 
   it("returns null when no drivers of type", () => {
-    expect(rankDriversByVqi([], "car")).toBeNull();
+    expect(rankDriversByVqi([], "van")).toBeNull();
   });
 });

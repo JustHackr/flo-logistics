@@ -182,7 +182,7 @@ function BrandSubtitle() {
   return (
     <>
       <p className="text-xs text-muted-foreground">
-        Blibli Logistics Optimization &amp; Maintenance
+        Blibli Analytic Logistic Optimization &amp; Maintenance
       </p>
       <p className="text-[10px] font-medium text-muted-foreground/80">v0.2</p>
     </>

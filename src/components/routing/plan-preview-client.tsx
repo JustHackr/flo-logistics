@@ -56,7 +56,7 @@ export type RoutingPlanPreview = {
   waypoints?: RouteWaypoint[];
   encodedPolyline?: string | null;
   matching?: {
-    vehicleType: "car" | "motorcycle";
+    vehicleType: "van" | "motorcycle";
     selectedRank: number;
     totalCandidates: number;
     selectionReason: string;
@@ -79,7 +79,7 @@ export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
     null
   );
   const [dispatchMatching, setDispatchMatching] = useState<{
-    car: DriverMatchingResult | null;
+    van: DriverMatchingResult | null;
     motorcycle: DriverMatchingResult | null;
   } | null>(null);
   const [routeStartAt, setRouteStartAt] = useState(() =>

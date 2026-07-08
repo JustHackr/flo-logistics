@@ -1,5 +1,5 @@
 export type EngineType = "gasoline" | "diesel" | "ev";
-export type VehicleType = "car" | "motorcycle";
+export type VehicleType = "van" | "motorcycle";
 
 export interface VehicleWithAnalysis {
   id: string;

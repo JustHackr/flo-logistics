@@ -86,7 +86,7 @@ export function DispatchMatchingPanel({
   dispatchMatching,
 }: {
   dispatchMatching: {
-    car: DriverMatchingResult | null;
+    van: DriverMatchingResult | null;
     motorcycle: DriverMatchingResult | null;
   };
 }) {
@@ -103,7 +103,7 @@ export function DispatchMatchingPanel({
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-6 lg:grid-cols-2">
-        <MatchingTable title="Car drivers" result={dispatchMatching.car} />
+        <MatchingTable title="Van drivers" result={dispatchMatching.van} />
         <MatchingTable title="Motorcycle drivers" result={dispatchMatching.motorcycle} />
       </CardContent>
     </Card>

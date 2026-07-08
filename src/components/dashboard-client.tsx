@@ -32,8 +32,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { RiskBadge } from "@/components/risk-badge";
 import { formatCurrency, formatCurrencyShort, formatNumber } from "@/lib/format";
+import { getVehicleFuelDisplay } from "@/lib/vehicle-fuel";
 import type { VehicleWithAnalysis } from "@/lib/types";
 
 const RISK_COLORS = {
@@ -279,7 +282,7 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="car">Car</SelectItem>
+                <SelectItem value="van">Van</SelectItem>
                 <SelectItem value="motorcycle">Motorcycle</SelectItem>
               </SelectContent>
             </Select>
@@ -306,6 +309,7 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
                   </button>
                 </TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>Fuel</TableHead>
                 <TableHead>Engine</TableHead>
                 <TableHead>
                   <button type="button" onClick={() => toggleSort("odometerKm")}>
@@ -321,10 +325,24 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((v) => (
+              {filtered.map((v) => {
+                const fuel = getVehicleFuelDisplay(v.vehicleType, v.engineType);
+                return (
                 <TableRow key={v.id}>
                   <TableCell className="font-medium">{v.name}</TableCell>
                   <TableCell className="capitalize">{v.vehicleType}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-xs",
+                        fuel.tier === "zero" && "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+                        fuel.tier === "subsidized" && "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-400"
+                      )}
+                    >
+                      {fuel.shortLabel}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="uppercase">{v.engineType}</TableCell>
                   <TableCell>{formatNumber(v.odometerKm)} km</TableCell>
                   <TableCell>
@@ -334,7 +352,8 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
                     {v.recommendedAction}
                   </TableCell>
                 </TableRow>
-              ))}
+              );
+              })}
             </TableBody>
           </Table>
         </CardContent>

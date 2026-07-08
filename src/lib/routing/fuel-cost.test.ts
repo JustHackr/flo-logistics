@@ -9,10 +9,10 @@ import {
 const prices = PERTAMINA_DKI_JAKARTA_FALLBACK.items;
 
 describe("calculateTripFuelCost", () => {
-  it("computes gasoline car trip cost using Pertamax", () => {
+  it("computes gasoline van trip cost using Pertamax", () => {
     const result = calculateTripFuelCost({
       distanceKm: 22,
-      vehicleType: "car",
+      vehicleType: "van",
       engineType: "gasoline",
       fuelPrices: prices,
     });
@@ -35,7 +35,7 @@ describe("calculateTripFuelCost", () => {
   it("returns zero-ish EV cost with kWh units", () => {
     const result = calculateTripFuelCost({
       distanceKm: 30,
-      vehicleType: "car",
+      vehicleType: "van",
       engineType: "ev",
       fuelPrices: prices,
     });
@@ -57,7 +57,7 @@ describe("calculateTripFuelSavings", () => {
       optimizedDistanceKm: baselineDistance * 0.55,
       warehouse,
       stopCoordinates: stops,
-      vehicleType: "car",
+      vehicleType: "van",
       engineType: "diesel",
       fuelPrices: prices,
       emissionsKg: 4.8,
