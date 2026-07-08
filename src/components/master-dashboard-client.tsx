@@ -6,16 +6,23 @@ import {
   BarChart,
   CartesianGrid,
   ResponsiveContainer,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { RiskBadge } from "@/components/risk-badge";
 import { LogisticsChartsPanel } from "@/components/routing/logistics-charts";
 import { formatCurrencyShort, formatDate } from "@/lib/format";
+import { DTI_PENALTY_PER_MIN } from "@/lib/routing/dti";
+import { RISK_THRESHOLDS } from "@/lib/vqi";
 import type { MasterOverview } from "@/lib/master-overview";
 
 const PIPELINE_LABELS: Record<string, string> = {
@@ -51,13 +58,15 @@ function MetricCard({
   title,
   value,
   detail,
+  helpText,
 }: {
   title: string;
   value: string | number;
   detail?: string;
+  helpText?: string;
 }) {
-  return (
-    <Card>
+  const card = (
+    <Card className={helpText ? "transition-colors hover:bg-muted/40" : undefined}>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
@@ -71,7 +80,79 @@ function MetricCard({
       </CardContent>
     </Card>
   );
+
+  if (!helpText) return card;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        className="block w-full cursor-help rounded-xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        delay={200}
+      >
+        {card}
+      </TooltipTrigger>
+      <TooltipContent
+        side="top"
+        align="start"
+        className="max-w-sm whitespace-normal px-3 py-2 text-left leading-relaxed"
+      >
+        {helpText}
+      </TooltipContent>
+    </Tooltip>
+  );
 }
+
+const METRIC_HELP = {
+  activeRoutes:
+    "Count of route plans with status IN_PROGRESS — routes currently being executed by drivers.",
+  totalRoutes:
+    "Total route plans in the system: PLANNED + IN_PROGRESS + COMPLETED.",
+  deliveryProgress:
+    "Delivered stops ÷ total stops across all active routes × 100. A stop counts as delivered when its order status is DELIVERED.",
+  ordersOnRoute:
+    "Orders with status ON_ROUTE or ETA — picked up and en route but not yet delivered.",
+  totalOrders: "Sum of orders across all pipeline stages (Received through Delivered).",
+  activeDistance:
+    "Σ totalDistanceKm for IN_PROGRESS routes. Distance comes from optimized nearest-neighbor TSP legs (warehouse → stops → warehouse).",
+  activeDuration:
+    "Σ totalDurationMin for IN_PROGRESS routes. Includes drive time (OSRM/Google + Jakarta traffic model) plus per-stop service time.",
+  activeEmissions:
+    "Σ estimatedEmissionsKg for IN_PROGRESS routes. CO₂e ≈ distance × engine factor (EV 0.05, gasoline 0.15, diesel 0.22 kg/km).",
+  avgDti: `Mean Delivery Trip Index across delivered orders with complete timestamps. DTI = 100 − min(100, max(0, slackMin) × ${DTI_PENALTY_PER_MIN}) where slack = actualLead − plannedLead (receivedAt → deliveredAt vs planned ETA).`,
+  avgCfi:
+    "Mean Carbon Footprint Index across active and completed routes. CFI = 100 × (dieselKg − actualKg) ÷ (dieselKg − evKg) on the same distance. 100 = EV-equivalent, 0 = diesel.",
+  activeDrivers: "Number of drivers in the roster (each linked to one fleet vehicle).",
+  tripFuelCost:
+    "Σ trip fuel cost for IN_PROGRESS routes. ICE: (distance ÷ km/L) × Pertamina price; EV: distance × kWh/km × PLN rate. Product matched by vehicle type + engine.",
+  fuelSavings:
+    "Σ fuel savings vs naive baseline for IN_PROGRESS routes. Baseline = separate warehouse round-trip per stop (2 × distance × 1.35). Savings = baseline cost − optimized route cost.",
+  pipelineReceived: "Orders with status RECEIVED — accepted, awaiting warehouse prep.",
+  pipelinePreparing: "Orders with status PREPARING — being packed at the warehouse.",
+  pipelineOnRoute: "Orders with status ON_ROUTE — assigned to a route and departed.",
+  pipelineEta: "Orders with status ETA — driver is within the estimated arrival window.",
+  pipelineDelivered: "Orders with status DELIVERED — confirmed handover to recipient.",
+  totalVehicles: "Total vehicles registered in the fleet database.",
+  avgVqi:
+    "Mean Vehicle Quality Index. VQI = 100 − (age + odometer + cost + planning penalties). Higher is healthier; max penalty per factor is capped at 30/30/20/20 pts.",
+  highRisk: `Vehicles with VQI below ${RISK_THRESHOLDS.highBelow} — prioritize maintenance or replacement.`,
+  mediumRisk: `Vehicles with VQI ${RISK_THRESHOLDS.highBelow}–${RISK_THRESHOLDS.lowAbove} — schedule inspection soon.`,
+  lowRisk: `Vehicles with VQI above ${RISK_THRESHOLDS.lowAbove} — within acceptable health range.`,
+  upcomingMaintenance:
+    "Sum of estimated next-service costs for vehicles with predicted maintenance within the next 90 days.",
+  fleetMaintenanceBudget:
+    "Sum of maintenanceCostUnit across all vehicles — total recorded maintenance spend per fleet unit.",
+} as const;
+
+const PIPELINE_HELP: Record<
+  "RECEIVED" | "PREPARING" | "ON_ROUTE" | "ETA" | "DELIVERED",
+  string
+> = {
+  RECEIVED: METRIC_HELP.pipelineReceived,
+  PREPARING: METRIC_HELP.pipelinePreparing,
+  ON_ROUTE: METRIC_HELP.pipelineOnRoute,
+  ETA: METRIC_HELP.pipelineEta,
+  DELIVERED: METRIC_HELP.pipelineDelivered,
+};
 
 function SectionHeader({
   title,
@@ -130,56 +211,67 @@ export function MasterDashboardClient({ data }: { data: MasterOverview }) {
             title="Active Routes"
             value={data.operations.inProgressRoutes}
             detail={`${data.routeCounts.planned} planned · ${data.routeCounts.completed} completed`}
+            helpText={METRIC_HELP.activeRoutes}
           />
           <MetricCard
             title="Total Routes"
             value={data.routeCounts.total}
             detail="All route plans"
+            helpText={METRIC_HELP.totalRoutes}
           />
           <MetricCard
             title="Delivery Progress"
             value={`${data.operations.deliveryProgressPercent}%`}
             detail={`${data.operations.deliveredStops}/${data.operations.totalDeliveryStops} stops`}
+            helpText={METRIC_HELP.deliveryProgress}
           />
           <MetricCard
             title="Orders On Route"
             value={data.operations.ordersOnRoute}
             detail="ON_ROUTE + ETA status"
+            helpText={METRIC_HELP.ordersOnRoute}
           />
           <MetricCard
             title="Total Orders"
             value={data.totalOrders}
             detail="All pipeline stages"
+            helpText={METRIC_HELP.totalOrders}
           />
           <MetricCard
             title="Active Distance"
             value={`${data.operations.totalDistanceKm} km`}
             detail="In-progress routes"
+            helpText={METRIC_HELP.activeDistance}
           />
           <MetricCard
             title="Active Duration"
             value={formatDuration(data.operations.totalDurationMin)}
             detail="Estimated drive time"
+            helpText={METRIC_HELP.activeDuration}
           />
           <MetricCard
             title="Active Emissions"
             value={`${data.operations.totalEmissionsKg} kg`}
             detail="CO₂e estimated"
+            helpText={METRIC_HELP.activeEmissions}
           />
           <MetricCard
             title="Avg DTI"
             value={data.operations.avgDti ?? "—"}
             detail={`${data.operations.deliveredOrdersWithDti} scored deliveries`}
+            helpText={METRIC_HELP.avgDti}
           />
           <MetricCard
             title="Avg CFI"
             value={data.operations.avgCfi ?? "—"}
             detail="100 = EV-equivalent"
+            helpText={METRIC_HELP.avgCfi}
           />
           <MetricCard
             title="Active Drivers"
             value={data.driverCount}
             detail="Assigned couriers"
+            helpText={METRIC_HELP.activeDrivers}
           />
           <MetricCard
             title="Trip Fuel Cost"
@@ -189,11 +281,13 @@ export function MasterDashboardClient({ data }: { data: MasterOverview }) {
                 ? `Pertamina ${data.fuelPrices.region}`
                 : "Active routes"
             }
+            helpText={METRIC_HELP.tripFuelCost}
           />
           <MetricCard
             title="Fuel Savings"
             value={formatCurrencyShort(data.operations.totalFuelCostSavingsIdr)}
             detail={`${data.operations.totalFuelCostSavingsPercent}% vs naive round trips`}
+            helpText={METRIC_HELP.fuelSavings}
           />
         </div>
         {data.fuelPrices && (
@@ -231,6 +325,7 @@ export function MasterDashboardClient({ data }: { data: MasterOverview }) {
               key={key}
               title={label}
               value={data.pipeline[key] ?? 0}
+              helpText={PIPELINE_HELP[key]}
             />
           ))}
         </div>
@@ -248,36 +343,43 @@ export function MasterDashboardClient({ data }: { data: MasterOverview }) {
             title="Total Vehicles"
             value={data.fleetHealth.totalVehicles}
             detail="Entire fleet"
+            helpText={METRIC_HELP.totalVehicles}
           />
           <MetricCard
             title="Avg Fleet VQI"
             value={data.fleetHealth.avgVqi}
             detail="Vehicle quality index"
+            helpText={METRIC_HELP.avgVqi}
           />
           <MetricCard
             title="High Risk"
             value={data.fleetHealth.highRiskCount}
             detail="VQI below 40"
+            helpText={METRIC_HELP.highRisk}
           />
           <MetricCard
             title="Medium Risk"
             value={data.fleetHealth.mediumRiskCount}
             detail="VQI 40–70"
+            helpText={METRIC_HELP.mediumRisk}
           />
           <MetricCard
             title="Low Risk"
             value={data.fleetHealth.lowRiskCount}
             detail="VQI above 70"
+            helpText={METRIC_HELP.lowRisk}
           />
           <MetricCard
             title="90-Day Maint. Cost"
             value={formatCurrencyShort(data.fleetHealth.upcomingMaintenanceCost)}
             detail={`${data.fleetHealth.upcomingMaintenanceCount} vehicles due`}
+            helpText={METRIC_HELP.upcomingMaintenance}
           />
           <MetricCard
             title="Fleet Maint. Budget"
             value={formatCurrencyShort(data.fleetHealth.totalMaintenanceCost)}
             detail="Sum of unit costs"
+            helpText={METRIC_HELP.fleetMaintenanceBudget}
           />
         </div>
       </section>
@@ -328,7 +430,7 @@ export function MasterDashboardClient({ data }: { data: MasterOverview }) {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="range" />
                   <YAxis allowDecimals={false} />
-                  <Tooltip />
+                  <RechartsTooltip />
                   <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -345,7 +447,7 @@ export function MasterDashboardClient({ data }: { data: MasterOverview }) {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="stage" />
                   <YAxis allowDecimals={false} />
-                  <Tooltip />
+                  <RechartsTooltip />
                   <Bar dataKey="count" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
