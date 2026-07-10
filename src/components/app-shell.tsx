@@ -69,6 +69,11 @@ const navGroups: NavGroup[] = [
         icon: Sparkles,
         badge: "AI",
       },
+      {
+        href: "/ai/settings",
+        label: "AI Settings",
+        icon: Settings,
+      },
     ],
   },
   {
@@ -143,8 +148,6 @@ function useActiveHref() {
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const activeHref = useActiveHref();
-  const pathname = usePathname();
-  const settingsActive = pathname === "/ai/settings";
 
   return (
     <nav className="flex flex-1 flex-col gap-1 p-4">
@@ -189,22 +192,6 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           })}
         </div>
       ))}
-      <div className="mt-auto border-t pt-4">
-        <Link
-          href="/ai/settings"
-          onClick={onNavigate}
-          aria-current={settingsActive ? "page" : undefined}
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-            settingsActive
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          )}
-        >
-          <Settings className="h-4 w-4" />
-          <span>AI Settings</span>
-        </Link>
-      </div>
     </nav>
   );
 }

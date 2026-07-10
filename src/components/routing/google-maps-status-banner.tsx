@@ -26,6 +26,8 @@ export function GoogleMapsStatusBanner() {
   const [showGoogleUpgrade, setShowGoogleUpgrade] = useState(false);
 
   useEffect(() => {
+    if (process.env.NODE_ENV === "production") return;
+
     let cancelled = false;
 
     async function load() {
@@ -57,6 +59,10 @@ export function GoogleMapsStatusBanner() {
       cancelled = true;
     };
   }, []);
+
+  if (process.env.NODE_ENV === "production") {
+    return null;
+  }
 
   if (loading) {
     return (

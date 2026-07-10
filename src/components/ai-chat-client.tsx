@@ -7,9 +7,8 @@ import { Bot, Loader2, Send, Sparkles, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SUGGESTED_PROMPTS } from "@/lib/ai-chat-prompts";
 import {
-  isAiProviderConfigured,
-  loadAiProviderSettings,
-  type AiProviderSettings,
+  isAiProviderPublicConfigured,
+  type AiProviderSettingsPublic,
 } from "@/lib/ai-settings";
 import { cn } from "@/lib/utils";
 
@@ -49,16 +48,19 @@ export function AiChatClient() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [providerSettings, setProviderSettings] =
-    useState<AiProviderSettings | null>(null);
+  const [providerStatus, setProviderStatus] =
+    useState<AiProviderSettingsPublic | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const initialSent = useRef(false);
 
   useEffect(() => {
-    setProviderSettings(loadAiProviderSettings());
+    void fetch("/api/ai/settings")
+      .then((res) => res.json())
+      .then((json: AiProviderSettingsPublic) => setProviderStatus(json))
+      .catch(() => setProviderStatus(null));
   }, []);
 
-  const llmConfigured = isAiProviderConfigured(providerSettings);
+  const llmConfigured = isAiProviderPublicConfigured(providerStatus);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -93,7 +95,6 @@ export function AiChatClient() {
           body: JSON.stringify({
             message: trimmed,
             history: historyForApi,
-            settings: llmConfigured ? providerSettings : undefined,
           }),
         });
         const json = await res.json();
@@ -114,7 +115,7 @@ export function AiChatClient() {
         setLoading(false);
       }
     },
-    [loading, llmConfigured, providerSettings]
+    [loading]
   );
 
   useEffect(() => {
@@ -140,8 +141,8 @@ export function AiChatClient() {
             <h2 className="truncate text-sm font-semibold">Company Assistant</h2>
             <p className="truncate text-xs text-muted-foreground">
               {llmConfigured
-                ? `Online · ${providerSettings?.model ?? "LLM"}`
-                : "Built-in mode · configure API in sidebar settings"}
+                ? `Online · ${providerStatus?.model ?? "LLM"}`
+                : "Built-in mode · configure API in AI Settings"}
             </p>
           </div>
           <div

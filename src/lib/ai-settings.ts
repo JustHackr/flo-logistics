@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-export const AI_SETTINGS_STORAGE_KEY = "balon-ai-provider-settings";
-
 export const aiProviderSettingsSchema = z.object({
   apiKey: z.string().trim().min(1, "API key is required"),
   baseUrl: z
@@ -24,6 +22,13 @@ export const aiProviderSettingsSchema = z.object({
 
 export type AiProviderSettings = z.infer<typeof aiProviderSettingsSchema>;
 
+export type AiProviderSettingsPublic = {
+  baseUrl: string;
+  model: string;
+  hasApiKey: boolean;
+  apiKeyMasked?: string;
+};
+
 export const DEFAULT_AI_PROVIDER_SETTINGS: Omit<AiProviderSettings, "apiKey"> = {
   baseUrl: "https://api.minimax.chat/v1",
   model: "MiniMax-Text-01",
@@ -40,26 +45,10 @@ export function isAiProviderConfigured(
   );
 }
 
-export function loadAiProviderSettings(): AiProviderSettings | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = localStorage.getItem(AI_SETTINGS_STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<AiProviderSettings>;
-    const result = aiProviderSettingsSchema.safeParse(parsed);
-    return result.success ? result.data : null;
-  } catch {
-    return null;
-  }
-}
-
-export function saveAiProviderSettings(settings: AiProviderSettings) {
-  const validated = aiProviderSettingsSchema.parse(settings);
-  localStorage.setItem(AI_SETTINGS_STORAGE_KEY, JSON.stringify(validated));
-}
-
-export function clearAiProviderSettings() {
-  localStorage.removeItem(AI_SETTINGS_STORAGE_KEY);
+export function isAiProviderPublicConfigured(
+  settings: AiProviderSettingsPublic | null | undefined
+): boolean {
+  return Boolean(settings?.hasApiKey && settings.baseUrl?.trim() && settings.model?.trim());
 }
 
 /** Mask key for display (last 4 chars only). */

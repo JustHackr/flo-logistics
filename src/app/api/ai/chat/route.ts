@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { respondToChatMessage } from "@/lib/ai-chat";
-import { aiProviderSettingsSchema } from "@/lib/ai-settings";
+import { getAiProviderSettings } from "@/lib/ai-provider-store";
 import {
   buildLiveCompanyContext,
   callOpenAiCompatibleChat,
@@ -18,14 +18,14 @@ const chatRequestSchema = z.object({
     )
     .max(12)
     .optional(),
-  settings: aiProviderSettingsSchema.optional(),
 });
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { message, history, settings } = chatRequestSchema.parse(body);
+    const { message, history } = chatRequestSchema.parse(body);
 
+    const settings = await getAiProviderSettings();
     if (settings) {
       const companyContext = await buildLiveCompanyContext();
       const reply = await callOpenAiCompatibleChat({

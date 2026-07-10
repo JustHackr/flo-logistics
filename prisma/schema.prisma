@@ -193,3 +193,13 @@ model FuelPriceItem {
   @@index([snapshotId])
   @@unique([snapshotId, productCode])
 }
+
+/// Singleton row (id = "default") for site-wide OpenAI-compatible AI provider settings.
+model AiProviderConfig {
+  id        String   @id @default("default")
+  apiKey    String
+  baseUrl   String
+  model     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
