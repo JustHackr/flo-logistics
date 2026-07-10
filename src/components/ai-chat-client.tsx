@@ -3,21 +3,21 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Bot, Loader2, Send, Sparkles, User } from "lucide-react";
+import { Bot, Loader2, Send, Sparkles, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SUGGESTED_PROMPTS } from "@/lib/ai-chat-prompts";
+import {
+  clearChatHistory,
+  defaultChatMessages,
+  loadChatHistory,
+  saveChatHistory,
+  type ChatMessage,
+} from "@/lib/ai-chat-history";
 import {
   isAiProviderPublicConfigured,
   type AiProviderSettingsPublic,
 } from "@/lib/ai-settings";
 import { cn } from "@/lib/utils";
-
-type ChatMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  links?: Array<{ label: string; href: string }>;
-};
 
 function renderMarkdownLite(text: string) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
@@ -37,21 +37,30 @@ export function AiChatClient() {
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get("q")?.trim() ?? "";
 
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "Hi — I'm your BALON supply chain & logistics operations expert. Ask about routes, drivers, orders, fleet health, fuel, or delivery KPIs.",
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(defaultChatMessages);
+  const [historyReady, setHistoryReady] = useState(false);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [providerStatus, setProviderStatus] =
     useState<AiProviderSettingsPublic | null>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const threadRef = useRef<HTMLDivElement>(null);
   const initialSent = useRef(false);
+
+  useEffect(() => {
+    setMessages(loadChatHistory());
+    setHistoryReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!historyReady) return;
+    saveChatHistory(messages);
+  }, [messages, historyReady]);
+
+  useEffect(() => {
+    if (!historyReady || !threadRef.current) return;
+    threadRef.current.scrollTop = 0;
+  }, [historyReady]);
 
   useEffect(() => {
     void fetch("/api/ai/settings")
@@ -118,16 +127,23 @@ export function AiChatClient() {
     [loading]
   );
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
+  function handleClearHistory() {
+    clearChatHistory();
+    setMessages(defaultChatMessages());
+    setError(null);
+    if (threadRef.current) {
+      threadRef.current.scrollTop = 0;
+    }
+  }
 
   useEffect(() => {
-    if (initialPrompt && !initialSent.current) {
+    if (initialPrompt && historyReady && !initialSent.current) {
       initialSent.current = true;
       void sendMessage(initialPrompt);
     }
-  }, [initialPrompt, sendMessage]);
+  }, [initialPrompt, sendMessage, historyReady]);
+
+  const hasConversation = messages.some((m) => m.role === "user");
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-5.5rem)] max-w-4xl flex-col md:h-[calc(100dvh-8rem)]">
@@ -145,6 +161,18 @@ export function AiChatClient() {
                 : "Built-in mode · configure API in AI Settings"}
             </p>
           </div>
+          {hasConversation && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="shrink-0 text-muted-foreground"
+              onClick={handleClearHistory}
+            >
+              <Trash2 className="h-4 w-4" />
+              Clear
+            </Button>
+          )}
           <div
             className={cn(
               "h-2.5 w-2.5 shrink-0 rounded-full",
@@ -183,8 +211,11 @@ export function AiChatClient() {
           )}
         </div>
 
-        {/* Message thread */}
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-muted/20 px-4 py-4">
+        {/* Message thread — always opens at top; no auto-scroll on new messages */}
+        <div
+          ref={threadRef}
+          className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto bg-muted/20 px-4 py-4"
+        >
           {messages.map((msg) => (
             <div
               key={msg.id}
@@ -248,7 +279,6 @@ export function AiChatClient() {
               </div>
             </div>
           )}
-          <div ref={bottomRef} />
         </div>
 
         {/* Composer */}
