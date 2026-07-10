@@ -29,7 +29,7 @@ Set a departure time on the plan page to apply Jakarta rush-hour multipliers (e.
 
 To enable live Google traffic, copy `.env.example` to `.env.local` and add a `GOOGLE_MAPS_API_KEY`. See `.env.example` for setup steps. This is **not required** for the demo.
 
-To **visualize routes on Google Maps** (Plan Route and Logistics Dashboard), also set `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` and enable the Maps JavaScript API in Google Cloud Console.
+To **visualize routes on Google Maps** (Plan Route and Logistics Dashboard), also set `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` and enable the **Maps JavaScript API** and **Directions API** in Google Cloud Console. Route maps use server polylines when available, otherwise the browser Directions API draws road-following paths.
 
 Demo warehouse: **Blok M Square**. Order coordinates are validated against Greater Jakarta (Jabodetabek) bounds. Generate sample CSVs at `/admin/mockup-data`.
 

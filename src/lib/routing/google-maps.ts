@@ -31,9 +31,13 @@ function parseGoogleDurationSeconds(duration: string | undefined): number | null
   return Number(match[1]);
 }
 
-/** Primary key — used for Routes API calls. */
+/** Primary key — used for Routes API calls. Falls back to the public key in dev. */
 export function getGoogleMapsApiKey() {
-  return process.env.GOOGLE_MAPS_API_KEY?.trim() || null;
+  return (
+    process.env.GOOGLE_MAPS_API_KEY?.trim() ||
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ||
+    null
+  );
 }
 
 /** Fallback/dedicated key — used for Distance Matrix API calls.

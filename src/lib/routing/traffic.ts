@@ -89,8 +89,8 @@ export function calibrateJakartaDurationMin(
   return Math.max(calibrated, floorMin);
 }
 
-/** Google traffic APIs require a current or future departure time. */
+/** Google traffic APIs require a departure time slightly in the future. */
 export function toTrafficDepartureTime(departTime: Date): Date {
-  const now = new Date();
-  return departTime.getTime() < now.getTime() ? now : departTime;
+  const minFuture = new Date(Date.now() + 60_000);
+  return departTime.getTime() < minFuture.getTime() ? minFuture : departTime;
 }

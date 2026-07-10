@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   APIProvider,
+  APILoadingStatus,
   Map,
   Marker,
+  useApiLoadingStatus,
   useMap,
   useMapsLibrary,
 } from "@vis.gl/react-google-maps";
@@ -14,6 +16,7 @@ import { isPublicGoogleMapsConfigured } from "@/lib/routing/google-maps";
 import { MapPin } from "lucide-react";
 
 const JAKARTA_CENTER = { lat: -6.2148, lng: 106.827 };
+const MAP_LIBRARIES = ["maps"] as const;
 
 function decodePolyline(encoded: string): google.maps.LatLngLiteral[] {
   const points: google.maps.LatLngLiteral[] = [];
@@ -53,37 +56,85 @@ function decodePolyline(encoded: string): google.maps.LatLngLiteral[] {
   return points;
 }
 
-function RoutePolyline({
+/** Loads a traffic-aware road path via the server Routes API. */
+function RoadPathLoader({
   waypoints,
-  encodedPolyline,
+  enabled,
+  onResolved,
 }: {
   waypoints: RouteWaypoint[];
-  encodedPolyline?: string | null;
+  enabled: boolean;
+  onResolved: (path: google.maps.LatLngLiteral[] | null) => void;
+}) {
+  useEffect(() => {
+    if (!enabled || waypoints.length < 2) {
+      onResolved(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadRoute() {
+      try {
+        const res = await fetch("/api/routing/routes/polyline", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            points: waypoints.map((wp) => ({ lat: wp.lat, lng: wp.lng })),
+          }),
+        });
+
+        if (cancelled) return;
+
+        if (!res.ok) {
+          onResolved(null);
+          return;
+        }
+
+        const json = (await res.json()) as { encodedPolyline?: string | null };
+        if (!json.encodedPolyline) {
+          onResolved(null);
+          return;
+        }
+
+        onResolved(decodePolyline(json.encodedPolyline));
+      } catch {
+        if (!cancelled) onResolved(null);
+      }
+    }
+
+    void loadRoute();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, onResolved, waypoints]);
+
+  return null;
+}
+
+function RoutePolyline({
+  path,
+  source,
+}: {
+  path: google.maps.LatLngLiteral[];
+  source: "google_routes" | "estimated";
 }) {
   const map = useMap();
   const maps = useMapsLibrary("maps");
 
-  const path = useMemo(() => {
-    if (encodedPolyline) {
-      try {
-        return decodePolyline(encodedPolyline);
-      } catch {
-        return waypointsToRoutePath(waypoints);
-      }
-    }
-    return waypointsToRoutePath(waypoints);
-  }, [encodedPolyline, waypoints]);
-
   useEffect(() => {
     if (!map || !maps || path.length < 2) return;
 
+    const isRoadNetwork = source === "google_routes";
+
     const polyline = new maps.Polyline({
       path,
-      geodesic: !encodedPolyline,
-      strokeColor: encodedPolyline ? "#2563eb" : "#64748b",
-      strokeOpacity: encodedPolyline ? 0.9 : 0.7,
-      strokeWeight: encodedPolyline ? 4 : 3,
-      ...(encodedPolyline
+      geodesic: !isRoadNetwork,
+      strokeColor: isRoadNetwork ? "#2563eb" : "#64748b",
+      strokeOpacity: isRoadNetwork ? 0.9 : 0.7,
+      strokeWeight: isRoadNetwork ? 4 : 3,
+      ...(isRoadNetwork
         ? {}
         : {
             icons: [
@@ -113,7 +164,7 @@ function RoutePolyline({
     return () => {
       polyline.setMap(null);
     };
-  }, [map, maps, path, encodedPolyline]);
+  }, [map, maps, path, source]);
 
   return null;
 }
@@ -158,9 +209,57 @@ function RouteMapInner({
   waypoints: RouteWaypoint[];
   encodedPolyline?: string | null;
 }) {
+  const [fetchedPath, setFetchedPath] = useState<
+    google.maps.LatLngLiteral[] | null
+  >(null);
+  const [fetchSettled, setFetchSettled] = useState(Boolean(encodedPolyline));
+
+  const handleRoadPath = useCallback((path: google.maps.LatLngLiteral[] | null) => {
+    setFetchedPath(path);
+    setFetchSettled(true);
+  }, []);
+
+  const { path, source, showPolyline } = useMemo(() => {
+    if (encodedPolyline) {
+      try {
+        return {
+          path: decodePolyline(encodedPolyline),
+          source: "google_routes" as const,
+          showPolyline: true,
+        };
+      } catch {
+        /* fall through */
+      }
+    }
+
+    if (fetchedPath && fetchedPath.length >= 2) {
+      return {
+        path: fetchedPath,
+        source: "google_routes" as const,
+        showPolyline: true,
+      };
+    }
+
+    if (!fetchSettled) {
+      return {
+        path: [],
+        source: "estimated" as const,
+        showPolyline: false,
+      };
+    }
+
+    return {
+      path: waypointsToRoutePath(waypoints),
+      source: "estimated" as const,
+      showPolyline: true,
+    };
+  }, [encodedPolyline, fetchSettled, fetchedPath, waypoints]);
+
   const center = waypoints[0]
     ? { lat: waypoints[0].lat, lng: waypoints[0].lng }
     : JAKARTA_CENTER;
+
+  const shouldFetchRoadPath = !encodedPolyline && waypoints.length >= 2;
 
   return (
     <Map
@@ -173,8 +272,36 @@ function RouteMapInner({
       className="h-full w-full"
     >
       <RouteMarkers waypoints={waypoints} />
-      <RoutePolyline waypoints={waypoints} encodedPolyline={encodedPolyline} />
+      {shouldFetchRoadPath && (
+        <RoadPathLoader
+          waypoints={waypoints}
+          enabled={shouldFetchRoadPath}
+          onResolved={handleRoadPath}
+        />
+      )}
+      {showPolyline && path.length >= 2 && (
+        <RoutePolyline path={path} source={source} />
+      )}
     </Map>
+  );
+}
+
+export function GoogleMapsProvider({ children }: { children: React.ReactNode }) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+
+  if (!isPublicGoogleMapsConfigured()) {
+    return children;
+  }
+
+  return (
+    <APIProvider
+      apiKey={apiKey}
+      language="id"
+      region="ID"
+      libraries={[...MAP_LIBRARIES]}
+    >
+      {children}
+    </APIProvider>
   );
 }
 
@@ -188,6 +315,8 @@ export function RouteMapView({
   className?: string;
 }) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+  const apiLoadingStatus = useApiLoadingStatus();
+  const withinProvider = apiLoadingStatus !== APILoadingStatus.NOT_LOADED;
 
   if (!isPublicGoogleMapsConfigured() || waypoints.length === 0) {
     return (
@@ -207,11 +336,24 @@ export function RouteMapView({
     );
   }
 
-  return (
+  const mapContent = (
     <div className={`overflow-hidden rounded-lg border ${className ?? "h-72"}`}>
-      <APIProvider apiKey={apiKey} language="id" region="ID">
-        <RouteMapInner waypoints={waypoints} encodedPolyline={encodedPolyline} />
-      </APIProvider>
+      <RouteMapInner waypoints={waypoints} encodedPolyline={encodedPolyline} />
     </div>
+  );
+
+  if (withinProvider) {
+    return mapContent;
+  }
+
+  return (
+    <APIProvider
+      apiKey={apiKey}
+      language="id"
+      region="ID"
+      libraries={[...MAP_LIBRARIES]}
+    >
+      {mapContent}
+    </APIProvider>
   );
 }

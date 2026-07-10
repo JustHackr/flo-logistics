@@ -12,6 +12,7 @@ import { calculateCfi } from "@/lib/routing/cfi";
 import { buildLogisticsReportBundle, type LogisticsReportBundle } from "@/lib/routing-reports";
 import { ensureFuelPriceSnapshot, type FuelPriceSnapshotView } from "@/lib/fuel-price-service";
 import { calculateTripFuelSavings } from "@/lib/routing/fuel-cost";
+import { computeRoutePolyline } from "@/lib/routing/google-maps";
 import type { EngineType, VehicleType } from "@/lib/types";
 
 export type OrderPipeline = {
@@ -86,6 +87,7 @@ export type ActiveRouteSummary = {
     cfiScore: number;
   }>;
   waypoints: RouteWaypoint[];
+  encodedPolyline?: string | null;
 };
 
 export type RoutingLogisticsOverview = {
@@ -226,7 +228,8 @@ export async function getRoutingLogisticsOverview(): Promise<RoutingLogisticsOve
     );
   }
 
-  const activeRoutes: ActiveRouteSummary[] = routePlans.map((rp) => {
+  const activeRoutes: ActiveRouteSummary[] = await Promise.all(
+    routePlans.map(async (rp) => {
     const stops = rp.stops;
     const totalStops = stops.length;
     const deliveredStops = stops.filter(
@@ -315,6 +318,11 @@ export async function getRoutingLogisticsOverview(): Promise<RoutingLogisticsOve
       emissionsKg: rp.estimatedEmissionsKg,
     });
 
+    const encodedPolyline = await computeRoutePolyline(
+      waypoints.map((wp) => ({ lat: wp.lat, lng: wp.lng })),
+      rp.routeStartAt ?? new Date()
+    );
+
     return {
       routePlanId: rp.id,
       status: rp.status,
@@ -365,8 +373,10 @@ export async function getRoutingLogisticsOverview(): Promise<RoutingLogisticsOve
         };
       }),
       waypoints,
+      encodedPolyline,
     };
-  });
+    })
+  );
 
   const roster = drivers.map((d) =>
     buildDriverEntry(d, vehiclesByDriverId.get(d.id))

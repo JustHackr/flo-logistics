@@ -18,6 +18,8 @@ import {
   UserRound,
   Menu,
   ScanEye,
+  Settings,
+  Sparkles,
   Warehouse,
   type LucideIcon,
 } from "lucide-react";
@@ -55,6 +57,17 @@ const navGroups: NavGroup[] = [
         href: "/routing/dashboard",
         label: "Logistics Dashboard",
         icon: Truck,
+      },
+    ],
+  },
+  {
+    label: "AI Assistant",
+    items: [
+      {
+        href: "/ai/chat",
+        label: "Company Assistant",
+        icon: Sparkles,
+        badge: "AI",
       },
     ],
   },
@@ -130,6 +143,8 @@ function useActiveHref() {
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const activeHref = useActiveHref();
+  const pathname = usePathname();
+  const settingsActive = pathname === "/ai/settings";
 
   return (
     <nav className="flex flex-1 flex-col gap-1 p-4">
@@ -174,6 +189,22 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           })}
         </div>
       ))}
+      <div className="mt-auto border-t pt-4">
+        <Link
+          href="/ai/settings"
+          onClick={onNavigate}
+          aria-current={settingsActive ? "page" : undefined}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+            settingsActive
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          )}
+        >
+          <Settings className="h-4 w-4" />
+          <span>AI Settings</span>
+        </Link>
+      </div>
     </nav>
   );
 }
@@ -193,7 +224,7 @@ function BrandHeader() {
   return (
     <div className="border-b px-6 py-5">
       <h1 className="text-lg font-semibold tracking-tight">BALON</h1>
-      {BrandSubtitle()}
+      <BrandSubtitle />
     </div>
   );
 }
@@ -218,12 +249,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               >
                 <Menu className="h-5 w-5" />
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 gap-0 p-0">
+              <SheetContent side="left" className="flex w-72 flex-col gap-0 p-0">
                 <SheetHeader className="border-b px-6 py-5">
                   <SheetTitle>BALON</SheetTitle>
-                  {BrandSubtitle()}
+                  <BrandSubtitle />
                 </SheetHeader>
-                <div className="overflow-y-auto">
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
                   <NavLinks onNavigate={() => setMobileOpen(false)} />
                 </div>
               </SheetContent>
@@ -235,7 +266,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </span>
             </div>
           </header>
-          <main className="flex-1 p-4 md:p-8">{children}</main>
+          <main className="flex-1 p-4 md:p-8 [&:has(.ai-chat-page)]:p-3 md:[&:has(.ai-chat-page)]:p-4">
+            {children}
+          </main>
         </div>
       </div>
     </TooltipProvider>

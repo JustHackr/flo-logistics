@@ -16,6 +16,8 @@ type RoutingStatus = {
   primarySource?: "google_traffic" | "osrm_traffic" | "estimated";
   primarySourceLabel?: string;
   googleOptional?: boolean;
+  mapVisualizationConfigured?: boolean;
+  mapVisualizationMessage?: string;
 };
 
 export function GoogleMapsStatusBanner() {
@@ -86,6 +88,12 @@ export function GoogleMapsStatusBanner() {
                 {Math.round(status.sampleDurationMin)} min
               </p>
             )}
+            {status.mapVisualizationConfigured && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {status.mapVisualizationMessage ??
+                  "Route maps enabled (Maps JavaScript + Directions API)."}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -137,13 +145,18 @@ export function GoogleMapsStatusBanner() {
                   (billing required)
                 </li>
                 <li>
-                  Enable <strong>Routes API</strong> and{" "}
-                  <strong>Distance Matrix API</strong>
+                  Enable <strong>Routes API</strong>,{" "}
+                  <strong>Distance Matrix API</strong>, and{" "}
+                  <strong>Maps JavaScript API</strong>
                 </li>
                 <li>
                   Add to <code className="rounded bg-muted px-1">.env.local</code>:{" "}
                   <code className="rounded bg-muted px-1">
                     GOOGLE_MAPS_API_KEY=your_key
+                  </code>{" "}
+                  and{" "}
+                  <code className="rounded bg-muted px-1">
+                    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_key
                   </code>
                 </li>
                 <li>

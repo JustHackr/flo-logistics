@@ -4,7 +4,10 @@ import {
   describeTrafficSource,
   isGoogleMapsConfigured,
 } from "@/lib/routing/estimator";
-import { getGoogleMapsStatus } from "@/lib/routing/google-maps";
+import {
+  getGoogleMapsStatus,
+  isPublicGoogleMapsConfigured,
+} from "@/lib/routing/google-maps";
 
 export async function GET() {
   const [googleStatus, osrmReachable] = await Promise.all([
@@ -30,6 +33,8 @@ export async function GET() {
       "OSRM is temporarily unavailable. Using local Jakarta traffic estimates.";
   }
 
+  const mapVisualizationConfigured = isPublicGoogleMapsConfigured();
+
   return NextResponse.json({
     ...googleStatus,
     osrmReachable,
@@ -37,5 +42,9 @@ export async function GET() {
     primarySourceLabel: describeTrafficSource(primarySource),
     message,
     googleOptional: !isGoogleMapsConfigured(),
+    mapVisualizationConfigured,
+    mapVisualizationMessage: mapVisualizationConfigured
+      ? "Google Maps JavaScript API configured for route visualization."
+      : "Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to render routes on Google Maps.",
   });
 }

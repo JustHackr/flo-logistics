@@ -10,10 +10,11 @@ import { RiskBadge } from "@/components/risk-badge";
 import { formatCurrency, formatCurrencyShort, formatNumber } from "@/lib/format";
 import type { RoutingLogisticsOverview } from "@/lib/routing-overview";
 import { RouteWaypointRow } from "@/components/routing/plan-preview-utils";
-import { RouteMapView } from "@/components/routing/route-map-view";
+import { RouteMapView, GoogleMapsProvider } from "@/components/routing/route-map-view";
 import { DtiBadge } from "@/components/dti-badge";
 import { CfiBadge } from "@/components/cfi-badge";
 import { LogisticsChartsPanel } from "@/components/routing/logistics-charts";
+import { RouteTotalsMetricGrid } from "@/components/routing/route-totals-metric-grid";
 
 type DriverInfo = RoutingLogisticsOverview["roster"][number];
 
@@ -334,14 +335,15 @@ export function LogisticsDashboardClient() {
             </CardContent>
           </Card>
 
-          <div className="space-y-4">
-            {data.activeRoutes.length === 0 && (
-              <div className="text-sm text-muted-foreground">
-                No optimized routes yet. Go to <span className="font-medium">Routing Orders</span>, select orders, and optimize.
-              </div>
-            )}
+          <GoogleMapsProvider>
+            <div className="space-y-4">
+              {data.activeRoutes.length === 0 && (
+                <div className="text-sm text-muted-foreground">
+                  No optimized routes yet. Go to <span className="font-medium">Routing Orders</span>, select orders, and optimize.
+                </div>
+              )}
 
-            {data.activeRoutes.map((route) => (
+              {data.activeRoutes.map((route) => (
               <Card key={route.routePlanId}>
                 <CardHeader>
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -370,36 +372,7 @@ export function LogisticsDashboardClient() {
                     driver={route.driver}
                   />
 
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                    <div className="rounded-lg border p-3">
-                      <div className="text-xs text-muted-foreground">Distance</div>
-                      <div className="mt-1 text-lg font-bold">{route.totals.totalDistanceKm} km</div>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <div className="text-xs text-muted-foreground">Duration</div>
-                      <div className="mt-1 text-lg font-bold">
-                        {Math.floor(route.totals.totalDurationMin / 60)} h{" "}
-                        {Math.round(route.totals.totalDurationMin % 60)} min
-                      </div>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <div className="text-xs text-muted-foreground">Emissions</div>
-                      <div className="mt-1 text-lg font-bold">
-                        {route.totals.estimatedEmissionsKg} kg CO₂e
-                      </div>
-                    </div>
-                    <div className="rounded-lg border p-3">
-                      <div className="text-xs text-muted-foreground">Fuel cost</div>
-                      <div className="mt-1 text-lg font-bold">
-                        {formatCurrency(route.totals.fuelCostIdr)}
-                      </div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        {route.totals.fuelProductName} · save{" "}
-                        {formatCurrencyShort(route.totals.fuelCostSavingsIdr)} (
-                        {route.totals.fuelCostSavingsPercent}%)
-                      </div>
-                    </div>
-                  </div>
+                  <RouteTotalsMetricGrid route={route} />
 
                   {route.nextStop && (
                     <div className="rounded-lg bg-muted p-3 text-sm">
@@ -413,7 +386,11 @@ export function LogisticsDashboardClient() {
                   )}
 
                   {(route.waypoints ?? []).length > 0 && (
-                    <RouteMapView waypoints={route.waypoints} className="h-64" />
+                    <RouteMapView
+                      waypoints={route.waypoints}
+                      encodedPolyline={route.encodedPolyline}
+                      className="h-64"
+                    />
                   )}
 
                   <div className="space-y-2">
@@ -456,7 +433,8 @@ export function LogisticsDashboardClient() {
                 </CardContent>
               </Card>
             ))}
-          </div>
+            </div>
+          </GoogleMapsProvider>
         </>
       )}
     </div>
