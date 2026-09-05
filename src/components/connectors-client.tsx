@@ -34,6 +34,7 @@ import {
   connectorTypes,
   type ConnectorInput,
 } from "@/lib/schemas/connector";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 type ConnectorRecord = {
   id: string;
@@ -45,13 +46,12 @@ type ConnectorRecord = {
   _count?: { vehicles: number };
 };
 
-const FUTURE_TOOLTIP = "Available in a future release";
-
 export function ConnectorsClient({
   initialConnectors,
 }: {
   initialConnectors: ConnectorRecord[];
 }) {
+  const { t, locale } = useI18n();
   const [connectors, setConnectors] = useState(initialConnectors);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ConnectorRecord | null>(null);
@@ -122,7 +122,7 @@ export function ConnectorsClient({
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error ?? "Failed to save connector");
+      setError(data.error ?? t("errors.requestFailed"));
       setLoading(false);
       return;
     }
@@ -164,18 +164,17 @@ export function ConnectorsClient({
   const typeMeta = CONNECTOR_TYPE_REGISTRY[form.type];
 
   return (
-    <div className="space-y-6">
+    <div lang={locale} className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Data Connectors</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("system.connectors.title")}</h2>
           <p className="text-muted-foreground">
-            Configure IoT, OMS, WMS, and other external data sources. Planned connectors are
-            shown as inactive to demonstrate future expansion.
+            {t("system.connectors.description")}
           </p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Connector
+          {t("system.connectors.addConnector")}
         </Button>
       </div>
 
@@ -203,11 +202,11 @@ export function ConnectorsClient({
                   <div className="flex flex-col items-end gap-1">
                     {isInactive && (
                       <Badge variant="outline" className="text-xs">
-                        Coming soon
+                        {t("common.comingSoon")}
                       </Badge>
                     )}
                     <Badge variant={statusVariant(connector.status)} className="capitalize">
-                      {connector.status}
+                      {t(`system.connectors.status.${connector.status}`)}
                     </Badge>
                   </div>
                 </div>
@@ -217,7 +216,7 @@ export function ConnectorsClient({
                   {connector.description ?? meta?.description}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Linked vehicles: {connector._count?.vehicles ?? 0}
+                  {t("system.connectors.linkedVehicles", { count: connector._count?.vehicles ?? 0 })}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Tooltip>
@@ -229,9 +228,9 @@ export function ConnectorsClient({
                       disabled
                     >
                       <Wifi className="mr-1 h-3 w-3" />
-                      Test
+                      {t("system.connectors.test")}
                     </TooltipTrigger>
-                    <TooltipContent>{FUTURE_TOOLTIP}</TooltipContent>
+                    <TooltipContent>{t("system.connectors.futureTooltip")}</TooltipContent>
                   </Tooltip>
                   <Tooltip>
                     <TooltipTrigger
@@ -242,9 +241,9 @@ export function ConnectorsClient({
                       disabled
                     >
                       <RefreshCw className="mr-1 h-3 w-3" />
-                      Sync
+                      {t("system.connectors.sync")}
                     </TooltipTrigger>
-                    <TooltipContent>{FUTURE_TOOLTIP}</TooltipContent>
+                    <TooltipContent>{t("system.connectors.futureTooltip")}</TooltipContent>
                   </Tooltip>
                   <Button
                     size="sm"
@@ -271,12 +270,12 @@ export function ConnectorsClient({
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Edit Connector" : "Add Connector"}
+              {editing ? t("system.connectors.editConnector") : t("system.connectors.addConnector")}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="connector-name">Name</Label>
+              <Label htmlFor="connector-name">{t("common.name")}</Label>
               <Input
                 id="connector-name"
                 value={form.name}
@@ -286,7 +285,7 @@ export function ConnectorsClient({
               />
             </div>
             <div className="space-y-2">
-              <Label>Type</Label>
+              <Label>{t("system.connectors.type")}</Label>
               <Select
                 value={form.type}
                 onValueChange={(v) => {
@@ -308,7 +307,7 @@ export function ConnectorsClient({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>{t("common.status")}</Label>
               <Select
                 value={form.status}
                 onValueChange={(v) =>
@@ -324,14 +323,14 @@ export function ConnectorsClient({
                 <SelectContent>
                   {connectorStatuses.map((s) => (
                     <SelectItem key={s} value={s} className="capitalize">
-                      {s}
+                      {t(`system.connectors.status.${s}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="connector-desc">Description</Label>
+              <Label htmlFor="connector-desc">{t("common.description")}</Label>
               <Textarea
                 id="connector-desc"
                 value={form.description ?? ""}
@@ -361,10 +360,10 @@ export function ConnectorsClient({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSave} disabled={loading}>
-              {loading ? "Saving..." : "Save"}
+              {loading ? t("system.connectors.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -373,14 +372,14 @@ export function ConnectorsClient({
       <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete connector?</DialogTitle>
+            <DialogTitle>{t("system.connectors.deleteConnector")}</DialogTitle>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
-              Delete
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

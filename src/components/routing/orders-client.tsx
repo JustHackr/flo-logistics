@@ -33,6 +33,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useI18n } from "@/components/i18n/use-i18n";
+import { toIntlLocale } from "@/lib/i18n/config";
 import { GoogleMapsStatusBanner } from "./google-maps-status-banner";
 
 type StopAccess = "CAR_ONLY" | "MOTORCYCLE_ONLY" | "BOTH";
@@ -58,15 +60,16 @@ type OrderRow = {
   deliveredAt: NullableISO;
 };
 
-const STATUS_OPTIONS: Array<{ value: OrderStatus; label: string }> = [
-  { value: "RECEIVED", label: "Received" },
-  { value: "PREPARING", label: "Preparing" },
-  { value: "ON_ROUTE", label: "On route" },
-  { value: "DELIVERED", label: "Delivered" },
+const STATUS_VALUES: OrderStatus[] = [
+  "RECEIVED",
+  "PREPARING",
+  "ON_ROUTE",
+  "DELIVERED",
 ];
 
 export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
   const router = useRouter();
+  const { t, locale } = useI18n();
 
   const [orders, setOrders] = useState<OrderRow[]>(initialOrders);
   const [loading, setLoading] = useState(false);
@@ -94,6 +97,13 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
 
   const selectedCount = selectedOrderIds.length;
 
+  const statusLabels: Record<OrderStatus, string> = {
+    RECEIVED: t("routing.orders.statusReceived"),
+    PREPARING: t("routing.orders.statusPreparing"),
+    ON_ROUTE: t("routing.orders.statusOnRoute"),
+    DELIVERED: t("routing.orders.statusDelivered"),
+  };
+
   // If initial orders are empty, refresh once (in case server serialization differs).
   useEffect(() => {
     if (initialOrders.length === 0) {
@@ -108,10 +118,10 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
     try {
       const res = await fetch("/api/routing/orders");
       const data = (await res.json()) as any;
-      if (!res.ok) throw new Error(data?.error ?? "Failed to load orders");
+      if (!res.ok) throw new Error(data?.error ?? t("routing.orders.loadFailed"));
       setOrders(data as OrderRow[]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load orders");
+      setError(e instanceof Error ? e.message : t("routing.orders.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -131,7 +141,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
   function formatStatus(iso: NullableISO) {
     if (!iso) return "—";
     const d = new Date(iso);
-    return d.toLocaleString("id-ID", {
+    return d.toLocaleString(toIntlLocale(locale), {
       hour12: false,
       year: "numeric",
       month: "short",
@@ -152,6 +162,12 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
     }
   }
 
+  function accessLabel(access: StopAccess) {
+    if (access === "CAR_ONLY") return t("routing.orders.accessCarOnly");
+    if (access === "MOTORCYCLE_ONLY") return t("routing.orders.accessMotorOnly");
+    return t("routing.orders.accessBoth");
+  }
+
   async function createOrder() {
     setError(null);
     setLoading(true);
@@ -169,7 +185,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "Failed to create order");
+      if (!res.ok) throw new Error(data?.error ?? t("routing.orders.createFailed"));
 
       setCreateForm({
         recipientAddress: "",
@@ -179,7 +195,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
       });
       setOrders((prev) => [data, ...prev]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create order");
+      setError(e instanceof Error ? e.message : t("routing.orders.createFailed"));
     } finally {
       setLoading(false);
     }
@@ -200,14 +216,14 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
             body: JSON.stringify({ rows: result.data }),
           });
           const data = await res.json();
-          if (!res.ok) throw new Error(data?.error ?? "Failed to import orders");
+          if (!res.ok) throw new Error(data?.error ?? t("routing.orders.importFailed"));
           setImportSummary({
             imported: data.imported ?? 0,
             failed: data.failed ?? 0,
           });
           void refreshOrders();
         } catch (e) {
-          setError(e instanceof Error ? e.message : "Failed to import orders");
+          setError(e instanceof Error ? e.message : t("routing.orders.importFailed"));
         } finally {
           setImporting(false);
         }
@@ -216,7 +232,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
   }
 
   async function deleteOrder(orderId: string) {
-    const ok = window.confirm("Delete this order?");
+    const ok = window.confirm(t("routing.orders.deleteConfirm"));
     if (!ok) return;
     setError(null);
     setLoading(true);
@@ -226,27 +242,25 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        throw new Error(data?.error ?? "Failed to delete order");
+        throw new Error(data?.error ?? t("routing.orders.deleteFailed"));
       }
       setOrders((prev) => prev.filter((o) => o.id !== orderId));
       setSelectedOrderIds((prev) => prev.filter((id) => id !== orderId));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to delete order");
+      setError(e instanceof Error ? e.message : t("routing.orders.deleteFailed"));
     } finally {
       setLoading(false);
     }
   }
 
   async function updateOrder(orderId: string) {
-    // For v1, update uses the same createForm for a simple edit flow.
-    // We'll repurpose by prompting for values; in a later iteration this can be a full edit modal.
     const current = orders.find((o) => o.id === orderId);
     if (!current) return;
 
-    const address = window.prompt("Edit address", current.recipientAddress);
+    const address = window.prompt(t("routing.orders.editAddress"), current.recipientAddress);
     if (!address) return;
-    const latStr = window.prompt("Edit latitude", String(current.lat));
-    const lngStr = window.prompt("Edit longitude", String(current.lng));
+    const latStr = window.prompt(t("routing.orders.editLatitude"), String(current.lat));
+    const lngStr = window.prompt(t("routing.orders.editLongitude"), String(current.lng));
     if (!latStr || !lngStr) return;
 
     setError(null);
@@ -263,11 +277,11 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "Failed to update order");
+      if (!res.ok) throw new Error(data?.error ?? t("routing.orders.updateFailed"));
 
       setOrders((prev) => prev.map((o) => (o.id === orderId ? data : o)));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update order");
+      setError(e instanceof Error ? e.message : t("routing.orders.updateFailed"));
     } finally {
       setLoading(false);
     }
@@ -283,10 +297,10 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
         body: JSON.stringify({ status }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "Failed to update status");
+      if (!res.ok) throw new Error(data?.error ?? t("routing.orders.statusFailed"));
       setOrders((prev) => prev.map((o) => (o.id === orderId ? data : o)));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update status");
+      setError(e instanceof Error ? e.message : t("routing.orders.statusFailed"));
     } finally {
       setLoading(false);
     }
@@ -319,11 +333,8 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
       <GoogleMapsStatusBanner />
 
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Routing Orders</h2>
-        <p className="text-muted-foreground">
-          Input recipients (address + lat/lng) and update delivery timestamps. Select orders
-          to run batch route optimization for Jakarta (warehouse → sorted stops → warehouse).
-        </p>
+        <h2 className="text-2xl font-bold tracking-tight">{t("routing.orders.pageTitle")}</h2>
+        <p className="text-muted-foreground">{t("routing.orders.subtitle")}</p>
       </div>
 
       {error && <div className="rounded-md border border-destructive/30 p-3 text-sm text-destructive">{error}</div>}
@@ -331,11 +342,11 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Create Order</CardTitle>
+            <CardTitle>{t("routing.orders.createOrder")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="recipientAddress">Address (recipient)</Label>
+              <Label htmlFor="recipientAddress">{t("routing.orders.addressLabel")}</Label>
               <Textarea
                 id="recipientAddress"
                 value={createForm.recipientAddress}
@@ -345,13 +356,13 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                     recipientAddress: e.target.value,
                   }))
                 }
-                placeholder="e.g. Jl. Sudirman Blok A, Jakarta"
+                placeholder={t("routing.orders.addressPlaceholder")}
               />
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="lat">Latitude</Label>
+                <Label htmlFor="lat">{t("routing.orders.latitude")}</Label>
                 <Input
                   id="lat"
                   type="number"
@@ -363,7 +374,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lng">Longitude</Label>
+                <Label htmlFor="lng">{t("routing.orders.longitude")}</Label>
                 <Input
                   id="lng"
                   type="number"
@@ -377,7 +388,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
             </div>
 
             <div className="space-y-2">
-              <Label>Vehicle access requirement</Label>
+              <Label>{t("routing.orders.accessRequirement")}</Label>
               <Select
                 value={createForm.accessRequirement}
                 onValueChange={(v) =>
@@ -388,34 +399,32 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                 }
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select access" />
+                  <SelectValue placeholder={t("routing.orders.selectAccess")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="CAR_ONLY">Car only</SelectItem>
-                  <SelectItem value="MOTORCYCLE_ONLY">Motorcycle only</SelectItem>
-                  <SelectItem value="BOTH">Both</SelectItem>
+                  <SelectItem value="CAR_ONLY">{t("routing.orders.accessCarOnly")}</SelectItem>
+                  <SelectItem value="MOTORCYCLE_ONLY">{t("routing.orders.accessMotorcycleOnly")}</SelectItem>
+                  <SelectItem value="BOTH">{t("routing.orders.accessBoth")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <Button onClick={createOrder} disabled={loading || !createForm.recipientAddress.trim()}>
               <Plus className="mr-2 h-4 w-4" />
-              Add Order
+              {t("routing.orders.addOrder")}
             </Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Bulk Import (CSV)</CardTitle>
+            <CardTitle>{t("routing.orders.bulkImport")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Upload a CSV file with columns{" "}
-              <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                recipientAddress, lat, lng, accessRequirement
-              </code>{" "}
-              to create many routing orders at once.
+              {t("routing.orders.bulkImportHelp", {
+                columns: "recipientAddress, lat, lng, accessRequirement",
+              })}
             </p>
             <div className="flex flex-wrap gap-2">
               <a
@@ -423,10 +432,10 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                 download
                 className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
               >
-                Download template
+                {t("routing.orders.downloadTemplate")}
               </a>
               <Label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-dashed px-4 py-2 text-sm text-muted-foreground hover:bg-muted/50">
-                <span>Choose CSV file…</span>
+                <span>{t("routing.orders.chooseCsv")}</span>
                 <input
                   type="file"
                   accept=".csv"
@@ -440,14 +449,18 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
             </div>
             {importing && (
               <p className="text-xs text-muted-foreground">
-                Importing orders from CSV…
+                {t("routing.orders.importing")}
               </p>
             )}
             {importSummary && (
               <p className="text-xs text-muted-foreground">
-                Imported {importSummary.imported} orders.
+                {t("routing.orders.importedSummary", {
+                  imported: importSummary.imported,
+                })}
                 {importSummary.failed > 0 &&
-                  ` ${importSummary.failed} rows failed validation.`}
+                  ` ${t("routing.orders.importedFailed", {
+                    failed: importSummary.failed,
+                  })}`}
               </p>
             )}
           </CardContent>
@@ -456,12 +469,12 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
-              <CardTitle>Orders & Status Timeline</CardTitle>
+              <CardTitle>{t("routing.orders.timelineTitle")}</CardTitle>
               <CardDescription>
-                Select orders to optimize. Use status buttons to set timestamps.
+                {t("routing.orders.timelineDescription")}
                 {selectedCount > 0 && (
                   <span className="ml-1 font-medium text-foreground">
-                    · {selectedCount} selected
+                    · {t("common.selectedCount", { count: selectedCount })}
                   </span>
                 )}
               </CardDescription>
@@ -472,7 +485,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                 onClick={exportSelectedCsv}
                 disabled={selectedCount === 0}
               >
-                Export Selected
+                {t("routing.orders.exportSelected")}
               </Button>
               <Button
                 onClick={() => {
@@ -483,7 +496,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                 disabled={selectedCount === 0}
               >
                 <Navigation className="mr-2 h-4 w-4" />
-                Optimize Selected
+                {t("routing.orders.optimizeSelected")}
               </Button>
             </div>
           </CardHeader>
@@ -493,11 +506,11 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10"></TableHead>
-                    <TableHead className="min-w-[220px]">Recipient</TableHead>
-                    <TableHead className="min-w-[120px]">Access</TableHead>
-                    <TableHead className="min-w-[100px]">Status</TableHead>
-                    <TableHead className="min-w-[160px]">Timestamps</TableHead>
-                    <TableHead className="min-w-[200px] text-right">Actions</TableHead>
+                    <TableHead className="min-w-[220px]">{t("routing.orders.recipient")}</TableHead>
+                    <TableHead className="min-w-[120px]">{t("routing.orders.access")}</TableHead>
+                    <TableHead className="min-w-[100px]">{t("common.status")}</TableHead>
+                    <TableHead className="min-w-[160px]">{t("routing.orders.timestamps")}</TableHead>
+                    <TableHead className="min-w-[200px] text-right">{t("common.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -524,13 +537,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                       <TableCell className="text-sm">
                         <div className="flex items-center gap-2">
                           {vehicleIcon(o.accessRequirement)}
-                          <span className="capitalize">
-                            {o.accessRequirement === "CAR_ONLY"
-                              ? "Car only"
-                              : o.accessRequirement === "MOTORCYCLE_ONLY"
-                              ? "Motor only"
-                              : "Both"}
-                          </span>
+                          <span>{accessLabel(o.accessRequirement)}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -539,11 +546,11 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                         </span>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        Received: {formatStatus(o.receivedAt)}
+                        {t("routing.orders.tsReceived", { time: formatStatus(o.receivedAt) })}
                         <br />
-                        OnRoute: {formatStatus(o.onRouteAt)}
+                        {t("routing.orders.tsOnRoute", { time: formatStatus(o.onRouteAt) })}
                         <br />
-                        Delivered: {formatStatus(o.deliveredAt)}
+                        {t("routing.orders.tsDelivered", { time: formatStatus(o.deliveredAt) })}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -552,7 +559,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                             size="icon"
                             onClick={() => updateOrder(o.id)}
                             disabled={loading}
-                            aria-label="Edit order"
+                            aria-label={t("routing.orders.editOrder")}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -561,22 +568,22 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                             size="icon"
                             onClick={() => deleteOrder(o.id)}
                             disabled={loading}
-                            aria-label="Delete order"
+                            aria-label={t("routing.orders.deleteOrder")}
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
 
                         <div className="mt-2 flex flex-wrap gap-1">
-                          {STATUS_OPTIONS.map((s) => (
+                          {STATUS_VALUES.map((value) => (
                             <Button
-                              key={s.value}
+                              key={value}
                               size="xs"
                               variant="outline"
-                              onClick={() => setOrderStatus(o.id, s.value)}
-                              disabled={loading || o.status === s.value}
+                              onClick={() => setOrderStatus(o.id, value)}
+                              disabled={loading || o.status === value}
                             >
-                              {s.label}
+                              {statusLabels[value]}
                             </Button>
                           ))}
                         </div>
@@ -586,7 +593,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                   {orders.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
-                        No orders yet. Add one on the left.
+                        {t("routing.orders.emptyHint")}
                       </TableCell>
                     </TableRow>
                   )}
@@ -594,11 +601,11 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
               </Table>
             </div>
             <div className="text-xs text-muted-foreground">
-              Uses Google Maps live traffic when connected. Jakarta validation uses a coordinate bounding box.
+              {t("routing.orders.footerNote")}
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={refreshOrders} disabled={loading}>
-                Refresh
+                {t("common.refresh")}
               </Button>
             </div>
           </CardContent>
@@ -607,4 +614,3 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
     </div>
   );
 }
-

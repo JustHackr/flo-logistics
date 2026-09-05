@@ -34,18 +34,20 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { CvSessionReportsPanel } from "@/components/computer-vision/cv-session-reports-panel";
 import { RiskBadge } from "@/components/risk-badge";
 import { formatCurrency, formatCurrencyShort, formatNumber } from "@/lib/format";
 import { getVehicleFuelDisplay } from "@/lib/vehicle-fuel";
 import type { VehicleWithAnalysis } from "@/lib/types";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 const RISK_COLORS = {
-  high: "hsl(var(--destructive))",
-  medium: "hsl(var(--chart-4))",
-  low: "hsl(var(--chart-2))",
+  high: "var(--destructive)",
+  medium: "var(--chart-4)",
+  low: "var(--chart-2)",
 };
 
-const ENGINE_COLORS = ["#3b82f6", "#f59e0b", "#10b981"];
+const ENGINE_COLORS = ["#3b82f6", "#60a5fa", "#1d4ed8"];
 
 type DashboardProps = {
   summary: {
@@ -72,6 +74,7 @@ type DashboardProps = {
 };
 
 export function DashboardClient({ summary, vehicles }: DashboardProps) {
+  const { t, locale } = useI18n();
   const [engineFilter, setEngineFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [riskFilter, setRiskFilter] = useState<string>("all");
@@ -106,17 +109,15 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
-        <p className="text-muted-foreground">
-          Fleet overview with Vehicle Quality Index and maintenance insights.
-        </p>
+        <h2 className="text-2xl font-bold tracking-tight">{t("fleet.dashboard.title")}</h2>
+        <p className="text-muted-foreground">{t("fleet.dashboard.subtitle")}</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Vehicles
+              {t("fleet.dashboard.totalVehicles")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -126,7 +127,7 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Average VQI
+              {t("fleet.dashboard.averageVqi")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -136,7 +137,7 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              High Risk
+              {t("fleet.dashboard.highRisk")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -148,12 +149,12 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Maint. Cost
+              {t("fleet.dashboard.totalMaintCost")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">
-              {formatCurrencyShort(summary.totalMaintenanceCost)}
+              {formatCurrencyShort(summary.totalMaintenanceCost, locale)}
             </p>
           </CardContent>
         </Card>
@@ -162,7 +163,7 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>VQI Distribution</CardTitle>
+            <CardTitle>{t("fleet.dashboard.vqiDistribution")}</CardTitle>
           </CardHeader>
           <CardContent className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -171,7 +172,7 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
                 <XAxis dataKey="range" />
                 <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -179,7 +180,7 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Vehicles by Engine Type</CardTitle>
+            <CardTitle>{t("fleet.dashboard.byEngineType")}</CardTitle>
           </CardHeader>
           <CardContent className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -206,18 +207,24 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Maintenance Cost by Vehicle Type</CardTitle>
+            <CardTitle>{t("fleet.dashboard.costByVehicleType")}</CardTitle>
           </CardHeader>
           <CardContent className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={summary.costByVehicleType}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="vehicleType" />
-                <YAxis tickFormatter={(value) => formatCurrencyShort(Number(value))} width={80} />
-                <Tooltip
-                  formatter={(value) => [formatCurrency(Number(value)), "Total cost"]}
+                <YAxis
+                  tickFormatter={(value) => formatCurrencyShort(Number(value), locale)}
+                  width={80}
                 />
-                <Bar dataKey="totalCost" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
+                <Tooltip
+                  formatter={(value) => [
+                    formatCurrency(Number(value), locale),
+                    t("fleet.dashboard.totalCost"),
+                  ]}
+                />
+                <Bar dataKey="totalCost" fill="var(--chart-3)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -225,24 +232,32 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Odometer vs Age (by Risk)</CardTitle>
+            <CardTitle>{t("fleet.dashboard.odometerVsAge")}</CardTitle>
           </CardHeader>
           <CardContent className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="age" name="Age (yr)" unit=" yr" />
-                <YAxis dataKey="odometer" name="Odometer" unit=" km" />
+                <XAxis
+                  dataKey="age"
+                  name={t("fleet.dashboard.ageAxis")}
+                  unit={` ${t("common.yearShort")}`}
+                />
+                <YAxis
+                  dataKey="odometer"
+                  name={t("fleet.dashboard.odometerAxis")}
+                  unit=" km"
+                />
                 <Tooltip
                   cursor={{ strokeDasharray: "3 3" }}
                   formatter={(value, name) => [
-                    formatNumber(Number(value)),
+                    formatNumber(Number(value), 0, locale),
                     name,
                   ]}
                 />
                 <Scatter
                   data={summary.scatterData}
-                  fill="hsl(var(--primary))"
+                  fill="var(--primary)"
                 >
                   {summary.scatterData.map((entry) => (
                     <Cell
@@ -263,38 +278,38 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
 
       <Card>
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>Vehicle Quality Index Table</CardTitle>
+          <CardTitle>{t("fleet.dashboard.vqiTable")}</CardTitle>
           <div className="flex flex-wrap gap-2">
             <Select value={engineFilter} onValueChange={(v) => setEngineFilter(v ?? "all")}>
               <SelectTrigger className="w-36">
-                <SelectValue placeholder="Engine" />
+                <SelectValue placeholder={t("fleet.dashboard.filterEngine")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All engines</SelectItem>
-                <SelectItem value="gasoline">Gasoline</SelectItem>
-                <SelectItem value="diesel">Diesel</SelectItem>
-                <SelectItem value="ev">EV</SelectItem>
+                <SelectItem value="all">{t("fleet.dashboard.allEngines")}</SelectItem>
+                <SelectItem value="gasoline">{t("fleet.vehicles.engineGasoline")}</SelectItem>
+                <SelectItem value="diesel">{t("fleet.vehicles.engineDiesel")}</SelectItem>
+                <SelectItem value="ev">{t("fleet.vehicles.engineEv")}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v ?? "all")}>
               <SelectTrigger className="w-36">
-                <SelectValue placeholder="Type" />
+                <SelectValue placeholder={t("fleet.dashboard.filterType")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                <SelectItem value="van">Van</SelectItem>
-                <SelectItem value="motorcycle">Motorcycle</SelectItem>
+                <SelectItem value="all">{t("fleet.dashboard.allTypes")}</SelectItem>
+                <SelectItem value="van">{t("fleet.vehicles.typeVan")}</SelectItem>
+                <SelectItem value="motorcycle">{t("fleet.vehicles.typeMotorcycle")}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={riskFilter} onValueChange={(v) => setRiskFilter(v ?? "all")}>
               <SelectTrigger className="w-36">
-                <SelectValue placeholder="Risk" />
+                <SelectValue placeholder={t("fleet.dashboard.filterRisk")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All risk</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="all">{t("fleet.dashboard.allRisk")}</SelectItem>
+                <SelectItem value="high">{t("fleet.dashboard.riskHigh")}</SelectItem>
+                <SelectItem value="medium">{t("fleet.dashboard.riskMedium")}</SelectItem>
+                <SelectItem value="low">{t("fleet.dashboard.riskLow")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -305,15 +320,16 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
               <TableRow>
                 <TableHead>
                   <button type="button" onClick={() => toggleSort("name")}>
-                    Name {sortKey === "name" && (sortDir === "asc" ? "↑" : "↓")}
+                    {t("common.name")} {sortKey === "name" && (sortDir === "asc" ? "↑" : "↓")}
                   </button>
                 </TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Fuel</TableHead>
-                <TableHead>Engine</TableHead>
+                <TableHead>{t("common.type")}</TableHead>
+                <TableHead>{t("common.fuel")}</TableHead>
+                <TableHead>{t("fleet.vehicles.engine")}</TableHead>
                 <TableHead>
                   <button type="button" onClick={() => toggleSort("odometerKm")}>
-                    Odometer {sortKey === "odometerKm" && (sortDir === "asc" ? "↑" : "↓")}
+                    {t("fleet.vehicles.odometer")}{" "}
+                    {sortKey === "odometerKm" && (sortDir === "asc" ? "↑" : "↓")}
                   </button>
                 </TableHead>
                 <TableHead>
@@ -321,7 +337,7 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
                     VQI {sortKey === "vqi" && (sortDir === "asc" ? "↑" : "↓")}
                   </button>
                 </TableHead>
-                <TableHead>Recommended Action</TableHead>
+                <TableHead>{t("fleet.dashboard.recommendedAction")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -344,7 +360,11 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
                     </Badge>
                   </TableCell>
                   <TableCell className="uppercase">{v.engineType}</TableCell>
-                  <TableCell>{formatNumber(v.odometerKm)} km</TableCell>
+                  <TableCell>
+                    {t("common.kmValue", {
+                      value: formatNumber(v.odometerKm, 0, locale),
+                    })}
+                  </TableCell>
                   <TableCell>
                     <RiskBadge risk={v.riskLevel} vqi={v.vqi} />
                   </TableCell>
@@ -358,6 +378,11 @@ export function DashboardClient({ summary, vehicles }: DashboardProps) {
           </Table>
         </CardContent>
       </Card>
+
+      <CvSessionReportsPanel
+        title={t("fleet.dashboard.cvTitle")}
+        description={t("fleet.dashboard.cvDescription")}
+      />
     </div>
   );
 }

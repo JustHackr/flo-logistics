@@ -2,16 +2,15 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isWithinJakartaBounds } from "@/lib/routing/jakarta";
 import { orderSchema, stopAccessValues } from "@/lib/schemas/order";
+import { apiError } from "@/lib/i18n/api-errors";
+import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const rows = body.rows as Array<Record<string, string>>;
     if (!Array.isArray(rows) || rows.length === 0) {
-      return NextResponse.json(
-        { error: "No rows provided for import" },
-        { status: 400 }
-      );
+      return apiError(getLocaleFromRequest(request), "importFailed", 400);
     }
 
     const errors: Array<{ row: number; error: string }> = [];
@@ -63,9 +62,8 @@ export async function POST(request: Request) {
       errors,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to import routing orders";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("[orders/import] failed:", error);
+    return apiError(getLocaleFromRequest(request), "importFailed", 400);
   }
 }
 

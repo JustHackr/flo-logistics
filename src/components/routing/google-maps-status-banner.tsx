@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 type RoutingStatus = {
   configured: boolean;
@@ -21,6 +22,7 @@ type RoutingStatus = {
 };
 
 export function GoogleMapsStatusBanner() {
+  const { t } = useI18n();
   const [status, setStatus] = useState<RoutingStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [showGoogleUpgrade, setShowGoogleUpgrade] = useState(false);
@@ -42,10 +44,9 @@ export function GoogleMapsStatusBanner() {
             connected: false,
             provider: null,
             hasTraffic: false,
-            message:
-              "Using local Jakarta traffic estimates. Could not reach routing status API.",
+            message: t("routing.maps.statusFallback"),
             primarySource: "estimated",
-            primarySourceLabel: "Jakarta traffic model (local estimates)",
+            primarySourceLabel: t("routing.maps.estimatedLabel"),
             osrmReachable: false,
           });
         }
@@ -58,7 +59,7 @@ export function GoogleMapsStatusBanner() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [t]);
 
   if (process.env.NODE_ENV === "production") {
     return null;
@@ -68,7 +69,7 @@ export function GoogleMapsStatusBanner() {
     return (
       <Card>
         <CardContent className="py-3 text-sm text-muted-foreground">
-          Checking routing data sources...
+          {t("routing.maps.checking")}
         </CardContent>
       </Card>
     );
@@ -82,22 +83,25 @@ export function GoogleMapsStatusBanner() {
         <CardContent className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">Google Maps enabled</span>
+              <span className="text-sm font-semibold">{t("routing.maps.googleEnabled")}</span>
               <Badge variant="secondary">
-                {status.hasTraffic ? "Live traffic" : "Road network"}
+                {status.hasTraffic
+                  ? t("routing.maps.liveTraffic")
+                  : t("routing.maps.roadNetwork")}
               </Badge>
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{status.message}</p>
             {status.sampleDistanceKm != null && status.sampleDurationMin != null && (
               <p className="mt-1 text-xs text-muted-foreground">
-                Sample leg (Blok M → Sudirman): {status.sampleDistanceKm} km, ~
-                {Math.round(status.sampleDurationMin)} min
+                {t("routing.maps.sampleLeg", {
+                  km: status.sampleDistanceKm,
+                  min: Math.round(status.sampleDurationMin),
+                })}
               </p>
             )}
             {status.mapVisualizationConfigured && (
               <p className="mt-1 text-xs text-muted-foreground">
-                {status.mapVisualizationMessage ??
-                  "Route maps enabled (Maps JavaScript + Directions API)."}
+                {status.mapVisualizationMessage ?? t("routing.maps.mapsEnabledDefault")}
               </p>
             )}
           </div>
@@ -119,9 +123,9 @@ export function GoogleMapsStatusBanner() {
       <CardContent className="space-y-3 py-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold">Routing data source</span>
+            <span className="text-sm font-semibold">{t("routing.maps.dataSource")}</span>
             <Badge variant={isEstimatedFallback ? "outline" : "secondary"}>
-              {status.primarySourceLabel ?? "OSRM + Jakarta traffic"}
+              {status.primarySourceLabel ?? t("routing.maps.osrmFallback")}
             </Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">{status.message}</p>
@@ -134,39 +138,33 @@ export function GoogleMapsStatusBanner() {
               className="text-xs font-medium text-muted-foreground underline hover:text-foreground"
               onClick={() => setShowGoogleUpgrade((v) => !v)}
             >
-              {showGoogleUpgrade ? "Hide" : "Optional: upgrade to Google Maps live traffic"}
+              {showGoogleUpgrade ? t("common.hide") : t("routing.maps.upgradeToggle")}
             </button>
             {showGoogleUpgrade && (
               <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
                 <li>
-                  Create an API key in{" "}
+                  {t("routing.maps.stepConsolePrefix")}{" "}
                   <a
                     className="font-medium text-foreground underline"
                     href="https://console.cloud.google.com/google/maps-apis/credentials"
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Google Cloud Console
-                  </a>{" "}
-                  (billing required)
+                    {t("routing.maps.googleCloudConsole")}
+                  </a>
                 </li>
+                <li>{t("routing.maps.stepEnable")}</li>
                 <li>
-                  Enable <strong>Routes API</strong>,{" "}
-                  <strong>Distance Matrix API</strong>, and{" "}
-                  <strong>Maps JavaScript API</strong>
-                </li>
-                <li>
-                  Add to <code className="rounded bg-muted px-1">.env.local</code>:{" "}
+                  {t("routing.maps.stepEnvPrefix")}{" "}
+                  <code className="rounded bg-muted px-1">.env.local</code>:{" "}
                   <code className="rounded bg-muted px-1">
                     GOOGLE_MAPS_API_KEY=your_key
                   </code>{" "}
-                  and{" "}
-                  <code className="rounded bg-muted px-1">
-                    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_key
-                  </code>
+                  {t("routing.maps.stepEnvSuffix")}
                 </li>
                 <li>
-                  Restart <code className="rounded bg-muted px-1">npm run dev</code>
+                  {t("routing.maps.stepRestartPrefix")}{" "}
+                  <code className="rounded bg-muted px-1">npm run dev</code>
                 </li>
               </ol>
             )}

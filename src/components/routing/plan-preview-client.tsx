@@ -5,6 +5,7 @@ import type { TrafficSource } from "@/lib/routing/estimator";
 import type { RouteWaypoint } from "@/lib/routing/waypoints";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/components/i18n/use-i18n";
 import { GoogleMapsStatusBanner } from "./google-maps-status-banner";
 import { OptimizedRoutePreview } from "./plan-preview-utils";
 import { DispatchMatchingPanel } from "./dispatch-matching-panel";
@@ -70,6 +71,7 @@ function toDatetimeLocalValue(date: Date) {
 
 export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
   const router = useRouter();
+  const { t } = useI18n();
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -112,12 +114,12 @@ export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "Failed to optimize route");
+      if (!res.ok) throw new Error(data?.error ?? t("routing.plan.optimizeFailed"));
       setPlans(data.plans ?? []);
       setTrafficSourceLabel(data.trafficSourceLabel ?? null);
       setDispatchMatching(data.dispatchMatching ?? null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to optimize route");
+      setError(e instanceof Error ? e.message : t("routing.plan.optimizeFailed"));
     } finally {
       setLoading(false);
     }
@@ -138,10 +140,10 @@ export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "Failed to save route plan");
+      if (!res.ok) throw new Error(data?.error ?? t("routing.plan.saveFailed"));
       router.push("/routing/dashboard");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to save route plan");
+      setError(e instanceof Error ? e.message : t("routing.plan.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -150,11 +152,11 @@ export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
   if (orderIdsNormalized.length === 0) {
     return (
       <div className="space-y-4">
-        <h2 className="text-2xl font-bold tracking-tight">Plan Route</h2>
+        <h2 className="text-2xl font-bold tracking-tight">{t("routing.plan.pageTitle")}</h2>
         <p className="text-muted-foreground">
-          No orders were selected. Go back to{" "}
-          <span className="font-medium">Routing Orders</span> and select some
-          orders.
+          {t("routing.plan.emptySelection", {
+            orders: t("routing.plan.ordersLink"),
+          })}
         </p>
       </div>
     );
@@ -168,16 +170,12 @@ export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
         <div className="space-y-3">
           <div>
             <h2 className="text-2xl font-bold tracking-tight">
-              Plan Route (Process)
+              {t("routing.plan.processTitle")}
             </h2>
-            <p className="text-muted-foreground">
-              Sorts waypoints using OSRM road distances and Jakarta rush-hour
-              traffic calibration. Produces one or more route plans (max 15 stops
-              per route).
-            </p>
+            <p className="text-muted-foreground">{t("routing.plan.subtitle")}</p>
             {trafficSourceLabel && (
               <p className="mt-2 text-sm text-muted-foreground">
-                Traffic data:{" "}
+                {t("routing.plan.trafficData")}{" "}
                 <span className="font-medium text-foreground">
                   {trafficSourceLabel}
                 </span>
@@ -189,7 +187,7 @@ export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
               htmlFor="route-start-at"
               className="text-sm font-medium"
             >
-              Route start time
+              {t("routing.plan.routeStartTime")}
             </label>
             <input
               id="route-start-at"
@@ -199,7 +197,7 @@ export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
               onChange={(e) => setRouteStartAt(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Rush-hour departures (e.g. weekday 08:00) produce longer leg times.
+              {t("routing.plan.rushHourHint")}
             </p>
           </div>
         </div>
@@ -208,13 +206,13 @@ export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
             variant="outline"
             onClick={() => router.push("/routing/orders")}
           >
-            Back
+            {t("common.back")}
           </Button>
           <Button
             onClick={() => void save()}
             disabled={saving || loading || plans.length === 0}
           >
-            {saving ? "Saving..." : "Save Route Plan(s)"}
+            {saving ? t("common.saving") : t("routing.plan.savePlans")}
           </Button>
         </div>
       </div>
@@ -226,12 +224,12 @@ export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
       )}
 
       {loading && (
-        <div className="text-sm text-muted-foreground">Optimizing...</div>
+        <div className="text-sm text-muted-foreground">{t("routing.plan.optimizing")}</div>
       )}
 
       {!loading && plans.length === 0 && (
         <div className="text-sm text-muted-foreground">
-          No route could be generated for these orders.
+          {t("routing.plan.noRoute")}
         </div>
       )}
 

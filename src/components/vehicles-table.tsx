@@ -26,6 +26,7 @@ import { RiskBadge } from "@/components/risk-badge";
 import { formatDate, formatNumber } from "@/lib/format";
 import { getVehicleFuelDisplay } from "@/lib/vehicle-fuel";
 import type { VehicleWithAnalysis } from "@/lib/types";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 type SortKey =
   | keyof Pick<
@@ -45,6 +46,7 @@ export function VehiclesTable({
 }: {
   vehicles: VehicleWithAnalysis[];
 }) {
+  const { t, locale } = useI18n();
   const [vehicles, setVehicles] = useState(initialVehicles);
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -106,32 +108,32 @@ export function VehiclesTable({
             <TableRow>
               <TableHead>
                 <button type="button" onClick={() => toggleSort("name")}>
-                  {sortLabel("name", "Name")}
+                  {sortLabel("name", t("fleet.vehicles.name"))}
                 </button>
               </TableHead>
               <TableHead>
                 <button type="button" onClick={() => toggleSort("vehicleType")}>
-                  {sortLabel("vehicleType", "Type")}
+                  {sortLabel("vehicleType", t("fleet.vehicles.type"))}
                 </button>
               </TableHead>
               <TableHead>
                 <button type="button" onClick={() => toggleSort("fuel")}>
-                  {sortLabel("fuel", "Fuel")}
+                  {sortLabel("fuel", t("fleet.vehicles.fuel"))}
                 </button>
               </TableHead>
               <TableHead>
                 <button type="button" onClick={() => toggleSort("engineType")}>
-                  {sortLabel("engineType", "Engine")}
+                  {sortLabel("engineType", t("fleet.vehicles.engine"))}
                 </button>
               </TableHead>
               <TableHead>
                 <button type="button" onClick={() => toggleSort("vehicleAgeYears")}>
-                  {sortLabel("vehicleAgeYears", "Age")}
+                  {sortLabel("vehicleAgeYears", t("fleet.vehicles.age"))}
                 </button>
               </TableHead>
               <TableHead>
                 <button type="button" onClick={() => toggleSort("odometerKm")}>
-                  {sortLabel("odometerKm", "Odometer")}
+                  {sortLabel("odometerKm", t("fleet.vehicles.odometer"))}
                 </button>
               </TableHead>
               <TableHead>
@@ -139,8 +141,8 @@ export function VehiclesTable({
                   {sortLabel("vqi", "VQI")}
                 </button>
               </TableHead>
-              <TableHead>Next Maintenance</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead>{t("fleet.vehicles.nextMaintenance")}</TableHead>
+              <TableHead className="text-right">{t("common.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -156,12 +158,20 @@ export function VehiclesTable({
                     </Badge>
                   </TableCell>
                   <TableCell className="uppercase">{vehicle.engineType}</TableCell>
-                  <TableCell>{formatNumber(vehicle.vehicleAgeYears, 1)} yr</TableCell>
-                  <TableCell>{formatNumber(vehicle.odometerKm)} km</TableCell>
+                  <TableCell>
+                    {t("fleet.vehicles.ageValue", {
+                      value: formatNumber(vehicle.vehicleAgeYears, 1, locale),
+                    })}
+                  </TableCell>
+                  <TableCell>
+                    {t("common.kmValue", {
+                      value: formatNumber(vehicle.odometerKm, 0, locale),
+                    })}
+                  </TableCell>
                   <TableCell>
                     <RiskBadge risk={vehicle.riskLevel} vqi={vehicle.vqi} />
                   </TableCell>
-                  <TableCell>{formatDate(vehicle.nextMaintenanceDate)}</TableCell>
+                  <TableCell>{formatDate(vehicle.nextMaintenanceDate, locale)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Link
@@ -189,22 +199,21 @@ export function VehiclesTable({
       <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete vehicle?</DialogTitle>
+            <DialogTitle>{t("fleet.vehicles.deleteTitle")}</DialogTitle>
             <DialogDescription>
-              This action cannot be undone. The vehicle record will be permanently
-              removed.
+              {t("fleet.vehicles.deleteDescription")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
               disabled={deleting}
             >
-              {deleting ? "Deleting..." : "Delete"}
+              {deleting ? t("common.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

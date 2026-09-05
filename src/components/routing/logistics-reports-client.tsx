@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
+import { enUS, id as idLocale } from "date-fns/locale";
 import { Download, Printer } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -20,15 +21,17 @@ import type {
   RouteReportRow,
 } from "@/lib/routing-reports";
 import type { RoutingLogisticsOverview } from "@/lib/routing-overview";
+import { useI18n } from "@/components/i18n/use-i18n";
+import { toIntlLocale, type Locale } from "@/lib/i18n/config";
 
 type RouteSortKey = keyof RouteReportRow;
 type DeliverySortKey = keyof DeliveryReportRow;
 
-function formatDateTime(iso: string | null) {
+function formatDateTime(iso: string | null, locale: Locale) {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("id-ID", {
+  return d.toLocaleString(toIntlLocale(locale), {
     hour12: false,
     year: "numeric",
     month: "short",
@@ -52,6 +55,7 @@ export function LogisticsReportsClient({
 }: {
   overview: RoutingLogisticsOverview;
 }) {
+  const { t, locale } = useI18n();
   const { report, operations, routeCounts, generatedAt } = overview;
   const [routeSortKey, setRouteSortKey] = useState<RouteSortKey>("driverName");
   const [routeSortDir, setRouteSortDir] = useState<"asc" | "desc">("asc");
@@ -204,32 +208,36 @@ export function LogisticsReportsClient({
     );
   }
 
+  const dateFnsLoc = locale === "id" ? idLocale : enUS;
+
   return (
     <div className="space-y-6 print:space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
-            Logistics Operations Report
+            {t("routing.reports.title")}
           </h2>
           <p className="text-muted-foreground">
-            Generated {format(new Date(generatedAt), "PPpp")}
+            {t("common.generatedAt", {
+              time: format(new Date(generatedAt), "PPpp", { locale: dateFnsLoc }),
+            })}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" render={<Link href="/routing/dashboard" />}>
-            Dashboard
+            {t("routing.reports.dashboard")}
           </Button>
           <Button variant="outline" onClick={() => window.print()}>
             <Printer className="mr-2 h-4 w-4" />
-            Print
+            {t("common.print")}
           </Button>
           <Button variant="outline" onClick={exportSummaryCsv}>
             <Download className="mr-2 h-4 w-4" />
-            Summary CSV
+            {t("routing.reports.summaryCsv")}
           </Button>
           <Button onClick={exportDeliveriesCsv}>
             <Download className="mr-2 h-4 w-4" />
-            Deliveries CSV
+            {t("routing.reports.deliveriesCsv")}
           </Button>
         </div>
       </div>
@@ -238,52 +246,62 @@ export function LogisticsReportsClient({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Active Routes
+              {t("routing.reports.activeRoutes")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{operations.inProgressRoutes}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {routeCounts.planned} planned · {routeCounts.completed} completed
+              {t("routing.reports.routeCounts", {
+                planned: routeCounts.planned,
+                completed: routeCounts.completed,
+              })}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Delivery Progress
+              {t("routing.reports.deliveryProgress")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{operations.deliveryProgressPercent}%</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {operations.deliveredStops}/{operations.totalDeliveryStops} stops
+              {t("routing.reports.stopsDetail", {
+                delivered: operations.deliveredStops,
+                total: operations.totalDeliveryStops,
+              })}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Avg DTI
+              {t("routing.reports.avgDti")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{operations.avgDti ?? "—"}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {operations.deliveredOrdersWithDti} scored deliveries
+              {t("routing.reports.scoredDeliveries", {
+                count: operations.deliveredOrdersWithDti,
+              })}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Avg CFI
+              {t("routing.reports.avgCfi")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold">{operations.avgCfi ?? "—"}</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {operations.totalEmissionsKg} kg CO₂e in progress
+              {t("routing.reports.emissionsInProgress", {
+                kg: operations.totalEmissionsKg,
+              })}
             </p>
           </CardContent>
         </Card>
@@ -293,20 +311,18 @@ export function LogisticsReportsClient({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2">
-          <CardTitle>Route Summary</CardTitle>
+          <CardTitle>{t("routing.reports.routeSummary")}</CardTitle>
           <Button variant="outline" size="sm" onClick={exportRoutesCsv} className="print:hidden">
             <Download className="mr-2 h-4 w-4" />
-            Export routes
+            {t("routing.reports.exportRoutes")}
           </Button>
         </CardHeader>
         <CardContent>
           {sortedRoutes.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No route plans yet. Optimize orders from{" "}
-              <Link href="/routing/orders" className="font-medium underline">
-                Routing Orders
-              </Link>
-              .
+              {t("routing.reports.noRoutes", {
+                orders: t("routing.reports.ordersLink"),
+              })}
             </p>
           ) : (
             <Table>
@@ -314,23 +330,27 @@ export function LogisticsReportsClient({
                 <TableRow>
                   <TableHead>
                     <button type="button" onClick={() => toggleRouteSort("driverName")}>
-                      Driver {routeSortKey === "driverName" && (routeSortDir === "asc" ? "↑" : "↓")}
+                      {t("routing.reports.driver")}{" "}
+                      {routeSortKey === "driverName" && (routeSortDir === "asc" ? "↑" : "↓")}
                     </button>
                   </TableHead>
                   <TableHead>
                     <button type="button" onClick={() => toggleRouteSort("status")}>
-                      Status {routeSortKey === "status" && (routeSortDir === "asc" ? "↑" : "↓")}
+                      {t("common.status")}{" "}
+                      {routeSortKey === "status" && (routeSortDir === "asc" ? "↑" : "↓")}
                     </button>
                   </TableHead>
-                  <TableHead>Progress</TableHead>
+                  <TableHead>{t("routing.reports.progress")}</TableHead>
                   <TableHead>
                     <button type="button" onClick={() => toggleRouteSort("distanceKm")}>
-                      Distance {routeSortKey === "distanceKm" && (routeSortDir === "asc" ? "↑" : "↓")}
+                      {t("routing.reports.distanceCol")}{" "}
+                      {routeSortKey === "distanceKm" && (routeSortDir === "asc" ? "↑" : "↓")}
                     </button>
                   </TableHead>
                   <TableHead>
                     <button type="button" onClick={() => toggleRouteSort("emissionsKg")}>
-                      Emissions {routeSortKey === "emissionsKg" && (routeSortDir === "asc" ? "↑" : "↓")}
+                      {t("routing.reports.emissions")}{" "}
+                      {routeSortKey === "emissionsKg" && (routeSortDir === "asc" ? "↑" : "↓")}
                     </button>
                   </TableHead>
                   <TableHead>
@@ -343,7 +363,7 @@ export function LogisticsReportsClient({
                       CFI {routeSortKey === "routeCfi" && (routeSortDir === "asc" ? "↑" : "↓")}
                     </button>
                   </TableHead>
-                  <TableHead>Vehicle</TableHead>
+                  <TableHead>{t("common.vehicle")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -352,10 +372,14 @@ export function LogisticsReportsClient({
                     <TableCell className="font-medium">{route.driverName}</TableCell>
                     <TableCell>{route.status}</TableCell>
                     <TableCell>
-                      {route.deliveredStops}/{route.totalStops} ({route.progressPercent}%)
+                      {t("routing.reports.progressCell", {
+                        delivered: route.deliveredStops,
+                        total: route.totalStops,
+                        percent: route.progressPercent,
+                      })}
                     </TableCell>
-                    <TableCell>{route.distanceKm} km</TableCell>
-                    <TableCell>{route.emissionsKg} kg</TableCell>
+                    <TableCell>{t("common.kmValue", { value: route.distanceKm })}</TableCell>
+                    <TableCell>{t("common.kgValue", { value: route.emissionsKg })}</TableCell>
                     <TableCell>{route.avgDti ?? "—"}</TableCell>
                     <TableCell>{route.routeCfi}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">
@@ -371,12 +395,12 @@ export function LogisticsReportsClient({
 
       <Card>
         <CardHeader>
-          <CardTitle>Stop-Level Delivery Report</CardTitle>
+          <CardTitle>{t("routing.reports.stopLevelTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           {sortedDeliveries.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No delivery stops on route plans yet.
+              {t("routing.reports.noDeliveries")}
             </p>
           ) : (
             <Table>
@@ -384,20 +408,22 @@ export function LogisticsReportsClient({
                 <TableRow>
                   <TableHead>
                     <button type="button" onClick={() => toggleDeliverySort("driverName")}>
-                      Driver {deliverySortKey === "driverName" && (deliverySortDir === "asc" ? "↑" : "↓")}
+                      {t("routing.reports.driver")}{" "}
+                      {deliverySortKey === "driverName" &&
+                        (deliverySortDir === "asc" ? "↑" : "↓")}
                     </button>
                   </TableHead>
                   <TableHead>#</TableHead>
-                  <TableHead>Address</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Planned ETA</TableHead>
-                  <TableHead>Delivered</TableHead>
+                  <TableHead>{t("routing.reports.address")}</TableHead>
+                  <TableHead>{t("common.status")}</TableHead>
+                  <TableHead>{t("routing.reports.plannedEta")}</TableHead>
+                  <TableHead>{t("routing.reports.delivered")}</TableHead>
                   <TableHead>
                     <button type="button" onClick={() => toggleDeliverySort("dtiScore")}>
                       DTI {deliverySortKey === "dtiScore" && (deliverySortDir === "asc" ? "↑" : "↓")}
                     </button>
                   </TableHead>
-                  <TableHead>Slack (min)</TableHead>
+                  <TableHead>{t("routing.reports.slackMin")}</TableHead>
                   <TableHead>CFI</TableHead>
                 </TableRow>
               </TableHeader>
@@ -408,8 +434,8 @@ export function LogisticsReportsClient({
                     <TableCell>{row.sequence}</TableCell>
                     <TableCell className="max-w-xs truncate">{row.recipientAddress}</TableCell>
                     <TableCell className="capitalize">{row.orderStatus.toLowerCase().replace("_", " ")}</TableCell>
-                    <TableCell>{formatDateTime(row.plannedEtaAt)}</TableCell>
-                    <TableCell>{formatDateTime(row.deliveredAt)}</TableCell>
+                    <TableCell>{formatDateTime(row.plannedEtaAt, locale)}</TableCell>
+                    <TableCell>{formatDateTime(row.deliveredAt, locale)}</TableCell>
                     <TableCell>{row.dtiScore ?? "—"}</TableCell>
                     <TableCell>{row.slackMin ?? "—"}</TableCell>
                     <TableCell>{row.cfiScore}</TableCell>

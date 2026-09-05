@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { connectorSchema } from "@/lib/schemas/connector";
+import { apiError } from "@/lib/i18n/api-errors";
+import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
 
 export async function GET() {
   const connectors = await prisma.dataConnector.findMany({
@@ -25,8 +27,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(connector, { status: 201 });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to create connector";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("[connectors] create failed:", error);
+    return apiError(getLocaleFromRequest(request), "validation", 400);
   }
 }

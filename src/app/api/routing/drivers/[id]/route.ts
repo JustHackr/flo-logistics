@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { driverSchema } from "@/lib/schemas/driver";
+import { apiError } from "@/lib/i18n/api-errors";
+import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const driver = await prisma.driver.findUnique({
     where: { id },
     include: { vehicle: true },
   });
   if (!driver) {
-    return NextResponse.json({ error: "Driver not found" }, { status: 404 });
+    return apiError(getLocaleFromRequest(request), "driverNotFound", 404);
   }
   return NextResponse.json(driver);
 }
@@ -37,25 +39,23 @@ export async function PUT(request: Request, context: RouteContext) {
 
     return NextResponse.json(updated);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to update driver";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("[drivers] update failed:", error);
+    return apiError(getLocaleFromRequest(request), "validation", 400);
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   const { id } = await context.params;
   try {
     await prisma.driver.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {
-    const message =
-      error instanceof Error && error.message.includes("Foreign")
-        ? "Driver has route plans and cannot be deleted."
-        : "Driver not found";
-    return NextResponse.json(
-      { error: message },
-      { status: error instanceof Error && error.message.includes("Foreign") ? 409 : 404 }
+    const hasRoutePlans =
+      error instanceof Error && error.message.includes("Foreign");
+    return apiError(
+      getLocaleFromRequest(request),
+      hasRoutePlans ? "conflict" : "driverNotFound",
+      hasRoutePlans ? 409 : 404
     );
   }
 }

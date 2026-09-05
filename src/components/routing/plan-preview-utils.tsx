@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 import type { RouteWaypoint } from "@/lib/routing/waypoints";
 import type { RoutingPlanPreview } from "./plan-preview-client";
@@ -10,20 +12,28 @@ import { Warehouse } from "lucide-react";
 import { RouteMapView } from "./route-map-view";
 import { DtiBadge } from "@/components/dti-badge";
 import { CfiBadge } from "@/components/cfi-badge";
+import { useI18n } from "@/components/i18n/use-i18n";
+import type { TranslationParams } from "@/lib/i18n/t";
 
-export function formatMinutes(totalMin: number) {
+export function formatMinutes(
+  totalMin: number,
+  t: (key: string, params?: TranslationParams) => string
+) {
   if (!Number.isFinite(totalMin)) return "—";
   const hours = Math.floor(totalMin / 60);
   const minutes = Math.round(totalMin % 60);
-  if (hours <= 0) return `${minutes} min`;
-  return `${hours} h ${minutes} min`;
+  if (hours <= 0) return t("common.durationMinutes", { minutes });
+  return t("common.durationHoursMinutes", { hours, minutes });
 }
 
-function formatDateTime(iso: string | null | undefined) {
+function formatDateTime(
+  iso: string | null | undefined,
+  localeTag: string
+) {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("id-ID", {
+  return d.toLocaleString(localeTag, {
     hour12: false,
     year: "numeric",
     month: "short",
@@ -40,8 +50,14 @@ export function RouteWaypointRow({
   waypoint: RouteWaypoint;
   action?: ReactNode;
 }) {
+  const { t, locale } = useI18n();
+  const localeTag = locale === "id" ? "id-ID" : "en-US";
+
   if (waypoint.stopType === "warehouse") {
-    const roleLabel = waypoint.role === "departure" ? "Depart" : "Return";
+    const roleLabel =
+      waypoint.role === "departure"
+        ? t("routing.plan.depart")
+        : t("routing.plan.return");
     return (
       <div className="flex items-start justify-between gap-3 rounded-md border border-dashed bg-muted/30 p-3">
         <div className="min-w-0">
@@ -56,16 +72,25 @@ export function RouteWaypointRow({
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
             {waypoint.role === "departure"
-              ? `Depart: ${formatDateTime(waypoint.etaAt)}`
-              : `Return ETA: ${formatDateTime(waypoint.etaAt)}`}
+              ? t("routing.plan.departAt", {
+                  time: formatDateTime(waypoint.etaAt, localeTag),
+                })
+              : t("routing.plan.returnEta", {
+                  time: formatDateTime(waypoint.etaAt, localeTag),
+                })}
             {waypoint.role === "return" && waypoint.distanceKm > 0
-              ? ` · Leg: ${waypoint.distanceKm} km drive, ${formatMinutes(waypoint.durationMin)}`
+              ? t("routing.plan.legKm", {
+                  km: waypoint.distanceKm,
+                  duration: formatMinutes(waypoint.durationMin, t),
+                })
               : ""}
           </div>
         </div>
         {waypoint.role === "return" && waypoint.distanceKm > 0 && (
           <div className="text-right">
-            <Badge variant="outline">{waypoint.distanceKm} km</Badge>
+            <Badge variant="outline">
+              {t("common.kmValue", { value: waypoint.distanceKm })}
+            </Badge>
           </div>
         )}
       </div>
@@ -80,11 +105,20 @@ export function RouteWaypointRow({
           <span className="truncate text-sm">{waypoint.recipientAddress}</span>
         </div>
         <div className="mt-1 text-xs text-muted-foreground">
-          ETA: {formatDateTime(waypoint.etaAt)}
+          {t("routing.plan.eta", {
+            time: formatDateTime(waypoint.etaAt, localeTag),
+          })}
         </div>
         <div className="mt-1 text-xs text-muted-foreground">
-          Leg: {waypoint.distanceKm} km drive, {formatMinutes(waypoint.durationMin)}
-          {waypoint.serviceTimeMin ? ` + ${waypoint.serviceTimeMin} min service` : ""}
+          {t("routing.plan.leg", {
+            km: waypoint.distanceKm,
+            duration: formatMinutes(waypoint.durationMin, t),
+          })}
+          {waypoint.serviceTimeMin
+            ? t("routing.plan.serviceExtra", {
+                minutes: waypoint.serviceTimeMin,
+              })
+            : ""}
         </div>
         {(waypoint.dtiPending || waypoint.dtiScore != null || waypoint.cfiScore != null) && (
           <div className="mt-2 flex flex-wrap gap-2">
@@ -98,7 +132,9 @@ export function RouteWaypointRow({
         )}
       </div>
       <div className="flex flex-col items-end gap-2">
-        <Badge variant="outline">{waypoint.distanceKm} km</Badge>
+        <Badge variant="outline">
+          {t("common.kmValue", { value: waypoint.distanceKm })}
+        </Badge>
         {action}
       </div>
     </div>
@@ -110,6 +146,7 @@ export function OptimizedRoutePreview({
 }: {
   plan: RoutingPlanPreview;
 }) {
+  const { t, locale } = useI18n();
   const deliveryCount = plan.stops.length;
   const waypoints = plan.waypoints ?? [];
 
@@ -127,21 +164,27 @@ export function OptimizedRoutePreview({
               </p>
             )}
             <div className="text-sm text-muted-foreground">
-              {plan.driver.employeeId ?? "—"} · {plan.driver.phone ?? "No phone"}
+              {plan.driver.employeeId ?? "—"} · {plan.driver.phone ?? t("common.noPhone")}
             </div>
             <div className="text-xs text-muted-foreground">
-              License: {plan.driver.licenseNumber ?? "—"} · Status:{" "}
+              {t("routing.dashboard.licenseStatus", {
+                license: plan.driver.licenseNumber ?? "—",
+              })}{" "}
               <span className="capitalize">{plan.driver.status}</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <RiskBadge risk={plan.vehicle.riskLevel} vqi={plan.vehicle.vqi} />
             <Badge variant="secondary">
-              CO₂ ~ {plan.estimatedEmissionsKg} kg
+              {t("routing.plan.emissionsBadge", {
+                kg: plan.estimatedEmissionsKg,
+              })}
             </Badge>
             {plan.fuelCostIdr != null && (
               <Badge variant="secondary">
-                Fuel {formatCurrency(plan.fuelCostIdr)}
+                {t("routing.plan.fuelBadge", {
+                  amount: formatCurrency(plan.fuelCostIdr, locale),
+                })}
               </Badge>
             )}
             {plan.trafficSource && (
@@ -154,63 +197,93 @@ export function OptimizedRoutePreview({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="rounded-lg border p-3">
-          <div className="text-sm font-semibold">Assigned vehicle</div>
+          <div className="text-sm font-semibold">{t("routing.plan.assignedVehicle")}</div>
           <div className="mt-1 text-sm">{plan.vehicle.name}</div>
           <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
             <div>
-              Type: <span className="font-medium text-foreground capitalize">{plan.vehicle.vehicleType}</span>
+              {t("routing.plan.typeLabel")}{" "}
+              <span className="font-medium text-foreground capitalize">{plan.vehicle.vehicleType}</span>
             </div>
             <div>
-              Engine: <span className="font-medium text-foreground uppercase">{plan.vehicle.engineType}</span>
+              {t("routing.plan.engineLabel")}{" "}
+              <span className="font-medium text-foreground uppercase">{plan.vehicle.engineType}</span>
             </div>
             <div>
-              Odometer: <span className="font-medium text-foreground">{formatNumber(plan.vehicle.odometerKm)} km</span>
+              {t("routing.plan.odometerLabel")}{" "}
+              <span className="font-medium text-foreground">
+                {t("common.kmValue", {
+                  value: formatNumber(plan.vehicle.odometerKm, 0, locale),
+                })}
+              </span>
             </div>
             <div>
-              Age: <span className="font-medium text-foreground">{formatNumber(plan.vehicle.vehicleAgeYears, 1)} yr</span>
+              {t("routing.plan.ageLabel")}{" "}
+              <span className="font-medium text-foreground">
+                {formatNumber(plan.vehicle.vehicleAgeYears, 1, locale)}{" "}
+                {t("common.yearShort")}
+              </span>
             </div>
             <div>
-              Maint. cost: <span className="font-medium text-foreground">{formatCurrency(plan.vehicle.maintenanceCostUnit)}</span>
+              {t("routing.plan.maintCostLabel")}{" "}
+              <span className="font-medium text-foreground">
+                {formatCurrency(plan.vehicle.maintenanceCostUnit, locale)}
+              </span>
             </div>
             <div>
-              VQI: <span className="font-medium text-foreground">{plan.vehicle.vqi}/100</span>
+              {t("routing.plan.vqiLabel")}{" "}
+              <span className="font-medium text-foreground">{plan.vehicle.vqi}/100</span>
             </div>
           </div>
           {plan.vehicle.recommendedAction && (
             <p className="mt-2 text-xs text-muted-foreground">
-              Maintenance note: {plan.vehicle.recommendedAction}
+              {t("routing.plan.maintenanceNote", {
+                note: plan.vehicle.recommendedAction,
+              })}
             </p>
           )}
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-lg border p-3">
-            <div className="text-xs text-muted-foreground">Total distance</div>
-            <div className="mt-1 text-lg font-bold">{plan.totalDistanceKm} km</div>
-          </div>
-          <div className="rounded-lg border p-3">
-            <div className="text-xs text-muted-foreground">Estimated duration</div>
-            <div className="mt-1 text-lg font-bold">{formatMinutes(plan.totalDurationMin)}</div>
-            <div className="mt-1 text-xs text-muted-foreground">
-              Includes Jakarta traffic + ~{deliveryCount * 10} min stop service
+            <div className="text-xs text-muted-foreground">{t("routing.plan.totalDistance")}</div>
+            <div className="mt-1 text-lg font-bold">
+              {t("common.kmValue", { value: plan.totalDistanceKm })}
             </div>
           </div>
           <div className="rounded-lg border p-3">
-            <div className="text-xs text-muted-foreground">Trip fuel cost</div>
+            <div className="text-xs text-muted-foreground">
+              {t("routing.plan.estimatedDurationLabel")}
+            </div>
             <div className="mt-1 text-lg font-bold">
-              {plan.fuelCostIdr != null ? formatCurrency(plan.fuelCostIdr) : "—"}
+              {formatMinutes(plan.totalDurationMin, t)}
+            </div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {t("routing.plan.durationIncludes", {
+                minutes: deliveryCount * 10,
+              })}
+            </div>
+          </div>
+          <div className="rounded-lg border p-3">
+            <div className="text-xs text-muted-foreground">{t("routing.plan.tripFuelCost")}</div>
+            <div className="mt-1 text-lg font-bold">
+              {plan.fuelCostIdr != null
+                ? formatCurrency(plan.fuelCostIdr, locale)
+                : "—"}
             </div>
             {plan.fuelProductName && (
               <div className="mt-1 text-xs text-muted-foreground">
                 {plan.fuelProductName}
                 {plan.fuelCostSavingsIdr != null
-                  ? ` · save ${formatCurrency(plan.fuelCostSavingsIdr)} (${plan.fuelCostSavingsPercent ?? 0}%)`
+                  ? t("routing.plan.fuelSave", {
+                      amount: formatCurrency(plan.fuelCostSavingsIdr, locale),
+                      percent: plan.fuelCostSavingsPercent ?? 0,
+                    })
                   : ""}
               </div>
             )}
           </div>
           <div className="rounded-lg border p-3">
-            <div className="text-xs text-muted-foreground">Vehicle VQI</div>
+            <div className="text-xs text-muted-foreground">{t("routing.plan.vehicleVqi")}</div>
             <div className="mt-1 text-lg font-bold">{plan.vehicle.vqi}/100</div>
           </div>
         </div>
@@ -224,7 +297,7 @@ export function OptimizedRoutePreview({
         )}
 
         <div className="space-y-2">
-          <div className="text-sm font-semibold">Sorted waypoints</div>
+          <div className="text-sm font-semibold">{t("routing.plan.sortedWaypoints")}</div>
           <div className="space-y-2">
             {waypoints.length > 0
               ? waypoints.map((wp) => (

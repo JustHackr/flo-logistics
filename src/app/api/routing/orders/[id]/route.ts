@@ -3,17 +3,19 @@ import { prisma } from "@/lib/prisma";
 
 import { orderSchema } from "@/lib/schemas/order";
 import { isWithinJakartaBounds } from "@/lib/routing/jakarta";
+import { apiError } from "@/lib/i18n/api-errors";
+import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const order = await prisma.order.findUnique({
     where: { id },
   });
 
   if (!order) {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    return apiError(getLocaleFromRequest(request), "orderNotFound", 404);
   }
 
   return NextResponse.json(order);
@@ -26,10 +28,7 @@ export async function PUT(request: Request, context: RouteContext) {
     const parsed = orderSchema.parse(body);
 
     if (!isWithinJakartaBounds(parsed.lat, parsed.lng)) {
-      return NextResponse.json(
-        { error: "Address must be within Jakarta bounds (demo validation)." },
-        { status: 400 }
-      );
+      return apiError(getLocaleFromRequest(request), "validation", 400);
     }
 
     const updated = await prisma.order.update({
@@ -44,19 +43,18 @@ export async function PUT(request: Request, context: RouteContext) {
 
     return NextResponse.json(updated);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to update order";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("[orders] update failed:", error);
+    return apiError(getLocaleFromRequest(request), "validation", 400);
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   const { id } = await context.params;
   try {
     await prisma.order.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    return apiError(getLocaleFromRequest(request), "orderNotFound", 404);
   }
 }
 

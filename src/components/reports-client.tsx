@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
+import { enUS, id as idLocale } from "date-fns/locale";
 import {
   Bar,
   BarChart,
@@ -25,6 +26,7 @@ import {
 import { RiskBadge } from "@/components/risk-badge";
 import { formatCurrency, formatCurrencyShort, formatDate } from "@/lib/format";
 import type { VehicleWithAnalysis } from "@/lib/types";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 type ReportsClientProps = {
   generatedAt: string;
@@ -50,8 +52,10 @@ export function ReportsClient({
   vehicles,
   timeline,
 }: ReportsClientProps) {
+  const { t, locale } = useI18n();
   const [sortKey, setSortKey] = useState<SortKey>("vqi");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const dateFnsLoc = locale === "id" ? idLocale : enUS;
 
   const sorted = useMemo(() => {
     return [...vehicles].sort((a, b) => {
@@ -75,11 +79,11 @@ export function ReportsClient({
   }, [vehicles, sortKey, sortDir]);
 
   const timelineChart = timeline
-    .filter((t) => t.inWindow && t.date)
-    .map((t) => ({
-      name: t.name.length > 12 ? `${t.name.slice(0, 12)}…` : t.name,
-      cost: t.estimatedCost,
-      date: format(new Date(t.date!), "MMM d"),
+    .filter((tItem) => tItem.inWindow && tItem.date)
+    .map((tItem) => ({
+      name: tItem.name.length > 12 ? `${tItem.name.slice(0, 12)}…` : tItem.name,
+      cost: tItem.estimatedCost,
+      date: format(new Date(tItem.date!), "MMM d", { locale: dateFnsLoc }),
     }));
 
   function toggleSort(key: SortKey) {
@@ -128,43 +132,51 @@ export function ReportsClient({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
-            Predictive Maintenance Report
+            {t("fleet.reports.title")}
           </h2>
           <p className="text-muted-foreground">
-            Generated {format(new Date(generatedAt), "PPpp")}
+            {t("common.generatedAt", {
+              time: format(new Date(generatedAt), "PPpp", { locale: dateFnsLoc }),
+            })}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="mr-2 h-4 w-4" />
-            Print
+            {t("common.print")}
           </Button>
           <Button onClick={exportCsv}>
             <Download className="mr-2 h-4 w-4" />
-            Export CSV
+            {t("common.exportCsv")}
           </Button>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Upcoming Maintenance (Next 90 Days)</CardTitle>
+          <CardTitle>{t("fleet.reports.upcomingTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="h-72">
           {timelineChart.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No maintenance events scheduled in the next 90 days.
+              {t("fleet.reports.noUpcoming")}
             </p>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={timelineChart}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
-                <YAxis tickFormatter={(value) => formatCurrencyShort(Number(value))} width={80} />
-                <Tooltip
-                  formatter={(value) => [formatCurrency(Number(value)), "Est. cost"]}
+                <YAxis
+                  tickFormatter={(value) => formatCurrencyShort(Number(value), locale)}
+                  width={80}
                 />
-                <Bar dataKey="cost" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Tooltip
+                  formatter={(value) => [
+                    formatCurrency(Number(value), locale),
+                    t("fleet.reports.estCost"),
+                  ]}
+                />
+                <Bar dataKey="cost" fill="var(--primary)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -173,7 +185,7 @@ export function ReportsClient({
 
       <Card>
         <CardHeader>
-          <CardTitle>Fleet Maintenance Forecast</CardTitle>
+          <CardTitle>{t("fleet.reports.forecastTitle")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -181,7 +193,8 @@ export function ReportsClient({
               <TableRow>
                 <TableHead>
                   <button type="button" onClick={() => toggleSort("name")}>
-                    Vehicle {sortKey === "name" && (sortDir === "asc" ? "↑" : "↓")}
+                    {t("common.vehicle")}{" "}
+                    {sortKey === "name" && (sortDir === "asc" ? "↑" : "↓")}
                   </button>
                 </TableHead>
                 <TableHead>
@@ -191,7 +204,8 @@ export function ReportsClient({
                 </TableHead>
                 <TableHead>
                   <button type="button" onClick={() => toggleSort("riskLevel")}>
-                    Risk {sortKey === "riskLevel" && (sortDir === "asc" ? "↑" : "↓")}
+                    {t("common.risk")}{" "}
+                    {sortKey === "riskLevel" && (sortDir === "asc" ? "↑" : "↓")}
                   </button>
                 </TableHead>
                 <TableHead>
@@ -199,18 +213,18 @@ export function ReportsClient({
                     type="button"
                     onClick={() => toggleSort("predictedNextMaintenance")}
                   >
-                    Predicted Next{" "}
+                    {t("fleet.reports.predictedNext")}{" "}
                     {sortKey === "predictedNextMaintenance" &&
                       (sortDir === "asc" ? "↑" : "↓")}
                   </button>
                 </TableHead>
                 <TableHead>
                   <button type="button" onClick={() => toggleSort("estimatedCost")}>
-                    Est. Cost (Rp){" "}
+                    {t("fleet.reports.estCostRp")}{" "}
                     {sortKey === "estimatedCost" && (sortDir === "asc" ? "↑" : "↓")}
                   </button>
                 </TableHead>
-                <TableHead>Recommended Action</TableHead>
+                <TableHead>{t("fleet.reports.recommendedAction")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -221,8 +235,8 @@ export function ReportsClient({
                   <TableCell>
                     <RiskBadge risk={v.riskLevel} />
                   </TableCell>
-                  <TableCell>{formatDate(v.predictedNextMaintenance)}</TableCell>
-                  <TableCell>{formatCurrency(v.estimatedCost)}</TableCell>
+                  <TableCell>{formatDate(v.predictedNextMaintenance, locale)}</TableCell>
+                  <TableCell>{formatCurrency(v.estimatedCost, locale)}</TableCell>
                   <TableCell className="max-w-md text-sm text-muted-foreground">
                     {v.recommendedAction}
                   </TableCell>

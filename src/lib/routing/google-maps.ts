@@ -1,7 +1,12 @@
 import type { LatLng } from "./geo";
 import { toTrafficDepartureTime } from "./traffic";
+import type { Locale } from "@/lib/i18n/config";
 
 export type GoogleMapsProvider = "routes" | "distance_matrix";
+
+function mapsLanguageCode(locale?: Locale) {
+  return locale === "en" ? "en" : "id";
+}
 
 export interface GoogleRouteLeg {
   distanceKm: number;
@@ -31,13 +36,9 @@ function parseGoogleDurationSeconds(duration: string | undefined): number | null
   return Number(match[1]);
 }
 
-/** Primary key — used for Routes API calls. Falls back to the public key in dev. */
+/** Primary key — used for Routes API calls (server-side only). */
 export function getGoogleMapsApiKey() {
-  return (
-    process.env.GOOGLE_MAPS_API_KEY?.trim() ||
-    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ||
-    null
-  );
+  return process.env.GOOGLE_MAPS_API_KEY?.trim() || null;
 }
 
 /** Fallback/dedicated key — used for Distance Matrix API calls.
@@ -52,6 +53,23 @@ export function getGoogleDistanceMatrixApiKey() {
 
 export function isGoogleMapsConfigured() {
   return Boolean(getGoogleMapsApiKey() || getGoogleDistanceMatrixApiKey());
+}
+
+/**
+ * Key for Maps JavaScript API (interactive map). Served to the browser only
+ * via /api/routing/maps/js-config — never via NEXT_PUBLIC_ bundle injection.
+ * Prefer a referrer-restricted key in GOOGLE_MAPS_JS_API_KEY.
+ */
+export function getMapsJsApiKey() {
+  return (
+    process.env.GOOGLE_MAPS_JS_API_KEY?.trim() ||
+    process.env.GOOGLE_MAPS_API_KEY?.trim() ||
+    null
+  );
+}
+
+export function isMapsJsConfigured() {
+  return Boolean(getMapsJsApiKey());
 }
 
 function toIsoDepartureTime(departTime: Date) {
@@ -73,7 +91,8 @@ async function readGoogleError(res: Response) {
 export async function computeRouteWithGoogleRoutes(
   a: LatLng,
   b: LatLng,
-  departTime: Date
+  departTime: Date,
+  locale?: Locale
 ): Promise<GoogleRouteLeg | null> {
   const routesApiKey = getGoogleMapsApiKey();
   if (!routesApiKey) return null;
@@ -98,7 +117,7 @@ export async function computeRouteWithGoogleRoutes(
         routingPreference: "TRAFFIC_AWARE_OPTIMAL",
         departureTime: toIsoDepartureTime(departTime),
         computeAlternativeRoutes: false,
-        languageCode: "id",
+        languageCode: mapsLanguageCode(locale),
         regionCode: "ID",
       }),
       signal: AbortSignal.timeout(15_000),
@@ -133,7 +152,8 @@ export async function computeRouteWithGoogleRoutes(
 export async function computeRouteWithGoogleDistanceMatrix(
   a: LatLng,
   b: LatLng,
-  departTime: Date
+  departTime: Date,
+  locale?: Locale
 ): Promise<GoogleRouteLeg | null> {
   const dmApiKey = getGoogleDistanceMatrixApiKey();
   if (!dmApiKey) return null;
@@ -149,7 +169,7 @@ export async function computeRouteWithGoogleDistanceMatrix(
     departure_time: departureUnix.toString(),
     traffic_model: "best_guess",
     region: "id",
-    language: "id",
+    language: mapsLanguageCode(locale),
     key: dmApiKey,
   });
 
@@ -196,17 +216,28 @@ export async function computeRouteWithGoogleDistanceMatrix(
 export async function computeGoogleRouteLeg(
   a: LatLng,
   b: LatLng,
-  departTime: Date
+  departTime: Date,
+  locale?: Locale
 ): Promise<GoogleRouteLeg | null> {
   try {
-    const fromRoutes = await computeRouteWithGoogleRoutes(a, b, departTime);
+    const fromRoutes = await computeRouteWithGoogleRoutes(
+      a,
+      b,
+      departTime,
+      locale
+    );
     if (fromRoutes) return fromRoutes;
   } catch (error) {
     console.warn("[google-maps] Routes API failed:", error);
   }
 
   try {
-    return await computeRouteWithGoogleDistanceMatrix(a, b, departTime);
+    return await computeRouteWithGoogleDistanceMatrix(
+      a,
+      b,
+      departTime,
+      locale
+    );
   } catch (error) {
     console.warn("[google-maps] Distance Matrix API failed:", error);
     return null;
@@ -215,7 +246,8 @@ export async function computeGoogleRouteLeg(
 
 export async function prewarmGoogleRouteMatrix(
   points: LatLng[],
-  departTime: Date
+  departTime: Date,
+  locale?: Locale
 ): Promise<Map<string, GoogleRouteLeg>> {
   const cache = new Map<string, GoogleRouteLeg>();
   const routesApiKey = getGoogleMapsApiKey();
@@ -245,7 +277,7 @@ export async function prewarmGoogleRouteMatrix(
           travelMode: "DRIVE",
           routingPreference: "TRAFFIC_AWARE_OPTIMAL",
           departureTime: departureIso,
-          languageCode: "id",
+          languageCode: mapsLanguageCode(locale),
           regionCode: "ID",
         }),
         signal: AbortSignal.timeout(25_000),
@@ -294,22 +326,20 @@ export async function prewarmGoogleRouteMatrix(
   return cache;
 }
 
-/** Browser-safe key for Maps JavaScript API (falls back to server key name in docs). */
+/** @deprecated Use isMapsJsConfigured — kept for older imports. */
 export function getPublicGoogleMapsApiKey() {
-  return (
-    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ||
-    process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY?.trim() ||
-    null
-  );
+  return getMapsJsApiKey();
 }
 
+/** @deprecated Use isMapsJsConfigured. */
 export function isPublicGoogleMapsConfigured() {
-  return Boolean(getPublicGoogleMapsApiKey());
+  return isMapsJsConfigured();
 }
 
 export async function computeRoutePolyline(
   points: LatLng[],
-  departTime: Date
+  departTime: Date,
+  locale?: Locale
 ): Promise<string | null> {
   const routesApiKey = getGoogleMapsApiKey();
   if (!routesApiKey || points.length < 2) return null;
@@ -344,7 +374,7 @@ export async function computeRoutePolyline(
           routingPreference: "TRAFFIC_AWARE_OPTIMAL",
           departureTime: toIsoDepartureTime(departTime),
           computeAlternativeRoutes: false,
-          languageCode: "id",
+          languageCode: mapsLanguageCode(locale),
           regionCode: "ID",
         }),
         signal: AbortSignal.timeout(20_000),
@@ -393,7 +423,7 @@ export async function getGoogleMapsStatus(): Promise<GoogleMapsStatus> {
         provider: null,
         hasTraffic: false,
         message:
-          "API keys are set but Google Maps returned no route. Enable Routes API and Distance Matrix API, and ensure billing is active.",
+          "Google Maps is configured but returned no route. Enable Routes API and Distance Matrix API, then try again.",
       };
     }
 

@@ -1,10 +1,5 @@
-import { ComingSoonPage } from "@/components/coming-soon-page";
+import { HubCongestionClient } from "@/components/computer-vision/hub-congestion-client";
 
 export default function HubCongestionDetectionPage() {
-  return (
-    <ComingSoonPage
-      title="Hub Congestion Detection"
-      description="Real-time hub congestion monitoring and alerts from camera feeds."
-    />
-  );
+  return <HubCongestionClient />;
 }

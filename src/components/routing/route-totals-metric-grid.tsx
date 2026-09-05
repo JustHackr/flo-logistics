@@ -14,6 +14,7 @@ import {
   buildRouteEmissionsHelp,
   buildRouteFuelCostHelp,
 } from "@/lib/routing/route-metric-help";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 function RouteMetricBox({
   label,
@@ -56,38 +57,40 @@ function RouteMetricBox({
 }
 
 export function RouteTotalsMetricGrid({ route }: { route: ActiveRouteSummary }) {
+  const { t, locale } = useI18n();
   const hours = Math.floor(route.totals.totalDurationMin / 60);
   const minutes = Math.round(route.totals.totalDurationMin % 60);
 
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <RouteMetricBox
-        label="Distance"
+        label={t("routing.metrics.distance")}
         value={`${route.totals.totalDistanceKm} km`}
         helpText={buildRouteDistanceHelp(route)}
       />
       <RouteMetricBox
-        label="Duration"
+        label={t("routing.metrics.duration")}
         value={
           <>
-            {hours} h {minutes} min
+            {t("common.durationHoursMinutes", { hours, minutes })}
           </>
         }
         helpText={buildRouteDurationHelp(route)}
       />
       <RouteMetricBox
-        label="Emissions"
+        label={t("routing.metrics.emissions")}
         value={`${route.totals.estimatedEmissionsKg} kg CO₂e`}
         helpText={buildRouteEmissionsHelp(route)}
       />
       <RouteMetricBox
-        label="Fuel cost"
-        value={formatCurrency(route.totals.fuelCostIdr)}
+        label={t("routing.metrics.fuelCost")}
+        value={formatCurrency(route.totals.fuelCostIdr, locale)}
         subtext={
           <>
-            {route.totals.fuelProductName} · save{" "}
-            {formatCurrencyShort(route.totals.fuelCostSavingsIdr)} (
-            {route.totals.fuelCostSavingsPercent}%)
+            {route.totals.fuelProductName} · {t("routing.metrics.savings", {
+              amount: formatCurrencyShort(route.totals.fuelCostSavingsIdr, locale),
+              percent: route.totals.fuelCostSavingsPercent,
+            })}
           </>
         }
         helpText={buildRouteFuelCostHelp(route)}

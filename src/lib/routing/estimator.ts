@@ -96,7 +96,7 @@ export async function estimateLegWithOsrm(
   }
 }
 
-/** Batch OSRM Table API: one origin → many destinations in a single free request. */
+/** Batch OSRM Table API: one origin → many destinations in a single request. */
 export async function estimateManyLegsWithOsrmTable(
   origin: LatLng,
   destinations: LatLng[],

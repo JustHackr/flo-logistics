@@ -1,4 +1,7 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
+import { useI18n } from "@/components/i18n/use-i18n";
 import { DTI_THRESHOLDS } from "@/lib/routing/dti";
 import type { RiskLevel } from "@/lib/vqi";
 
@@ -17,12 +20,19 @@ export function DtiBadge({
   risk?: RiskLevel;
   pending?: boolean;
 }) {
+  const { t } = useI18n();
+
   if (pending) {
-    return <Badge variant="outline">DTI pending</Badge>;
+    return <Badge variant="outline">{t("status.dtiPending")}</Badge>;
   }
+
+  const riskLevel = risk ?? "medium";
   return (
-    <Badge variant={getDtiBadgeVariant(risk ?? "medium")}>
-      DTI {score} · {risk}
+    <Badge variant={getDtiBadgeVariant(riskLevel)}>
+      {t("status.dtiWithRisk", {
+        score: score ?? "—",
+        risk: t(`status.risk.${riskLevel}`),
+      })}
     </Badge>
   );
 }

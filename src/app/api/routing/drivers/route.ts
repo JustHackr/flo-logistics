@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { driverSchema } from "@/lib/schemas/driver";
+import { apiError } from "@/lib/i18n/api-errors";
+import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
 
 export async function GET() {
   const drivers = await prisma.driver.findMany({
@@ -29,9 +31,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to create driver";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("[drivers] create failed:", error);
+    return apiError(getLocaleFromRequest(request), "validation", 400);
   }
 }
 

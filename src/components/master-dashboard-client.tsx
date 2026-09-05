@@ -19,19 +19,40 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { RiskBadge } from "@/components/risk-badge";
+import { WelcomeTutorial } from "@/components/welcome-tutorial";
 import { LogisticsChartsPanel } from "@/components/routing/logistics-charts";
+import { CvSessionReportsPanel } from "@/components/computer-vision/cv-session-reports-panel";
+import { useI18n } from "@/components/i18n/use-i18n";
 import { formatCurrencyShort, formatDate } from "@/lib/format";
 import { DTI_PENALTY_PER_MIN } from "@/lib/routing/dti";
 import { RISK_THRESHOLDS } from "@/lib/vqi";
 import { cn } from "@/lib/utils";
 import type { MasterOverview } from "@/lib/master-overview";
+import type { TranslationParams } from "@/lib/i18n/t";
 
-const PIPELINE_LABELS: Record<string, string> = {
-  RECEIVED: "Received",
-  PREPARING: "Preparing",
-  ON_ROUTE: "On route",
-  DELIVERED: "Delivered",
-};
+type Translate = (key: string, params?: TranslationParams) => string;
+
+const PIPELINE_KEYS = [
+  "RECEIVED",
+  "PREPARING",
+  "ON_ROUTE",
+  "DELIVERED",
+] as const;
+
+function pipelineLabelKey(
+  key: (typeof PIPELINE_KEYS)[number]
+): string {
+  switch (key) {
+    case "RECEIVED":
+      return "home.pipeline.received";
+    case "PREPARING":
+      return "home.pipeline.preparing";
+    case "ON_ROUTE":
+      return "home.pipeline.onRoute";
+    case "DELIVERED":
+      return "home.pipeline.delivered";
+  }
+}
 
 function formatDateTime(iso: string | null) {
   if (!iso) return "—";
@@ -46,12 +67,12 @@ function formatDateTime(iso: string | null) {
   });
 }
 
-function formatDuration(totalMin: number) {
+function formatDuration(t: Translate, totalMin: number) {
   if (!Number.isFinite(totalMin)) return "—";
   const hours = Math.floor(totalMin / 60);
   const minutes = Math.round(totalMin % 60);
-  if (hours <= 0) return `${minutes} min`;
-  return `${hours} h ${minutes} min`;
+  if (hours <= 0) return t("common.durationMinutes", { minutes });
+  return t("common.durationHoursMinutes", { hours, minutes });
 }
 
 function MetricCard({
@@ -114,56 +135,41 @@ function MetricCard({
   );
 }
 
-const METRIC_HELP = {
-  activeRoutes:
-    "Count of route plans with status IN_PROGRESS — routes currently being executed by drivers.",
-  totalRoutes:
-    "Total route plans in the system: PLANNED + IN_PROGRESS + COMPLETED.",
-  deliveryProgress:
-    "Delivered stops ÷ total stops across all active routes × 100. A stop counts as delivered when its order status is DELIVERED.",
-  ordersOnRoute:
-    "Orders with status ON_ROUTE — assigned to a route, departed, and not yet delivered.",
-  totalOrders: "Sum of orders across all pipeline stages (Received through Delivered).",
-  activeDistance:
-    "Σ totalDistanceKm for IN_PROGRESS routes. Distance comes from optimized nearest-neighbor TSP legs (warehouse → stops → warehouse).",
-  activeDuration:
-    "Σ totalDurationMin for IN_PROGRESS routes. Includes drive time (OSRM/Google + Jakarta traffic model) plus per-stop service time.",
-  activeEmissions:
-    "Σ estimatedEmissionsKg for IN_PROGRESS routes. CO₂e ≈ distance × engine factor (EV 0.05, gasoline 0.15, diesel 0.22 kg/km).",
-  avgDti: `Mean Delivery Trip Index across delivered orders with complete timestamps. DTI = 100 − min(100, max(0, slackMin) × ${DTI_PENALTY_PER_MIN}) where slack = actualLead − plannedLead (receivedAt → deliveredAt vs planned ETA).`,
-  avgCfi:
-    "Mean Carbon Footprint Index across active and completed routes. CFI = 100 × (dieselKg − actualKg) ÷ (dieselKg − evKg) on the same distance. 100 = EV-equivalent, 0 = diesel.",
-  activeDrivers: "Number of drivers in the roster (each linked to one fleet vehicle).",
-  tripFuelCost:
-    "Σ trip fuel cost for IN_PROGRESS routes. ICE: (distance ÷ km/L) × Pertamina price; EV: distance × kWh/km × PLN rate. Product matched by vehicle type + engine.",
-  fuelSavings:
-    "Σ fuel savings vs naive baseline for IN_PROGRESS routes. Baseline = separate warehouse round-trip per stop (2 × distance × 1.35). Savings = baseline cost − optimized route cost.",
-  pipelineReceived: "Orders with status RECEIVED — accepted, awaiting warehouse prep.",
-  pipelinePreparing: "Orders with status PREPARING — being packed at the warehouse.",
-  pipelineOnRoute:
-    "Orders with status ON_ROUTE — assigned to a route and en route to the recipient.",
-  pipelineDelivered: "Orders with status DELIVERED — confirmed handover to recipient.",
-  totalVehicles: "Total vehicles registered in the fleet database.",
-  avgVqi:
-    "Mean Vehicle Quality Index. VQI = 100 − (age + odometer + cost + planning penalties). Higher is healthier; max penalty per factor is capped at 30/30/20/20 pts.",
-  highRisk: `Vehicles with VQI below ${RISK_THRESHOLDS.highBelow} — prioritize maintenance or replacement.`,
-  mediumRisk: `Vehicles with VQI ${RISK_THRESHOLDS.highBelow}–${RISK_THRESHOLDS.lowAbove} — schedule inspection soon.`,
-  lowRisk: `Vehicles with VQI above ${RISK_THRESHOLDS.lowAbove} — within acceptable health range.`,
-  upcomingMaintenance:
-    "Sum of estimated next-service costs for vehicles with predicted maintenance within the next 90 days.",
-  fleetMaintenanceBudget:
-    "Sum of maintenanceCostUnit across all vehicles — total recorded maintenance spend per fleet unit.",
-} as const;
-
-const PIPELINE_HELP: Record<
-  "RECEIVED" | "PREPARING" | "ON_ROUTE" | "DELIVERED",
-  string
-> = {
-  RECEIVED: METRIC_HELP.pipelineReceived,
-  PREPARING: METRIC_HELP.pipelinePreparing,
-  ON_ROUTE: METRIC_HELP.pipelineOnRoute,
-  DELIVERED: METRIC_HELP.pipelineDelivered,
-};
+function getMetricHelp(t: Translate) {
+  return {
+    activeRoutes: t("home.metricHelp.activeRoutes"),
+    totalRoutes: t("home.metricHelp.totalRoutes"),
+    deliveryProgress: t("home.metricHelp.deliveryProgress"),
+    ordersOnRoute: t("home.metricHelp.ordersOnRoute"),
+    totalOrders: t("home.metricHelp.totalOrders"),
+    activeDistance: t("home.metricHelp.activeDistance"),
+    activeDuration: t("home.metricHelp.activeDuration"),
+    activeEmissions: t("home.metricHelp.activeEmissions"),
+    avgDti: t("home.metricHelp.avgDti", { penalty: DTI_PENALTY_PER_MIN }),
+    avgCfi: t("home.metricHelp.avgCfi"),
+    activeDrivers: t("home.metricHelp.activeDrivers"),
+    tripFuelCost: t("home.metricHelp.tripFuelCost"),
+    fuelSavings: t("home.metricHelp.fuelSavings"),
+    pipelineReceived: t("home.metricHelp.pipelineReceived"),
+    pipelinePreparing: t("home.metricHelp.pipelinePreparing"),
+    pipelineOnRoute: t("home.metricHelp.pipelineOnRoute"),
+    pipelineDelivered: t("home.metricHelp.pipelineDelivered"),
+    totalVehicles: t("home.metricHelp.totalVehicles"),
+    avgVqi: t("home.metricHelp.avgVqi"),
+    highRisk: t("home.metricHelp.highRisk", {
+      threshold: RISK_THRESHOLDS.highBelow,
+    }),
+    mediumRisk: t("home.metricHelp.mediumRisk", {
+      highBelow: RISK_THRESHOLDS.highBelow,
+      lowAbove: RISK_THRESHOLDS.lowAbove,
+    }),
+    lowRisk: t("home.metricHelp.lowRisk", {
+      threshold: RISK_THRESHOLDS.lowAbove,
+    }),
+    upcomingMaintenance: t("home.metricHelp.upcomingMaintenance"),
+    fleetMaintenanceBudget: t("home.metricHelp.fleetMaintenanceBudget"),
+  } as const;
+}
 
 function SectionHeader({
   title,
@@ -192,297 +198,125 @@ function SectionHeader({
 }
 
 export function MasterDashboardClient({ data }: { data: MasterOverview }) {
+  const { t } = useI18n();
+  const metricHelp = getMetricHelp(t);
+
+  const pipelineHelp = {
+    RECEIVED: metricHelp.pipelineReceived,
+    PREPARING: metricHelp.pipelinePreparing,
+    ON_ROUTE: metricHelp.pipelineOnRoute,
+    DELIVERED: metricHelp.pipelineDelivered,
+  } as const;
+
   const pipelineChartData = Object.entries(data.pipeline).map(([key, count]) => ({
-    stage: PIPELINE_LABELS[key] ?? key,
+    stage: PIPELINE_KEYS.includes(key as (typeof PIPELINE_KEYS)[number])
+      ? t(pipelineLabelKey(key as (typeof PIPELINE_KEYS)[number]))
+      : key,
     count,
   }));
 
   const hasRoutes = data.routeCounts.total > 0;
   const hasOrders = data.totalOrders > 0;
+  const isEmpty = !hasOrders && !hasRoutes;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Overview</h2>
-        <p className="text-muted-foreground">
-          High-level visibility across logistics operations, fleet health, and
-          delivery performance.
-        </p>
+    <div className="space-y-10">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1.5">
+          <h2 className="text-2xl font-semibold tracking-tight">
+            {t("home.title")}
+          </h2>
+          <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+            {t("home.subtitle")}
+          </p>
+        </div>
+        <WelcomeTutorial />
       </div>
 
-      <section className="space-y-4">
-        <SectionHeader
-          title="Logistics Operations"
-          description="Routing, delivery progress, and environmental impact."
-          href="/routing/dashboard"
-          linkLabel="Logistics dashboard"
-        />
-        <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 [&>*]:h-full">
-          <MetricCard
-            title="Active Routes"
-            value={data.operations.inProgressRoutes}
-            detail={`${data.routeCounts.planned} planned · ${data.routeCounts.completed} completed`}
-            helpText={METRIC_HELP.activeRoutes}
-          />
-          <MetricCard
-            title="Total Routes"
-            value={data.routeCounts.total}
-            detail="All route plans"
-            helpText={METRIC_HELP.totalRoutes}
-          />
-          <MetricCard
-            title="Delivery Progress"
-            value={`${data.operations.deliveryProgressPercent}%`}
-            detail={`${data.operations.deliveredStops}/${data.operations.totalDeliveryStops} stops`}
-            helpText={METRIC_HELP.deliveryProgress}
-          />
-          <MetricCard
-            title="Orders On Route"
-            value={data.operations.ordersOnRoute}
-            detail="ON_ROUTE status"
-            helpText={METRIC_HELP.ordersOnRoute}
-          />
-          <MetricCard
-            title="Total Orders"
-            value={data.totalOrders}
-            detail="All pipeline stages"
-            helpText={METRIC_HELP.totalOrders}
-          />
-          <MetricCard
-            title="Active Distance"
-            value={`${data.operations.totalDistanceKm} km`}
-            detail="In-progress routes"
-            helpText={METRIC_HELP.activeDistance}
-          />
-          <MetricCard
-            title="Active Duration"
-            value={formatDuration(data.operations.totalDurationMin)}
-            detail="Estimated drive time"
-            helpText={METRIC_HELP.activeDuration}
-          />
-          <MetricCard
-            title="Active Emissions"
-            value={`${data.operations.totalEmissionsKg} kg`}
-            detail="CO₂e estimated"
-            helpText={METRIC_HELP.activeEmissions}
-          />
-          <MetricCard
-            title="Avg DTI"
-            value={data.operations.avgDti ?? "—"}
-            detail={`${data.operations.deliveredOrdersWithDti} scored deliveries`}
-            helpText={METRIC_HELP.avgDti}
-          />
-          <MetricCard
-            title="Avg CFI"
-            value={data.operations.avgCfi ?? "—"}
-            detail="100 = EV-equivalent"
-            helpText={METRIC_HELP.avgCfi}
-          />
-          <MetricCard
-            title="Active Drivers"
-            value={data.driverCount}
-            detail="Assigned couriers"
-            helpText={METRIC_HELP.activeDrivers}
-          />
-          <MetricCard
-            title="Trip Fuel Cost"
-            value={formatCurrencyShort(data.operations.totalFuelCostIdr)}
-            detail={
-              data.fuelPrices
-                ? `Pertamina ${data.fuelPrices.region}`
-                : "Active routes"
-            }
-            helpText={METRIC_HELP.tripFuelCost}
-          />
-          <MetricCard
-            title="Fuel Savings"
-            value={formatCurrencyShort(data.operations.totalFuelCostSavingsIdr)}
-            detail={`${data.operations.totalFuelCostSavingsPercent}% vs naive round trips`}
-            helpText={METRIC_HELP.fuelSavings}
-          />
-        </div>
-        {data.fuelPrices && (
-          <p className="text-xs text-muted-foreground">
-            Fuel prices fetched {formatDateTime(data.fuelPrices.fetchedAt)}
-            {data.fuelPrices.effectiveLabel
-              ? ` · effective ${data.fuelPrices.effectiveLabel}`
-              : ""}
-            {" · "}
-            <Link href="/system/gas-price" className="font-medium underline">
-              View gas price list
-            </Link>
+      {isEmpty && (
+        <div className="rounded-xl border border-dashed border-primary/20 bg-primary/[0.03] px-5 py-6">
+          <p className="text-sm font-medium text-foreground">
+            {t("home.empty.title")}
           </p>
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <SectionHeader
-          title="Order Pipeline"
-          description="Orders by fulfillment stage."
-          href="/routing/orders"
-          linkLabel="View orders"
-        />
-        <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-4 [&>*]:h-full">
-          {(
-            [
-              ["RECEIVED", "Received"],
-              ["PREPARING", "Preparing"],
-              ["ON_ROUTE", "On route"],
-              ["DELIVERED", "Delivered"],
-            ] as const
-          ).map(([key, label]) => (
-            <MetricCard
-              key={key}
-              title={label}
-              value={data.pipeline[key] ?? 0}
-              helpText={PIPELINE_HELP[key]}
-            />
-          ))}
+          <p className="mt-1 max-w-lg text-sm text-muted-foreground">
+            {t("home.empty.description")}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button size="sm" render={<Link href="/routing/orders" />}>
+              {t("home.empty.importOrders")}
+            </Button>
+            <Button size="sm" variant="outline" render={<Link href="/routing/plan" />}>
+              {t("home.empty.planRoute")}
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              render={<Link href="/admin/mockup-data" />}
+            >
+              {t("home.empty.loadSample")}
+            </Button>
+          </div>
         </div>
-      </section>
-
-      <section className="space-y-4">
-        <SectionHeader
-          title="Fleet Health"
-          description="Predictive maintenance and vehicle quality."
-          href="/dashboard"
-          linkLabel="Maintenance dashboard"
-        />
-        <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 [&>*]:h-full">
-          <MetricCard
-            title="Total Vehicles"
-            value={data.fleetHealth.totalVehicles}
-            detail="Entire fleet"
-            helpText={METRIC_HELP.totalVehicles}
-          />
-          <MetricCard
-            title="Avg Fleet VQI"
-            value={data.fleetHealth.avgVqi}
-            detail="Vehicle quality index"
-            helpText={METRIC_HELP.avgVqi}
-          />
-          <MetricCard
-            title="High Risk"
-            value={data.fleetHealth.highRiskCount}
-            detail="VQI below 40"
-            helpText={METRIC_HELP.highRisk}
-          />
-          <MetricCard
-            title="Medium Risk"
-            value={data.fleetHealth.mediumRiskCount}
-            detail="VQI 40–70"
-            helpText={METRIC_HELP.mediumRisk}
-          />
-          <MetricCard
-            title="Low Risk"
-            value={data.fleetHealth.lowRiskCount}
-            detail="VQI above 70"
-            helpText={METRIC_HELP.lowRisk}
-          />
-          <MetricCard
-            title="90-Day Maint. Cost"
-            value={formatCurrencyShort(data.fleetHealth.upcomingMaintenanceCost)}
-            detail={`${data.fleetHealth.upcomingMaintenanceCount} vehicles due`}
-            helpText={METRIC_HELP.upcomingMaintenance}
-          />
-          <MetricCard
-            title="Fleet Maint. Budget"
-            value={formatCurrencyShort(data.fleetHealth.totalMaintenanceCost)}
-            detail="Sum of unit costs"
-            helpText={METRIC_HELP.fleetMaintenanceBudget}
-          />
-        </div>
-      </section>
-
-      {!hasOrders && !hasRoutes && (
-        <Card>
-          <CardContent className="py-6">
-            <p className="text-sm text-muted-foreground">
-              No routing data yet. Import orders from{" "}
-              <Link href="/routing/orders" className="font-medium text-foreground underline">
-                Routing Orders
-              </Link>{" "}
-              or generate sample data from{" "}
-              <Link href="/admin/mockup-data" className="font-medium text-foreground underline">
-                Mockup Data
-              </Link>
-              .
-            </p>
-          </CardContent>
-        </Card>
       )}
 
       <section className="space-y-4">
         <SectionHeader
-          title="Operations Charts"
-          description="Pipeline, routes, DTI, CFI, emissions, and driver VQI."
-          href="/routing/reports"
-          linkLabel="Full reports"
+          title={t("home.sections.atAGlance.title")}
+          description={t("home.sections.atAGlance.description")}
         />
-        <LogisticsChartsPanel charts={data.charts} compact />
-      </section>
-
-      <section className="space-y-4">
-        <SectionHeader
-          title="Fleet Charts"
-          description="VQI distribution across the fleet."
-          href="/reports"
-          linkLabel="Maintenance reports"
-        />
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">VQI Distribution</CardTitle>
-            </CardHeader>
-            <CardContent className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={data.fleetHealth.vqiDistribution}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="range" />
-                  <YAxis allowDecimals={false} />
-                  <RechartsTooltip />
-                  <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Order Pipeline</CardTitle>
-            </CardHeader>
-            <CardContent className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={pipelineChartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="stage" />
-                  <YAxis allowDecimals={false} />
-                  <RechartsTooltip />
-                  <Bar dataKey="count" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+        <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 xl:grid-cols-4 [&>*]:h-full">
+          <MetricCard
+            title={t("home.metrics.activeRoutes")}
+            value={data.operations.inProgressRoutes}
+            detail={t("home.metrics.activeRoutesDetail", {
+              planned: data.routeCounts.planned,
+              completed: data.routeCounts.completed,
+            })}
+            helpText={metricHelp.activeRoutes}
+          />
+          <MetricCard
+            title={t("home.metrics.deliveryProgress")}
+            value={`${data.operations.deliveryProgressPercent}%`}
+            detail={t("home.metrics.deliveryProgressDetail", {
+              delivered: data.operations.deliveredStops,
+              total: data.operations.totalDeliveryStops,
+            })}
+            helpText={metricHelp.deliveryProgress}
+          />
+          <MetricCard
+            title={t("home.metrics.highRiskVehicles")}
+            value={data.fleetHealth.highRiskCount}
+            detail={t("home.metrics.highRiskDetail")}
+            helpText={metricHelp.highRisk}
+          />
+          <MetricCard
+            title={t("home.metrics.avgFleetVqi")}
+            value={data.fleetHealth.avgVqi}
+            detail={t("home.metrics.avgFleetVqiDetail")}
+            helpText={metricHelp.avgVqi}
+          />
         </div>
       </section>
 
       <section className="space-y-4">
         <SectionHeader
-          title="Needs Attention"
-          description="Active routes and vehicles requiring follow-up."
+          title={t("home.sections.needsAttention.title")}
+          description={t("home.sections.needsAttention.description")}
         />
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Active Routes</CardTitle>
+              <CardTitle className="text-base">
+                {t("home.attention.activeRoutes")}
+              </CardTitle>
               <Button variant="outline" size="sm" render={<Link href="/routing/dashboard" />}>
-                View all
+                {t("common.viewAll")}
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
               {data.attentionRoutes.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No active or planned routes. Optimize orders to create a route plan.
+                  {t("home.attention.emptyRoutes")}
                 </p>
               ) : (
                 data.attentionRoutes.map((route) => (
@@ -495,7 +329,10 @@ export function MasterDashboardClient({ data }: { data: MasterOverview }) {
                     </div>
                     {route.nextStopAddress && (
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Next: {route.nextStopAddress} · ETA {formatDateTime(route.nextStopEta)}
+                        {t("home.attention.nextStop", {
+                          address: route.nextStopAddress,
+                          eta: formatDateTime(route.nextStopEta),
+                        })}
                       </p>
                     )}
                   </div>
@@ -506,15 +343,17 @@ export function MasterDashboardClient({ data }: { data: MasterOverview }) {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-base">Fleet Risk</CardTitle>
+              <CardTitle className="text-base">
+                {t("home.attention.fleetRisk")}
+              </CardTitle>
               <Button variant="outline" size="sm" render={<Link href="/vehicles" />}>
-                View fleet
+                {t("home.attention.viewFleet")}
               </Button>
             </CardHeader>
             <CardContent className="space-y-3">
               {data.highRiskVehicles.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No medium or high-risk vehicles in the top attention list.
+                  {t("home.attention.emptyFleet")}
                 </p>
               ) : (
                 data.highRiskVehicles.map((vehicle) => (
@@ -524,8 +363,10 @@ export function MasterDashboardClient({ data }: { data: MasterOverview }) {
                       <RiskBadge risk={vehicle.riskLevel} vqi={vehicle.vqi} />
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Next maint.: {formatDate(vehicle.predictedNextMaintenance)} · Est.{" "}
-                      {formatCurrencyShort(vehicle.estimatedCost)}
+                      {t("home.attention.nextMaint", {
+                        date: formatDate(vehicle.predictedNextMaintenance),
+                        cost: formatCurrencyShort(vehicle.estimatedCost),
+                      })}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
                       {vehicle.recommendedAction}
@@ -533,6 +374,238 @@ export function MasterDashboardClient({ data }: { data: MasterOverview }) {
                   </div>
                 ))
               )}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <SectionHeader
+          title={t("home.sections.logisticsOps.title")}
+          description={t("home.sections.logisticsOps.description")}
+          href="/routing/dashboard"
+          linkLabel={t("home.sections.logisticsOps.link")}
+        />
+        <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 [&>*]:h-full">
+          <MetricCard
+            title={t("home.metrics.totalRoutes")}
+            value={data.routeCounts.total}
+            detail={t("home.metrics.totalRoutesDetail")}
+            helpText={metricHelp.totalRoutes}
+          />
+          <MetricCard
+            title={t("home.metrics.ordersOnRoute")}
+            value={data.operations.ordersOnRoute}
+            detail={t("home.metrics.ordersOnRouteDetail")}
+            helpText={metricHelp.ordersOnRoute}
+          />
+          <MetricCard
+            title={t("home.metrics.totalOrders")}
+            value={data.totalOrders}
+            detail={t("home.metrics.totalOrdersDetail")}
+            helpText={metricHelp.totalOrders}
+          />
+          <MetricCard
+            title={t("home.metrics.activeDrivers")}
+            value={data.driverCount}
+            detail={t("home.metrics.activeDriversDetail")}
+            helpText={metricHelp.activeDrivers}
+          />
+          <MetricCard
+            title={t("home.metrics.activeDistance")}
+            value={t("home.metrics.activeDistanceValue", {
+              km: data.operations.totalDistanceKm,
+            })}
+            detail={t("home.metrics.activeDistanceDetail")}
+            helpText={metricHelp.activeDistance}
+          />
+          <MetricCard
+            title={t("home.metrics.activeDuration")}
+            value={formatDuration(t, data.operations.totalDurationMin)}
+            detail={t("home.metrics.activeDurationDetail")}
+            helpText={metricHelp.activeDuration}
+          />
+          <MetricCard
+            title={t("home.metrics.activeEmissions")}
+            value={t("home.metrics.activeEmissionsValue", {
+              kg: data.operations.totalEmissionsKg,
+            })}
+            detail={t("home.metrics.activeEmissionsDetail")}
+            helpText={metricHelp.activeEmissions}
+          />
+          <MetricCard
+            title={t("home.metrics.avgDti")}
+            value={data.operations.avgDti ?? "—"}
+            detail={t("home.metrics.avgDtiDetail", {
+              count: data.operations.deliveredOrdersWithDti,
+            })}
+            helpText={metricHelp.avgDti}
+          />
+          <MetricCard
+            title={t("home.metrics.avgCfi")}
+            value={data.operations.avgCfi ?? "—"}
+            detail={t("home.metrics.avgCfiDetail")}
+            helpText={metricHelp.avgCfi}
+          />
+          <MetricCard
+            title={t("home.metrics.tripFuelCost")}
+            value={formatCurrencyShort(data.operations.totalFuelCostIdr)}
+            detail={
+              data.fuelPrices
+                ? t("home.metrics.tripFuelCostDetailRegion", {
+                    region: data.fuelPrices.region,
+                  })
+                : t("home.metrics.tripFuelCostDetailActive")
+            }
+            helpText={metricHelp.tripFuelCost}
+          />
+          <MetricCard
+            title={t("home.metrics.fuelSavings")}
+            value={formatCurrencyShort(data.operations.totalFuelCostSavingsIdr)}
+            detail={t("home.metrics.fuelSavingsDetail", {
+              percent: data.operations.totalFuelCostSavingsPercent,
+            })}
+            helpText={metricHelp.fuelSavings}
+          />
+        </div>
+        {data.fuelPrices && (
+          <p className="text-xs text-muted-foreground">
+            {t("home.fuelPrices.fetched", {
+              time: formatDateTime(data.fuelPrices.fetchedAt),
+            })}
+            {data.fuelPrices.effectiveLabel
+              ? ` · ${t("home.fuelPrices.effective", {
+                  label: data.fuelPrices.effectiveLabel,
+                })}`
+              : ""}
+            {" · "}
+            <Link href="/system/gas-price" className="font-medium underline">
+              {t("home.fuelPrices.viewList")}
+            </Link>
+          </p>
+        )}
+      </section>
+
+      <section className="space-y-4">
+        <SectionHeader
+          title={t("home.sections.orderPipeline.title")}
+          description={t("home.sections.orderPipeline.description")}
+          href="/routing/orders"
+          linkLabel={t("home.sections.orderPipeline.link")}
+        />
+        <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-4 [&>*]:h-full">
+          {PIPELINE_KEYS.map((key) => (
+            <MetricCard
+              key={key}
+              title={t(pipelineLabelKey(key))}
+              value={data.pipeline[key] ?? 0}
+              helpText={pipelineHelp[key]}
+            />
+          ))}
+        </div>
+      </section>
+
+      <CvSessionReportsPanel
+        title={t("home.cvPanel.title")}
+        description={t("home.cvPanel.description")}
+      />
+
+      <section className="space-y-4">
+        <SectionHeader
+          title={t("home.sections.fleetHealth.title")}
+          description={t("home.sections.fleetHealth.description")}
+          href="/dashboard"
+          linkLabel={t("home.sections.fleetHealth.link")}
+        />
+        <div className="grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 [&>*]:h-full">
+          <MetricCard
+            title={t("home.metrics.totalVehicles")}
+            value={data.fleetHealth.totalVehicles}
+            detail={t("home.metrics.totalVehiclesDetail")}
+            helpText={metricHelp.totalVehicles}
+          />
+          <MetricCard
+            title={t("home.metrics.mediumRisk")}
+            value={data.fleetHealth.mediumRiskCount}
+            detail={t("home.metrics.mediumRiskDetail")}
+            helpText={metricHelp.mediumRisk}
+          />
+          <MetricCard
+            title={t("home.metrics.lowRisk")}
+            value={data.fleetHealth.lowRiskCount}
+            detail={t("home.metrics.lowRiskDetail")}
+            helpText={metricHelp.lowRisk}
+          />
+          <MetricCard
+            title={t("home.metrics.upcomingMaintCost")}
+            value={formatCurrencyShort(data.fleetHealth.upcomingMaintenanceCost)}
+            detail={t("home.metrics.upcomingMaintDetail", {
+              count: data.fleetHealth.upcomingMaintenanceCount,
+            })}
+            helpText={metricHelp.upcomingMaintenance}
+          />
+          <MetricCard
+            title={t("home.metrics.fleetMaintBudget")}
+            value={formatCurrencyShort(data.fleetHealth.totalMaintenanceCost)}
+            detail={t("home.metrics.fleetMaintBudgetDetail")}
+            helpText={metricHelp.fleetMaintenanceBudget}
+          />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        <SectionHeader
+          title={t("home.sections.operationsCharts.title")}
+          description={t("home.sections.operationsCharts.description")}
+          href="/routing/reports"
+          linkLabel={t("home.sections.operationsCharts.link")}
+        />
+        <LogisticsChartsPanel charts={data.charts} compact />
+      </section>
+
+      <section className="space-y-4">
+        <SectionHeader
+          title={t("home.sections.fleetCharts.title")}
+          description={t("home.sections.fleetCharts.description")}
+          href="/reports"
+          linkLabel={t("home.sections.fleetCharts.link")}
+        />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                {t("home.charts.vqiDistribution")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.fleetHealth.vqiDistribution}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="range" />
+                  <YAxis allowDecimals={false} />
+                  <RechartsTooltip />
+                  <Bar dataKey="count" fill="var(--chart-1)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">
+                {t("home.charts.orderPipeline")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={pipelineChartData}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="stage" />
+                  <YAxis allowDecimals={false} />
+                  <RechartsTooltip />
+                  <Bar dataKey="count" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>

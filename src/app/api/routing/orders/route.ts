@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isWithinJakartaBounds } from "@/lib/routing/jakarta";
 import { orderSchema } from "@/lib/schemas/order";
+import { apiError } from "@/lib/i18n/api-errors";
+import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
 
 export async function GET() {
   const orders = await prisma.order.findMany({
@@ -16,10 +18,7 @@ export async function POST(request: Request) {
     const parsed = orderSchema.parse(body);
 
     if (!isWithinJakartaBounds(parsed.lat, parsed.lng)) {
-      return NextResponse.json(
-        { error: "Address must be within Jakarta bounds (demo validation)." },
-        { status: 400 }
-      );
+      return apiError(getLocaleFromRequest(request), "validation", 400);
     }
 
     const receivedAt = new Date();
@@ -45,8 +44,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to create order";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("[orders] create failed:", error);
+    return apiError(getLocaleFromRequest(request), "validation", 400);
   }
 }
 

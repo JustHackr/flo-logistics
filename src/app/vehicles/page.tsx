@@ -10,6 +10,9 @@ import {
 } from "@/lib/vehicle-service";
 import { aggregateFleetFuelMix } from "@/lib/vehicle-fuel";
 import { VehiclesTable } from "@/components/vehicles-table";
+import { getLocale } from "@/lib/i18n/get-locale";
+import { getDictionary } from "@/lib/i18n/dictionary";
+import { t } from "@/lib/i18n/t";
 import type { EngineType, VehicleType } from "@/lib/types";
 
 function fuelMixBadgeClass(tier: "zero" | "subsidized" | "standard") {
@@ -19,7 +22,11 @@ function fuelMixBadgeClass(tier: "zero" | "subsidized" | "standard") {
 }
 
 export default async function VehiclesPage() {
-  const vehicles = await prisma.vehicle.findMany({ orderBy: { name: "asc" } });
+  const [locale, vehicles] = await Promise.all([
+    getLocale(),
+    prisma.vehicle.findMany({ orderBy: { name: "asc" } }),
+  ]);
+  const dict = await getDictionary(locale);
   const avgCost = getFleetAvgMaintenanceCost(vehicles);
   const enriched = vehicles.map((v) => enrichVehicle(v, avgCost));
   const fuelMix = aggregateFleetFuelMix(
@@ -33,9 +40,11 @@ export default async function VehiclesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Vehicles</h2>
+          <h2 className="text-2xl font-bold tracking-tight">
+            {t(dict, "fleet.vehicles.title")}
+          </h2>
           <p className="text-muted-foreground">
-            Manage fleet vehicles and view Vehicle Quality Index scores.
+            {t(dict, "fleet.vehicles.subtitle")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -43,10 +52,10 @@ export default async function VehiclesPage() {
             href="/vehicles/import"
             className={cn(buttonVariants({ variant: "outline" }))}
           >
-            Import CSV
+            {t(dict, "fleet.vehicles.importCsv")}
           </Link>
           <Link href="/vehicles/new" className={cn(buttonVariants())}>
-            Add Vehicle
+            {t(dict, "fleet.vehicles.addVehicle")}
           </Link>
         </div>
       </div>
@@ -54,12 +63,19 @@ export default async function VehiclesPage() {
       <Card>
         <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-medium">Fleet fuel mix</p>
+            <p className="text-sm font-medium">
+              {t(dict, "fleet.vehicles.fuelMix")}
+            </p>
             <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-              {fuelMix.zeroEmissionPercent}% zero-emission
+              {t(dict, "fleet.vehicles.zeroEmissionPercent", {
+                percent: fuelMix.zeroEmissionPercent,
+              })}
             </p>
             <p className="text-xs text-muted-foreground">
-              {fuelMix.zeroEmissionCount} of {fuelMix.total} vehicles on PLN EV charging
+              {t(dict, "fleet.vehicles.zeroEmissionCount", {
+                count: fuelMix.zeroEmissionCount,
+                total: fuelMix.total,
+              })}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

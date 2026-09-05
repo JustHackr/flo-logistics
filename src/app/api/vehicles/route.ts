@@ -5,6 +5,8 @@ import {
   enrichVehicle,
   getFleetAvgMaintenanceCost,
 } from "@/lib/vehicle-service";
+import { apiError } from "@/lib/i18n/api-errors";
+import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
 
 export async function GET() {
   const vehicles = await prisma.vehicle.findMany({ orderBy: { name: "asc" } });
@@ -31,8 +33,7 @@ export async function POST(request: Request) {
     const avgCost = getFleetAvgMaintenanceCost(vehicles);
     return NextResponse.json(enrichVehicle(vehicle, avgCost), { status: 201 });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to create vehicle";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("[vehicles] create failed:", error);
+    return apiError(getLocaleFromRequest(request), "validation", 400);
   }
 }

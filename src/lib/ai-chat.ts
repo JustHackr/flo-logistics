@@ -188,7 +188,7 @@ async function buildPipelineResponse(): Promise<ChatResponse> {
   return {
     reply: lines.join("\n"),
     links: [
-      { label: "Overview", href: "/" },
+      { label: "Unified Dashboard", href: "/" },
       { label: "Orders", href: "/routing/orders" },
     ],
   };
@@ -316,7 +316,7 @@ async function buildOperationsResponse(): Promise<ChatResponse> {
   return {
     reply: lines.join("\n"),
     links: [
-      { label: "Overview", href: "/" },
+      { label: "Unified Dashboard", href: "/" },
       { label: "Logistics dashboard", href: "/routing/dashboard" },
     ],
   };
@@ -334,6 +334,6 @@ async function buildGeneralResponse(): Promise<ChatResponse> {
       "• Delivery pipeline status",
       "• Maintenance alerts or fuel prices",
     ].join("\n"),
-    links: [{ label: "Overview dashboard", href: "/" }],
+    links: [{ label: "Unified Dashboard", href: "/" }],
   };
 }

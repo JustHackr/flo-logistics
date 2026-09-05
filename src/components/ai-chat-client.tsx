@@ -15,9 +15,10 @@ import {
 } from "@/lib/ai-chat-history";
 import {
   isAiProviderPublicConfigured,
-  type AiProviderSettingsPublic,
+  type AiProviderStatus,
 } from "@/lib/ai-settings";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 function renderMarkdownLite(text: string) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
@@ -34,6 +35,7 @@ function renderMarkdownLite(text: string) {
 }
 
 export function AiChatClient() {
+  const { t, locale } = useI18n();
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get("q")?.trim() ?? "";
 
@@ -43,7 +45,7 @@ export function AiChatClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [providerStatus, setProviderStatus] =
-    useState<AiProviderSettingsPublic | null>(null);
+    useState<AiProviderStatus | null>(null);
   const threadRef = useRef<HTMLDivElement>(null);
   const initialSent = useRef(false);
 
@@ -65,7 +67,7 @@ export function AiChatClient() {
   useEffect(() => {
     void fetch("/api/ai/settings")
       .then((res) => res.json())
-      .then((json: AiProviderSettingsPublic) => setProviderStatus(json))
+      .then((json: AiProviderStatus) => setProviderStatus(json))
       .catch(() => setProviderStatus(null));
   }, []);
 
@@ -104,10 +106,11 @@ export function AiChatClient() {
           body: JSON.stringify({
             message: trimmed,
             history: historyForApi,
+            locale,
           }),
         });
         const json = await res.json();
-        if (!res.ok) throw new Error(json?.error ?? "Request failed");
+        if (!res.ok) throw new Error(json?.error ?? t("errors.generic"));
 
         setMessages((prev) => [
           ...prev,
@@ -119,12 +122,12 @@ export function AiChatClient() {
           },
         ]);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Something went wrong");
+        setError(e instanceof Error ? e.message : t("errors.generic"));
       } finally {
         setLoading(false);
       }
     },
-    [loading]
+    [loading, locale, t]
   );
 
   function handleClearHistory() {
@@ -146,7 +149,7 @@ export function AiChatClient() {
   const hasConversation = messages.some((m) => m.role === "user");
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-5.5rem)] max-w-4xl flex-col md:h-[calc(100dvh-8rem)]">
+    <div lang={locale} className="mx-auto flex h-[calc(100dvh-5.5rem)] max-w-4xl flex-col md:h-[calc(100dvh-8rem)]">
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border bg-background shadow-sm">
         {/* Chat header */}
         <div className="flex shrink-0 items-center gap-3 border-b px-4 py-3">
@@ -154,11 +157,11 @@ export function AiChatClient() {
             <Sparkles className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-sm font-semibold">Company Assistant</h2>
+            <h2 className="truncate text-sm font-semibold">{t("ai.chat.askFlo")}</h2>
             <p className="truncate text-xs text-muted-foreground">
               {llmConfigured
-                ? `Online · ${providerStatus?.model ?? "LLM"}`
-                : "Built-in mode · configure API in AI Settings"}
+                ? t("ai.chat.onlineModel", { model: providerStatus?.model ?? "LLM" })
+                : t("ai.chat.localAnswers")}
             </p>
           </div>
           {hasConversation && (
@@ -170,7 +173,7 @@ export function AiChatClient() {
               onClick={handleClearHistory}
             >
               <Trash2 className="h-4 w-4" />
-              Clear
+              {t("ai.chat.clearShort")}
             </Button>
           )}
           <div
@@ -178,14 +181,14 @@ export function AiChatClient() {
               "h-2.5 w-2.5 shrink-0 rounded-full",
               llmConfigured ? "bg-emerald-500" : "bg-amber-500"
             )}
-            title={llmConfigured ? "API connected" : "No API configured"}
+            title={llmConfigured ? t("ai.chat.connected") : t("ai.chat.localAssistant")}
           />
         </div>
 
         {/* Suggested prompts */}
         <div className="shrink-0 border-b bg-muted/30 px-4 py-3">
           <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Try asking
+            {t("ai.chat.tryAsking")}
           </p>
           <div className="flex gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {SUGGESTED_PROMPTS.map((prompt) => (
@@ -193,22 +196,17 @@ export function AiChatClient() {
                 key={prompt.id}
                 type="button"
                 disabled={loading}
-                onClick={() => void sendMessage(prompt.message)}
+                onClick={() =>
+                  void sendMessage(
+                    t(`ai.suggested.${prompt.id}.message`)
+                  )
+                }
                 className="shrink-0 rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
               >
-                {prompt.label}
+                {t(`ai.suggested.${prompt.id}.label`)}
               </button>
             ))}
           </div>
-          {!llmConfigured && (
-            <p className="mt-2 text-xs text-amber-600 dark:text-amber-500">
-              Add your API key in{" "}
-              <Link href="/ai/settings" className="underline underline-offset-2">
-                AI Settings
-              </Link>{" "}
-              for richer logistics expert answers.
-            </p>
-          )}
         </div>
 
         {/* Message thread — always opens at top; no auto-scroll on new messages */}
@@ -275,7 +273,7 @@ export function AiChatClient() {
               </div>
               <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border bg-background px-3.5 py-2.5 text-sm text-muted-foreground shadow-sm">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                {llmConfigured ? "Typing…" : "Checking live data…"}
+                {llmConfigured ? t("ai.chat.typing") : t("ai.chat.checkingLiveData")}
               </div>
             </div>
           )}
@@ -296,7 +294,7 @@ export function AiChatClient() {
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Message Company Assistant…"
+              placeholder={t("ai.chat.messagePlaceholder")}
               rows={1}
               disabled={loading}
               className="max-h-32 min-h-[44px] flex-1 resize-none rounded-2xl border bg-muted/40 px-4 py-2.5 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:bg-background disabled:opacity-50"
@@ -314,7 +312,7 @@ export function AiChatClient() {
               disabled={loading || !input.trim()}
             >
               <Send className="h-4 w-4" />
-              <span className="sr-only">Send</span>
+              <span className="sr-only">{t("ai.chat.send")}</span>
             </Button>
           </form>
         </div>

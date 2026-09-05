@@ -15,13 +15,14 @@ import {
 } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import type { LogisticsCharts } from "@/lib/routing-reports";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 const PIE_COLORS = [
-  "hsl(var(--primary))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
+  "var(--primary)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
 ];
 
 function EmptyChart({ message }: { message: string }) {
@@ -39,26 +40,35 @@ export function LogisticsChartsPanel({
   charts: LogisticsCharts;
   compact?: boolean;
 }) {
+  const { t } = useI18n();
   const chartHeight = compact ? "h-56" : "h-72";
+  const pipeline = charts.pipeline.map((item) => ({
+    ...item,
+    stage: t(`status.orderStatus.${String(item.stage).toUpperCase().replace(" ", "_")}`),
+  }));
+  const routeStatus = charts.routeStatus.map((item) => ({
+    ...item,
+    status: t(`status.routeStatus.${String(item.status).toLowerCase()}`),
+  }));
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Order Pipeline</CardTitle>
-          <CardDescription>Orders by fulfillment stage</CardDescription>
+          <CardTitle className="text-base">{t("routing.charts.pipeline.title")}</CardTitle>
+          <CardDescription>{t("routing.charts.pipeline.description")}</CardDescription>
         </CardHeader>
         <CardContent className={chartHeight}>
           {charts.pipeline.every((d) => d.count === 0) ? (
-            <EmptyChart message="No orders in the pipeline yet." />
+            <EmptyChart message={t("routing.charts.pipeline.empty")} />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={charts.pipeline}>
-                <CartesianGrid strokeDasharray="3 3" />
+              <BarChart data={pipeline}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="stage" tick={{ fontSize: 12 }} />
                 <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="count" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="var(--chart-2)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -67,17 +77,17 @@ export function LogisticsChartsPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Route Status</CardTitle>
-          <CardDescription>Planned, active, and completed routes</CardDescription>
+          <CardTitle className="text-base">{t("routing.charts.routeStatus.title")}</CardTitle>
+          <CardDescription>{t("routing.charts.routeStatus.description")}</CardDescription>
         </CardHeader>
         <CardContent className={chartHeight}>
           {charts.routeStatus.length === 0 ? (
-            <EmptyChart message="No route plans created yet." />
+            <EmptyChart message={t("routing.charts.routeStatus.empty")} />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={charts.routeStatus}
+                  data={routeStatus}
                   dataKey="count"
                   nameKey="status"
                   cx="50%"
@@ -99,20 +109,20 @@ export function LogisticsChartsPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Driver VQI</CardTitle>
-          <CardDescription>Vehicle quality index by assigned driver</CardDescription>
+          <CardTitle className="text-base">{t("routing.charts.driverVqi.title")}</CardTitle>
+          <CardDescription>{t("routing.charts.driverVqi.description")}</CardDescription>
         </CardHeader>
         <CardContent className={chartHeight}>
           {charts.driverVqi.length === 0 ? (
-            <EmptyChart message="No drivers in roster." />
+            <EmptyChart message={t("routing.charts.driverVqi.empty")} />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.driverVqi}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="name" />
                 <YAxis domain={[0, 100]} />
                 <Tooltip />
-                <Bar dataKey="vqi" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="vqi" fill="var(--primary)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -121,20 +131,20 @@ export function LogisticsChartsPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">DTI Distribution</CardTitle>
-          <CardDescription>Delivered stops scored by SLA performance</CardDescription>
+          <CardTitle className="text-base">{t("routing.charts.dti.title")}</CardTitle>
+          <CardDescription>{t("routing.charts.dti.description")}</CardDescription>
         </CardHeader>
         <CardContent className={chartHeight}>
           {charts.dtiDistribution.every((d) => d.count === 0) ? (
-            <EmptyChart message="No delivered stops with DTI scores yet." />
+            <EmptyChart message={t("routing.charts.dti.empty")} />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.dtiDistribution}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="range" />
                 <YAxis allowDecimals={false} />
                 <Tooltip />
-                <Bar dataKey="count" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="var(--chart-4)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -143,22 +153,22 @@ export function LogisticsChartsPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Route DTI & CFI</CardTitle>
-          <CardDescription>Delivery performance and carbon index per route</CardDescription>
+          <CardTitle className="text-base">{t("routing.charts.performance.title")}</CardTitle>
+          <CardDescription>{t("routing.charts.performance.description")}</CardDescription>
         </CardHeader>
         <CardContent className={chartHeight}>
           {charts.routePerformance.length === 0 ? (
-            <EmptyChart message="Optimize orders to create route plans." />
+            <EmptyChart message={t("routing.charts.performance.empty")} />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.routePerformance}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="name" />
                 <YAxis domain={[0, 100]} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="dti" name="DTI" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="cfi" name="CFI" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="dti" name="DTI" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="cfi" name="CFI" fill="var(--chart-3)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -167,20 +177,20 @@ export function LogisticsChartsPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Route Emissions</CardTitle>
-          <CardDescription>Estimated CO₂e by active route (kg)</CardDescription>
+          <CardTitle className="text-base">{t("routing.charts.emissions.title")}</CardTitle>
+          <CardDescription>{t("routing.charts.emissions.description")}</CardDescription>
         </CardHeader>
         <CardContent className={chartHeight}>
           {charts.emissionsByRoute.length === 0 ? (
-            <EmptyChart message="No route emissions data yet." />
+            <EmptyChart message={t("routing.charts.emissions.empty")} />
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.emissionsByRoute}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip formatter={(value) => [`${value} kg`, "CO₂e"]} />
-                <Bar dataKey="emissionsKg" fill="hsl(var(--chart-5))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="emissionsKg" fill="var(--chart-5)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -190,22 +200,28 @@ export function LogisticsChartsPanel({
       {charts.engineCfi.length > 0 && (
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base">CFI by Engine Type</CardTitle>
-            <CardDescription>Average carbon footprint index across routes</CardDescription>
+            <CardTitle className="text-base">{t("routing.charts.engineCfi.title")}</CardTitle>
+            <CardDescription>{t("routing.charts.engineCfi.description")}</CardDescription>
           </CardHeader>
           <CardContent className={compact ? "h-56" : "h-64"}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={charts.engineCfi}>
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="engineType" />
                 <YAxis domain={[0, 100]} />
                 <Tooltip
-                  formatter={(value, _name, item) => [
-                    `${value} (${(item.payload as { routes: number }).routes} routes)`,
-                    "Avg CFI",
-                  ]}
+                  formatter={(value, _name, item) => {
+                    const payload = item?.payload as { routes?: number } | undefined;
+                    return [
+                      t("routing.charts.engineCfi.routes", {
+                        value: String(value ?? ""),
+                        count: payload?.routes ?? 0,
+                      }),
+                      t("routing.charts.engineCfi.average"),
+                    ];
+                  }}
                 />
-                <Bar dataKey="avgCfi" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="avgCfi" fill="var(--chart-3)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

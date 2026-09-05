@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { validateCsvRow } from "@/lib/csv";
 import { prisma } from "@/lib/prisma";
+import { apiError } from "@/lib/i18n/api-errors";
+import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
 
 export async function POST(request: Request) {
   try {
@@ -8,10 +10,7 @@ export async function POST(request: Request) {
     const rows: Record<string, string>[] = body.rows ?? [];
 
     if (!Array.isArray(rows) || rows.length === 0) {
-      return NextResponse.json(
-        { error: "No rows provided for import" },
-        { status: 400 }
-      );
+      return apiError(getLocaleFromRequest(request), "importFailed", 400);
     }
 
     const results = rows.map((row, index) => validateCsvRow(row, index + 1));
@@ -37,8 +36,7 @@ export async function POST(request: Request) {
       results,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to import vehicles";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("[vehicles/import] failed:", error);
+    return apiError(getLocaleFromRequest(request), "importFailed", 400);
   }
 }

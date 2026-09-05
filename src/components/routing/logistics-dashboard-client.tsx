@@ -15,14 +15,18 @@ import { DtiBadge } from "@/components/dti-badge";
 import { CfiBadge } from "@/components/cfi-badge";
 import { LogisticsChartsPanel } from "@/components/routing/logistics-charts";
 import { RouteTotalsMetricGrid } from "@/components/routing/route-totals-metric-grid";
+import { CvSessionReportsPanel } from "@/components/computer-vision/cv-session-reports-panel";
+import { useI18n } from "@/components/i18n/use-i18n";
+import { toIntlLocale, type Locale } from "@/lib/i18n/config";
+import type { TranslationParams } from "@/lib/i18n/t";
 
 type DriverInfo = RoutingLogisticsOverview["roster"][number];
 
-function formatDateTime(iso: string | null | undefined) {
+function formatDateTime(iso: string | null | undefined, locale: Locale) {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString("id-ID", {
+  return d.toLocaleString(toIntlLocale(locale), {
     hour12: false,
     year: "numeric",
     month: "short",
@@ -35,9 +39,13 @@ function formatDateTime(iso: string | null | undefined) {
 function DriverVehicleCard({
   title,
   driver,
+  t,
+  locale,
 }: {
   title: string;
   driver: DriverInfo;
+  t: (key: string, params?: TranslationParams) => string;
+  locale: Locale;
 }) {
   return (
     <div className="rounded-lg border p-4">
@@ -46,10 +54,13 @@ function DriverVehicleCard({
           <div className="text-sm font-semibold">{title}</div>
           <div className="mt-1 text-base font-bold">{driver.name}</div>
           <div className="mt-1 text-xs text-muted-foreground">
-            {driver.employeeId ?? "No employee ID"} · {driver.phone ?? "No phone"}
+            {driver.employeeId ?? t("routing.dashboard.noEmployeeId")} ·{" "}
+            {driver.phone ?? t("common.noPhone")}
           </div>
           <div className="mt-1 text-xs text-muted-foreground">
-            License: {driver.licenseNumber ?? "—"} · Status:{" "}
+            {t("routing.dashboard.licenseStatus", {
+              license: driver.licenseNumber ?? "—",
+            })}{" "}
             <span className="capitalize">{driver.status}</span>
           </div>
         </div>
@@ -59,22 +70,41 @@ function DriverVehicleCard({
         <div className="text-sm font-medium">{driver.vehicle.name}</div>
         <div className="mt-2 grid gap-1 text-xs text-muted-foreground sm:grid-cols-2">
           <div>
-            Type: <span className="font-medium text-foreground capitalize">{driver.vehicle.vehicleType}</span>
+            {t("routing.dashboard.typeLabel")}{" "}
+            <span className="font-medium text-foreground capitalize">
+              {driver.vehicle.vehicleType}
+            </span>
           </div>
           <div>
-            Engine: <span className="font-medium text-foreground uppercase">{driver.vehicle.engineType}</span>
+            {t("routing.dashboard.engineLabel")}{" "}
+            <span className="font-medium text-foreground uppercase">
+              {driver.vehicle.engineType}
+            </span>
           </div>
           <div>
-            Odometer: <span className="font-medium text-foreground">{formatNumber(driver.vehicle.odometerKm)} km</span>
+            {t("routing.dashboard.odometerLabel")}{" "}
+            <span className="font-medium text-foreground">
+              {t("common.kmValue", {
+                value: formatNumber(driver.vehicle.odometerKm, 0, locale),
+              })}
+            </span>
           </div>
           <div>
-            Age: <span className="font-medium text-foreground">{formatNumber(driver.vehicle.vehicleAgeYears, 1)} yr</span>
+            {t("routing.dashboard.ageLabel")}{" "}
+            <span className="font-medium text-foreground">
+              {formatNumber(driver.vehicle.vehicleAgeYears, 1, locale)}{" "}
+              {t("common.yearShort")}
+            </span>
           </div>
           <div>
-            Maint. cost: <span className="font-medium text-foreground">{formatCurrency(driver.vehicle.maintenanceCostUnit)}</span>
+            {t("routing.dashboard.maintCostLabel")}{" "}
+            <span className="font-medium text-foreground">
+              {formatCurrency(driver.vehicle.maintenanceCostUnit, locale)}
+            </span>
           </div>
           <div>
-            VQI: <span className="font-medium text-foreground">{driver.vehicle.vqi}/100</span>
+            {t("routing.dashboard.vqiLabel")}{" "}
+            <span className="font-medium text-foreground">{driver.vehicle.vqi}/100</span>
           </div>
         </div>
         {driver.vehicle.recommendedAction && (
@@ -88,6 +118,7 @@ function DriverVehicleCard({
 }
 
 export function LogisticsDashboardClient() {
+  const { t, locale } = useI18n();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<RoutingLogisticsOverview | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,10 +129,10 @@ export function LogisticsDashboardClient() {
     try {
       const res = await fetch("/api/routing/logistics/overview");
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error ?? "Failed to load overview");
+      if (!res.ok) throw new Error(json?.error ?? t("routing.dashboard.loadFailed"));
       setData(json);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load overview");
+      setError(e instanceof Error ? e.message : t("routing.dashboard.loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -122,32 +153,37 @@ export function LogisticsDashboardClient() {
         body: JSON.stringify({ status: "DELIVERED" }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json?.error ?? "Failed to update order");
+      if (!res.ok) throw new Error(json?.error ?? t("routing.dashboard.updateFailed"));
       void load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update order");
+      setError(e instanceof Error ? e.message : t("routing.dashboard.updateFailed"));
       setLoading(false);
     }
   }
+
+  const pipelineLabels = [
+    ["RECEIVED", t("routing.dashboard.statusReceived")],
+    ["PREPARING", t("routing.dashboard.statusPreparing")],
+    ["ON_ROUTE", t("routing.dashboard.statusOnRoute")],
+    ["DELIVERED", t("routing.dashboard.statusDelivered")],
+  ] as const;
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
-            Logistics Dashboard
+            {t("routing.dashboard.title")}
           </h2>
-          <p className="text-muted-foreground">
-            Track driver identity, assigned vehicles, route progress, and delivery status from Blok M Square.
-          </p>
+          <p className="text-muted-foreground">{t("routing.dashboard.subtitle")}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" render={<Link href="/routing/reports" />}>
             <FileBarChart className="mr-2 h-4 w-4" />
-            Reports
+            {t("routing.dashboard.reports")}
           </Button>
           <Button variant="outline" onClick={() => void load()} disabled={loading}>
-            Refresh
+            {t("common.refresh")}
           </Button>
         </div>
       </div>
@@ -159,114 +195,141 @@ export function LogisticsDashboardClient() {
       )}
 
       {!data && loading && (
-        <div className="text-sm text-muted-foreground">Loading dashboard...</div>
+        <div className="text-sm text-muted-foreground">{t("routing.dashboard.loading")}</div>
       )}
 
       {data && (
         <>
+          <CvSessionReportsPanel
+            title={t("routing.dashboard.cvTitle")}
+            description={t("routing.dashboard.cvDescription")}
+          />
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Active Routes
+                  {t("routing.dashboard.activeRoutes")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{data.operations.inProgressRoutes}</div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {data.routeCounts.planned} planned · {data.routeCounts.completed} completed
+                  {t("routing.dashboard.routeCounts", {
+                    planned: data.routeCounts.planned,
+                    completed: data.routeCounts.completed,
+                  })}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Delivery Progress
+                  {t("routing.dashboard.deliveryProgress")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{data.operations.deliveryProgressPercent}%</div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {data.operations.deliveredStops}/{data.operations.totalDeliveryStops} stops
+                  {t("routing.dashboard.stopsDetail", {
+                    delivered: data.operations.deliveredStops,
+                    total: data.operations.totalDeliveryStops,
+                  })}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Distance (active)
+                  {t("routing.dashboard.distanceActive")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{data.operations.totalDistanceKm} km</div>
+                <div className="text-3xl font-bold">
+                  {t("common.kmValue", { value: data.operations.totalDistanceKm })}
+                </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {Math.floor(data.operations.totalDurationMin / 60)} h{" "}
-                  {data.operations.totalDurationMin % 60} min drive
+                  {t("routing.dashboard.driveTime", {
+                    hours: Math.floor(data.operations.totalDurationMin / 60),
+                    minutes: data.operations.totalDurationMin % 60,
+                  })}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Emissions (active)
+                  {t("routing.dashboard.emissionsActive")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{data.operations.totalEmissionsKg} kg</div>
-                <p className="mt-1 text-xs text-muted-foreground">CO₂e estimated</p>
+                <div className="text-3xl font-bold">
+                  {t("common.kgValue", { value: data.operations.totalEmissionsKg })}
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("routing.dashboard.co2Estimated")}
+                </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Avg DTI
+                  {t("routing.dashboard.avgDti")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{data.operations.avgDti ?? "—"}</div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {data.operations.deliveredOrdersWithDti} scored deliveries
+                  {t("routing.dashboard.scoredDeliveries", {
+                    count: data.operations.deliveredOrdersWithDti,
+                  })}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Avg CFI
+                  {t("routing.dashboard.avgCfi")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{data.operations.avgCfi ?? "—"}</div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {data.operations.ordersOnRoute} orders on route
+                  {t("routing.dashboard.ordersOnRoute", {
+                    count: data.operations.ordersOnRoute,
+                  })}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Trip Fuel Cost
+                  {t("routing.dashboard.tripFuelCost")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">
-                  {formatCurrencyShort(data.operations.totalFuelCostIdr)}
+                  {formatCurrencyShort(data.operations.totalFuelCostIdr, locale)}
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">Active routes</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("routing.dashboard.activeRoutesShort")}
+                </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Fuel Savings
+                  {t("routing.dashboard.fuelSavings")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">
-                  {formatCurrencyShort(data.operations.totalFuelCostSavingsIdr)}
+                  {formatCurrencyShort(data.operations.totalFuelCostSavingsIdr, locale)}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {data.operations.totalFuelCostSavingsPercent}% vs naive trips
+                  {t("routing.dashboard.fuelSavingsDetail", {
+                    percent: data.operations.totalFuelCostSavingsPercent,
+                  })}
                 </p>
               </CardContent>
             </Card>
@@ -274,14 +337,18 @@ export function LogisticsDashboardClient() {
 
           {data.fuelPrices && (
             <p className="text-xs text-muted-foreground">
-              Pertamina prices · {data.fuelPrices.region} · fetched{" "}
-              {formatDateTime(data.fuelPrices.fetchedAt)}
+              {t("routing.dashboard.fuelPrices", {
+                region: data.fuelPrices.region,
+                time: formatDateTime(data.fuelPrices.fetchedAt, locale),
+              })}
               {data.fuelPrices.effectiveLabel
-                ? ` · effective ${data.fuelPrices.effectiveLabel}`
+                ? t("routing.dashboard.fuelPricesEffective", {
+                    label: data.fuelPrices.effectiveLabel,
+                  })
                 : ""}
               {" · "}
               <Link href="/system/gas-price" className="font-medium underline">
-                Gas price list
+                {t("routing.dashboard.gasPriceList")}
               </Link>
             </p>
           )}
@@ -289,14 +356,7 @@ export function LogisticsDashboardClient() {
           <LogisticsChartsPanel charts={data.report.charts} compact />
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {(
-              [
-                ["RECEIVED", "Received"],
-                ["PREPARING", "Preparing"],
-                ["ON_ROUTE", "On route"],
-                ["DELIVERED", "Delivered"],
-              ] as const
-            ).map(([key, label]) => (
+            {pipelineLabels.map(([key, label]) => (
               <Card key={key}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -313,9 +373,9 @@ export function LogisticsDashboardClient() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between gap-2">
-                <CardTitle>Driver roster & assigned vehicles</CardTitle>
+                <CardTitle>{t("routing.dashboard.rosterTitle")}</CardTitle>
                 <Link href="/routing/drivers" className="text-sm font-medium text-primary hover:underline">
-                  Manage drivers
+                  {t("routing.dashboard.manageDrivers")}
                 </Link>
               </div>
             </CardHeader>
@@ -323,13 +383,15 @@ export function LogisticsDashboardClient() {
               {(data.roster ?? []).map((driver) => (
                 <DriverVehicleCard
                   key={driver.id}
-                  title="Courier / driver"
+                  title={t("routing.dashboard.courierDriver")}
                   driver={driver}
+                  t={t}
+                  locale={locale}
                 />
               ))}
               {(data.roster ?? []).length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  No drivers seeded yet. Run `npm run db:seed`.
+                  {t("routing.dashboard.noDriversSeeded")}
                 </p>
               )}
             </CardContent>
@@ -339,7 +401,9 @@ export function LogisticsDashboardClient() {
             <div className="space-y-4">
               {data.activeRoutes.length === 0 && (
                 <div className="text-sm text-muted-foreground">
-                  No optimized routes yet. Go to <span className="font-medium">Routing Orders</span>, select orders, and optimize.
+                  {t("routing.dashboard.noRoutes", {
+                    orders: t("routing.dashboard.ordersLink"),
+                  })}
                 </div>
               )}
 
@@ -349,15 +413,22 @@ export function LogisticsDashboardClient() {
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <CardTitle className="text-base">
-                        Route for {route.driver.name}
+                        {t("routing.dashboard.routeFor", { name: route.driver.name })}
                       </CardTitle>
                       <div className="text-sm text-muted-foreground">
-                        Warehouse: {route.warehouse.name} · Stops: {route.totals.totalStops}
+                        {t("routing.dashboard.warehouseStops", {
+                          warehouse: route.warehouse.name,
+                          stops: route.totals.totalStops,
+                        })}
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary">
-                      Progress {route.totals.deliveredStops}/{route.totals.totalStops} · {route.totals.progressPercent}%
+                      {t("routing.dashboard.progressBadge", {
+                        delivered: route.totals.deliveredStops,
+                        total: route.totals.totalStops,
+                        percent: route.totals.progressPercent,
+                      })}
                     </Badge>
                     {route.totals.avgDti != null && (
                       <DtiBadge score={route.totals.avgDti} risk={route.totals.avgDti >= 70 ? "low" : route.totals.avgDti >= 40 ? "medium" : "high"} />
@@ -368,19 +439,23 @@ export function LogisticsDashboardClient() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <DriverVehicleCard
-                    title="Assigned driver & vehicle"
+                    title={t("routing.dashboard.assignedDriverVehicle")}
                     driver={route.driver}
+                    t={t}
+                    locale={locale}
                   />
 
                   <RouteTotalsMetricGrid route={route} />
 
                   {route.nextStop && (
                     <div className="rounded-lg bg-muted p-3 text-sm">
-                      <div className="font-medium">Next stop</div>
+                      <div className="font-medium">{t("routing.dashboard.nextStop")}</div>
                       <div className="text-muted-foreground">
-                        {route.nextStop.recipientAddress} · ETA:{" "}
-                        {formatDateTime(route.nextStop.etaAt)} · Current status:{" "}
-                        {route.nextStop.orderStatus}
+                        {t("routing.dashboard.nextStopDetail", {
+                          address: route.nextStop.recipientAddress,
+                          eta: formatDateTime(route.nextStop.etaAt, locale),
+                          status: route.nextStop.orderStatus,
+                        })}
                       </div>
                     </div>
                   )}
@@ -394,7 +469,9 @@ export function LogisticsDashboardClient() {
                   )}
 
                   <div className="space-y-2">
-                    <div className="text-sm font-semibold">Route waypoints (sorted)</div>
+                    <div className="text-sm font-semibold">
+                      {t("routing.dashboard.waypointsTitle")}
+                    </div>
                     <div className="space-y-2">
                       {(route.waypoints ?? []).map((wp) => (
                         <RouteWaypointRow
@@ -421,7 +498,7 @@ export function LogisticsDashboardClient() {
                                   onClick={() => void setDelivered(wp.orderId)}
                                   disabled={loading || wp.orderStatus === "DELIVERED"}
                                 >
-                                  Mark delivered
+                                  {t("routing.dashboard.markDelivered")}
                                 </Button>
                               </>
                             ) : undefined

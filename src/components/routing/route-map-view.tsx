@@ -12,11 +12,67 @@ import {
 } from "@vis.gl/react-google-maps";
 import type { RouteWaypoint } from "@/lib/routing/waypoints";
 import { waypointsToRoutePath } from "@/lib/routing/waypoints";
-import { isPublicGoogleMapsConfigured } from "@/lib/routing/google-maps";
 import { MapPin } from "lucide-react";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 const JAKARTA_CENTER = { lat: -6.2148, lng: 106.827 };
 const MAP_LIBRARIES = ["maps"] as const;
+
+type MapsJsConfig =
+  | { configured: true; apiKey: string }
+  | { configured: false; message?: string };
+
+function useMapsJsConfig() {
+  const [config, setConfig] = useState<MapsJsConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await fetch("/api/routing/maps/js-config");
+        const json = (await res.json()) as MapsJsConfig & {
+          error?: string;
+          message?: string;
+          apiKey?: string;
+        };
+        if (cancelled) return;
+        if (
+          res.ok &&
+          json.configured === true &&
+          typeof json.apiKey === "string" &&
+          json.apiKey.length > 0
+        ) {
+          setConfig({ configured: true, apiKey: json.apiKey });
+        } else {
+          setConfig({
+            configured: false,
+            message:
+              json.message ??
+              "Interactive Google Maps is not available for this demo.",
+          });
+        }
+      } catch {
+        if (!cancelled) {
+          setConfig({
+            configured: false,
+            message: "Could not load map configuration.",
+          });
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { config, loading };
+}
 
 function decodePolyline(encoded: string): google.maps.LatLngLiteral[] {
   const points: google.maps.LatLngLiteral[] = [];
@@ -287,16 +343,17 @@ function RouteMapInner({
 }
 
 export function GoogleMapsProvider({ children }: { children: React.ReactNode }) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+  const { config, loading } = useMapsJsConfig();
+  const { locale } = useI18n();
 
-  if (!isPublicGoogleMapsConfigured()) {
-    return children;
+  if (loading || !config?.configured) {
+    return <>{children}</>;
   }
 
   return (
     <APIProvider
-      apiKey={apiKey}
-      language="id"
+      apiKey={config.apiKey}
+      language={locale === "id" ? "id" : "en"}
       region="ID"
       libraries={[...MAP_LIBRARIES]}
     >
@@ -314,22 +371,50 @@ export function RouteMapView({
   encodedPolyline?: string | null;
   className?: string;
 }) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+  const { t, locale } = useI18n();
+  const { config, loading } = useMapsJsConfig();
   const apiLoadingStatus = useApiLoadingStatus();
   const withinProvider = apiLoadingStatus !== APILoadingStatus.NOT_LOADED;
 
-  if (!isPublicGoogleMapsConfigured() || waypoints.length === 0) {
+  if (waypoints.length === 0) {
     return (
       <div
         className={`flex items-center justify-center rounded-lg border border-dashed bg-muted/30 p-6 text-center ${className ?? "h-64"}`}
       >
         <div className="space-y-2">
           <MapPin className="mx-auto h-6 w-6 text-muted-foreground" />
-          <p className="text-sm font-medium">Route map unavailable</p>
+          <p className="text-sm font-medium">{t("routing.map.unavailable")}</p>
           <p className="max-w-sm text-xs text-muted-foreground">
-            {waypoints.length === 0
-              ? "No waypoints to display."
-              : "Add NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to .env.local and enable Maps JavaScript API to view the route on Google Maps."}
+            {t("routing.map.noWaypoints")}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div
+        className={`flex items-center justify-center rounded-lg border border-dashed bg-muted/30 p-6 text-center ${className ?? "h-64"}`}
+      >
+        <div className="space-y-2">
+          <MapPin className="mx-auto h-6 w-6 text-muted-foreground" />
+          <p className="text-sm font-medium">{t("routing.map.loading")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!config?.configured) {
+    return (
+      <div
+        className={`flex items-center justify-center rounded-lg border border-dashed bg-muted/30 p-6 text-center ${className ?? "h-64"}`}
+      >
+        <div className="space-y-2">
+          <MapPin className="mx-auto h-6 w-6 text-muted-foreground" />
+          <p className="text-sm font-medium">{t("routing.map.unavailable")}</p>
+          <p className="max-w-sm text-xs text-muted-foreground">
+            {config?.message ?? t("routing.map.notConfigured")}
           </p>
         </div>
       </div>
@@ -348,8 +433,8 @@ export function RouteMapView({
 
   return (
     <APIProvider
-      apiKey={apiKey}
-      language="id"
+      apiKey={config.apiKey}
+      language={locale === "id" ? "id" : "en"}
       region="ID"
       libraries={[...MAP_LIBRARIES]}
     >

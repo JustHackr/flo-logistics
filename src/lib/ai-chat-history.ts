@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  readLocalStorage,
+  removeLocalStorage,
+  writeLocalStorage,
+} from "@/lib/safe-storage";
 
 export const AI_CHAT_HISTORY_KEY = "flo-ai-chat-history";
 
@@ -30,9 +35,8 @@ export function defaultChatMessages(): ChatMessage[] {
 }
 
 export function loadChatHistory(): ChatMessage[] {
-  if (typeof window === "undefined") return defaultChatMessages();
   try {
-    const raw = localStorage.getItem(AI_CHAT_HISTORY_KEY);
+    const raw = readLocalStorage(AI_CHAT_HISTORY_KEY);
     if (!raw) return defaultChatMessages();
     const parsed = JSON.parse(raw) as unknown;
     const result = z.array(chatMessageSchema).safeParse(parsed);
@@ -46,15 +50,9 @@ export function loadChatHistory(): ChatMessage[] {
 }
 
 export function saveChatHistory(messages: ChatMessage[]) {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(AI_CHAT_HISTORY_KEY, JSON.stringify(messages));
-  } catch {
-    /* storage full or unavailable */
-  }
+  writeLocalStorage(AI_CHAT_HISTORY_KEY, JSON.stringify(messages));
 }
 
 export function clearChatHistory() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(AI_CHAT_HISTORY_KEY);
+  removeLocalStorage(AI_CHAT_HISTORY_KEY);
 }

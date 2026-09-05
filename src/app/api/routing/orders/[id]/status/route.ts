@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { orderStatusUpdateSchema } from "@/lib/schemas/order";
+import { apiError } from "@/lib/i18n/api-errors";
+import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -12,7 +14,7 @@ export async function POST(request: Request, context: RouteContext) {
 
     const order = await prisma.order.findUnique({ where: { id } });
     if (!order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return apiError(getLocaleFromRequest(request), "orderNotFound", 404);
     }
 
     const timestamp = parsed.timestamp ?? new Date();
@@ -21,7 +23,7 @@ export async function POST(request: Request, context: RouteContext) {
       let receivedAt = order.receivedAt;
       let preparingAt = order.preparingAt;
       let onRouteAt = order.onRouteAt;
-      let etaAt = order.etaAt;
+      const etaAt = order.etaAt;
       let deliveredAt = order.deliveredAt;
 
       switch (parsed.status) {
@@ -64,11 +66,8 @@ export async function POST(request: Request, context: RouteContext) {
 
     return NextResponse.json(updated);
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Failed to update order status";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("[orders] status update failed:", error);
+    return apiError(getLocaleFromRequest(request), "validation", 400);
   }
 }
 

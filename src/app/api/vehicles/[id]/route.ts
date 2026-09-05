@@ -5,14 +5,16 @@ import {
   enrichVehicle,
   getFleetAvgMaintenanceCost,
 } from "@/lib/vehicle-service";
+import { apiError } from "@/lib/i18n/api-errors";
+import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const vehicle = await prisma.vehicle.findUnique({ where: { id } });
   if (!vehicle) {
-    return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
+    return apiError(getLocaleFromRequest(request), "vehicleNotFound", 404);
   }
   const vehicles = await prisma.vehicle.findMany();
   const avgCost = getFleetAvgMaintenanceCost(vehicles);
@@ -40,18 +42,17 @@ export async function PUT(request: Request, context: RouteContext) {
     const avgCost = getFleetAvgMaintenanceCost(vehicles);
     return NextResponse.json(enrichVehicle(vehicle, avgCost));
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to update vehicle";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("[vehicles] update failed:", error);
+    return apiError(getLocaleFromRequest(request), "validation", 400);
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   const { id } = await context.params;
   try {
     await prisma.vehicle.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
+    return apiError(getLocaleFromRequest(request), "vehicleNotFound", 404);
   }
 }

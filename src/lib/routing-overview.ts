@@ -189,37 +189,43 @@ function buildWaypointsForRoute(
 export async function getRoutingLogisticsOverview(): Promise<RoutingLogisticsOverview> {
   const generatedAt = new Date().toISOString();
 
-  const fleetVehicles = await prisma.vehicle.findMany();
+  const [fleetVehicles, fuelPrices, routePlans, statusCounts, drivers] =
+    await Promise.all([
+      prisma.vehicle.findMany(),
+      ensureFuelPriceSnapshot(),
+      prisma.routePlan.findMany({
+        orderBy: { createdAt: "desc" },
+        include: {
+          driver: { include: { vehicle: true } },
+          warehouse: true,
+          stops: {
+            orderBy: { sequence: "asc" },
+            include: { order: true },
+          },
+        },
+      }),
+      prisma.order.groupBy({
+        by: ["status"],
+        _count: { _all: true },
+      }),
+      prisma.driver.findMany({
+        include: { vehicle: true },
+      }),
+    ]);
+
   const fleetAvgMaintenanceCost = getFleetAvgMaintenanceCost(fleetVehicles);
-  const fuelPrices = await ensureFuelPriceSnapshot();
-
-  const routePlans = await prisma.routePlan.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      driver: { include: { vehicle: true } },
-      warehouse: true,
-      stops: {
-        orderBy: { sequence: "asc" },
-        include: { order: true },
-      },
-    },
-  });
-
-  const pipelineCounts = await prisma.order.findMany({
-    select: { status: true },
-  });
 
   const pipeline: OrderPipeline = {
-    RECEIVED: pipelineCounts.filter((o) => o.status === "RECEIVED").length,
-    PREPARING: pipelineCounts.filter((o) => o.status === "PREPARING").length,
-    ON_ROUTE: pipelineCounts.filter((o) => o.status === "ON_ROUTE").length,
-    DELIVERED: pipelineCounts.filter((o) => o.status === "DELIVERED").length,
+    RECEIVED: 0,
+    PREPARING: 0,
+    ON_ROUTE: 0,
+    DELIVERED: 0,
   };
+  for (const row of statusCounts) {
+    pipeline[row.status] = row._count._all;
+  }
 
   const vehiclesByDriverId = new Map<string, ReturnType<typeof enrichVehicle>>();
-  const drivers = await prisma.driver.findMany({
-    include: { vehicle: true },
-  });
 
   for (const d of drivers) {
     vehiclesByDriverId.set(
@@ -242,13 +248,19 @@ export async function getRoutingLogisticsOverview(): Promise<RoutingLogisticsOve
 
     const engineType = rp.driver.vehicle.engineType as EngineType;
 
-    const deliveryStops: DeliveryStopInput[] = stops.map((s) => {
-      const dti = calculateDti({
+    // DTI/CFI per stop are needed in three places below (deliveryStops,
+    // avgDti, stop payloads) — compute them once per stop.
+    const stopMetrics = stops.map((s) => ({
+      dti: calculateDti({
         receivedAt: s.order.receivedAt,
         plannedEtaAt: s.etaAt,
         deliveredAt: s.order.deliveredAt,
-      });
-      const cfi = calculateCfi(engineType, s.distanceKm);
+      }),
+      cfi: calculateCfi(engineType, s.distanceKm),
+    }));
+
+    const deliveryStops: DeliveryStopInput[] = stops.map((s, i) => {
+      const { dti, cfi } = stopMetrics[i];
 
       return {
         orderId: s.orderId,
@@ -293,16 +305,12 @@ export async function getRoutingLogisticsOverview(): Promise<RoutingLogisticsOve
     const routeCfi = calculateCfi(engineType, rp.totalDistanceKm).score;
 
     const dtiScores = stops
-      .filter((s) => s.order.status === "DELIVERED")
-      .map((s) =>
-        calculateDti({
-          receivedAt: s.order.receivedAt,
-          plannedEtaAt: s.etaAt,
-          deliveredAt: s.order.deliveredAt,
-        })
+      .map((s, i) => ({ s, dti: stopMetrics[i].dti }))
+      .filter(
+        ({ s, dti }) =>
+          s.order.status === "DELIVERED" && dti.status === "computed"
       )
-      .filter((d) => d.status === "computed")
-      .map((d) => d.score);
+      .map(({ dti }) => dti.score);
 
     const vehicleType = rp.driver.vehicle.vehicleType as VehicleType;
     const fuelSavings = calculateTripFuelSavings({
@@ -349,13 +357,8 @@ export async function getRoutingLogisticsOverview(): Promise<RoutingLogisticsOve
         fuelLitersUsed: fuelSavings.optimized.litersUsed,
       },
       nextStop: nextStopPayload,
-      stops: stops.map((s) => {
-        const dti = calculateDti({
-          receivedAt: s.order.receivedAt,
-          plannedEtaAt: s.etaAt,
-          deliveredAt: s.order.deliveredAt,
-        });
-        const stopCfi = calculateCfi(engineType, s.distanceKm);
+      stops: stops.map((s, i) => {
+        const { dti, cfi: stopCfi } = stopMetrics[i];
 
         return {
           sequence: s.sequence,

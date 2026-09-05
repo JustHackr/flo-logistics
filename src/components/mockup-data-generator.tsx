@@ -20,6 +20,7 @@ import {
   generateMockVehicles,
   ORDER_CSV_HEADERS,
 } from "@/lib/mockup-data";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 type Dataset = "vehicles" | "orders";
 
@@ -33,6 +34,7 @@ function useMockCsv(dataset: Dataset, count: number, seed: number) {
 }
 
 export function MockupDataGenerator() {
+  const { t, locale } = useI18n();
   const [dataset, setDataset] = useState<Dataset>("vehicles");
   const [vehicleCount, setVehicleCount] = useState(10);
   const [orderCount, setOrderCount] = useState(12);
@@ -63,18 +65,16 @@ export function MockupDataGenerator() {
   }
 
   return (
-    <Card>
+    <Card lang={locale}>
       <CardHeader>
         <div className="flex items-start gap-3">
           <div className="rounded-lg bg-muted p-2">
             <Database className="h-5 w-5 text-muted-foreground" />
           </div>
           <div className="space-y-1">
-            <CardTitle>Mockup Data Generator</CardTitle>
+            <CardTitle>{t("system.mockup.title")}</CardTitle>
             <CardDescription>
-              Generate sample CSV files for Vehicle Information and Routing
-              Orders. Use these files to test connector imports and routing
-              optimization workflows.
+              {t("system.mockup.description")}
             </CardDescription>
           </div>
         </div>
@@ -85,13 +85,13 @@ export function MockupDataGenerator() {
           onValueChange={(value) => setDataset((value as Dataset) ?? "vehicles")}
         >
           <TabsList>
-            <TabsTrigger value="vehicles">Vehicle Information</TabsTrigger>
-            <TabsTrigger value="orders">Routing Orders</TabsTrigger>
+            <TabsTrigger value="vehicles">{t("system.mockup.vehicleInformation")}</TabsTrigger>
+            <TabsTrigger value="orders">{t("system.mockup.routingOrders")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="vehicles" className="space-y-4 pt-2">
             <p className="text-sm text-muted-foreground">
-              Matches the vehicle import template (biaya dalam Rupiah):{" "}
+              {t("system.mockup.vehicleTemplate")}{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
                 {CSV_TEMPLATE_HEADERS.join(", ")}
               </code>
@@ -100,18 +100,18 @@ export function MockupDataGenerator() {
 
           <TabsContent value="orders" className="space-y-4 pt-2">
             <p className="text-sm text-muted-foreground">
-              Matches the routing orders import template:{" "}
+              {t("system.mockup.ordersTemplate")}{" "}
               <code className="rounded bg-muted px-1 py-0.5 text-xs">
                 {ORDER_CSV_HEADERS.join(", ")}
               </code>
-              . Each address is paired with coordinates on a real Jakarta street.
+              . {t("system.mockup.addressCoordinates")}
             </p>
           </TabsContent>
         </Tabs>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-2">
-            <Label htmlFor="mock-row-count">Number of rows</Label>
+            <Label htmlFor="mock-row-count">{t("system.mockup.rowCount")}</Label>
             <Input
               id="mock-row-count"
               type="number"
@@ -125,20 +125,20 @@ export function MockupDataGenerator() {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={regenerate}>
               <RefreshCw className="mr-2 h-4 w-4" />
-              Regenerate
+              {t("system.mockup.regenerate")}
             </Button>
             <Button onClick={() => downloadCsv(filename, csv)}>
               <Download className="mr-2 h-4 w-4" />
-              Download CSV
+              {t("system.mockup.downloadCsv")}
             </Button>
           </div>
         </div>
 
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <Label>CSV preview</Label>
+            <Label>{t("system.mockup.csvPreview")}</Label>
             <span className="text-xs text-muted-foreground">
-              {count} data row{count === 1 ? "" : "s"} · {headers.length} columns
+              {t("system.mockup.previewSummary", { rows: count, columns: headers.length })}
             </span>
           </div>
           <pre className="max-h-80 overflow-auto rounded-lg border bg-muted/40 p-4 text-xs leading-relaxed whitespace-pre-wrap break-all font-mono">

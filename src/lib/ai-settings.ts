@@ -22,37 +22,25 @@ export const aiProviderSettingsSchema = z.object({
 
 export type AiProviderSettings = z.infer<typeof aiProviderSettingsSchema>;
 
-export type AiProviderSettingsPublic = {
-  baseUrl: string;
+/**
+ * Safe-to-share provider status. Never includes the API key or base URL —
+ * only whether the server-side provider is configured and which model runs.
+ */
+export type AiProviderStatus = {
+  configured: boolean;
   model: string;
-  hasApiKey: boolean;
-  apiKeyMasked?: string;
 };
 
-export const DEFAULT_AI_PROVIDER_SETTINGS: Omit<AiProviderSettings, "apiKey"> = {
-  baseUrl: "https://api.minimax.chat/v1",
-  model: "MiniMax-Text-01",
-};
-
-export function isAiProviderConfigured(
-  settings: Partial<AiProviderSettings> | null | undefined
-): settings is AiProviderSettings {
-  if (!settings) return false;
-  return Boolean(
-    settings.apiKey?.trim() &&
-      settings.baseUrl?.trim() &&
-      settings.model?.trim()
-  );
-}
+/** @deprecated Prefer AiProviderStatus — kept as an alias for older imports. */
+export type AiProviderSettingsPublic = AiProviderStatus;
 
 export function isAiProviderPublicConfigured(
-  settings: AiProviderSettingsPublic | null | undefined
+  status: AiProviderStatus | null | undefined
 ): boolean {
-  return Boolean(settings?.hasApiKey && settings.baseUrl?.trim() && settings.model?.trim());
+  return Boolean(status?.configured);
 }
 
-/** Mask key for display (last 4 chars only). */
-export function maskApiKey(apiKey: string) {
-  if (apiKey.length <= 4) return "••••";
-  return `••••${apiKey.slice(-4)}`;
-}
+export const DEFAULT_AI_PROVIDER_SETTINGS: Omit<AiProviderSettings, "apiKey"> = {
+  baseUrl: "https://api.minimax.io/v1",
+  model: "MiniMax-Text-01",
+};

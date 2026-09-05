@@ -84,7 +84,7 @@ describe("estimateManyFromOrigin", () => {
 });
 
 describe("describeTrafficSource", () => {
-  it("labels OSRM stack as primary free source", () => {
+  it("labels OSRM stack as primary source", () => {
     expect(describeTrafficSource("osrm_traffic")).toBe(
       "OSRM road distances + Jakarta traffic model"
     );

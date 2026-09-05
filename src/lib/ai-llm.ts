@@ -2,13 +2,14 @@ import { getMasterOverview } from "@/lib/master-overview";
 import { getRoutingLogisticsOverview } from "@/lib/routing-overview";
 import { formatCurrencyShort } from "@/lib/format";
 import type { AiProviderSettings } from "@/lib/ai-settings";
+import type { Locale } from "@/lib/i18n/config";
 
 export type LlmChatMessage = {
   role: "user" | "assistant" | "system";
   content: string;
 };
 
-const LOGISTICS_EXPERT_SYSTEM = `You are the FLO Supply Chain Operations Assistant — a senior logistics, fleet, and last-mile delivery expert for Jakarta last-mile operations (FLO: Fab Logistics Operations).
+const LOGISTICS_EXPERT_SYSTEM = `You are the FLO Supply Chain Operations Assistant — a senior logistics, fleet, and last-mile delivery expert for Fab Logistics' Jakarta operations (FLO: Fab Logistics Operations).
 
 YOUR ROLE:
 - Help operators understand delivery performance, routes, drivers, orders, fleet health (VQI), maintenance, fuel costs, emissions, DTI/CFI metrics, and warehouse logistics.
@@ -27,7 +28,9 @@ FORMAT:
 - Use short paragraphs or bullet points for metrics.
 - When citing data, prefer exact figures from LIVE COMPANY DATA.`;
 
-export async function buildLiveCompanyContext(): Promise<string> {
+export async function buildLiveCompanyContext(
+  locale: Locale = "en"
+): Promise<string> {
   const [master, logistics] = await Promise.all([
     getMasterOverview(),
     getRoutingLogisticsOverview(),
@@ -37,7 +40,7 @@ export async function buildLiveCompanyContext(): Promise<string> {
     .filter((r) => r.status === "IN_PROGRESS")
     .map(
       (r) =>
-        `${r.driver.name}: ${r.totals.deliveredStops}/${r.totals.totalStops} stops, ${r.totals.totalDistanceKm} km, fuel ${formatCurrencyShort(r.totals.fuelCostIdr)}`
+        `${r.driver.name}: ${r.totals.deliveredStops}/${r.totals.totalStops} stops, ${r.totals.totalDistanceKm} km, fuel ${formatCurrencyShort(r.totals.fuelCostIdr, locale)}`
     );
 
   const drivers = logistics.roster
@@ -65,7 +68,7 @@ export async function buildLiveCompanyContext(): Promise<string> {
     drivers || "No drivers seeded.",
     "",
     "FUEL & OPS:",
-    `Active route fuel spend ${formatCurrencyShort(master.operations.totalFuelCostIdr)}, savings ${formatCurrencyShort(master.operations.totalFuelCostSavingsIdr)} (${master.operations.totalFuelCostSavingsPercent}%)`,
+    `Active route fuel spend ${formatCurrencyShort(master.operations.totalFuelCostIdr, locale)}, savings ${formatCurrencyShort(master.operations.totalFuelCostSavingsIdr, locale)} (${master.operations.totalFuelCostSavingsPercent}%)`,
     `Avg DTI ${master.operations.avgDti ?? "n/a"}, Avg CFI ${master.operations.avgCfi ?? "n/a"}`,
   ].join("\n");
 }
@@ -79,13 +82,18 @@ export async function callOpenAiCompatibleChat(input: {
   userMessage: string;
   history?: Array<{ role: "user" | "assistant"; content: string }>;
   companyContext: string;
+  locale?: Locale;
 }): Promise<string> {
   const url = `${normalizeBaseUrl(input.settings.baseUrl)}/chat/completions`;
 
   const messages: LlmChatMessage[] = [
     {
       role: "system",
-      content: `${LOGISTICS_EXPERT_SYSTEM}\n\n---\nLIVE COMPANY DATA (authoritative; do not contradict):\n${input.companyContext}`,
+      content: `${LOGISTICS_EXPERT_SYSTEM}\n\nLANGUAGE: ${
+        input.locale === "id"
+          ? "Answer in natural Bahasa Indonesia. Keep FLO, VQI, DTI, CFI, ODOL, product names, and other operational acronyms unchanged."
+          : "Answer in English."
+      }\n\n---\nLIVE COMPANY DATA (authoritative; do not contradict):\n${input.companyContext}`,
     },
     ...(input.history ?? []).slice(-8),
     { role: "user", content: input.userMessage },
@@ -134,13 +142,15 @@ export async function callOpenAiCompatibleChat(input: {
 }
 
 export async function testOpenAiCompatibleConnection(
-  settings: AiProviderSettings
+  settings: AiProviderSettings,
+  locale: Locale = "en"
 ): Promise<{ ok: true; sample: string }> {
   const reply = await callOpenAiCompatibleChat({
     settings,
     userMessage:
       "Reply with exactly: FLO logistics assistant ready. (This is a connection test.)",
     companyContext: "Test context — no live data required for this ping.",
+    locale,
   });
 
   return { ok: true, sample: reply.slice(0, 200) };

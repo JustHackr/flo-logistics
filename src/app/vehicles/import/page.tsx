@@ -18,8 +18,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { validateCsvRow } from "@/lib/csv";
 import type { CsvValidationResult } from "@/lib/csv";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 export default function ImportPage() {
+  const { t } = useI18n();
   const [results, setResults] = useState<CsvValidationResult[]>([]);
   const [importing, setImporting] = useState(false);
   const [importSummary, setImportSummary] = useState<{
@@ -62,15 +64,15 @@ export default function ImportPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Bulk CSV Import</h2>
+        <h2 className="text-2xl font-bold tracking-tight">{t("fleet.import.title")}</h2>
         <p className="text-muted-foreground">
-          Upload a CSV file to import multiple vehicles at once.
+          {t("fleet.import.subtitle")}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Upload CSV</CardTitle>
+          <CardTitle>{t("fleet.import.upload")}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <a
@@ -79,11 +81,11 @@ export default function ImportPage() {
             className={cn(buttonVariants({ variant: "outline" }), "inline-flex")}
           >
             <Download className="mr-2 h-4 w-4" />
-            Download Template
+            {t("fleet.import.downloadTemplate")}
           </a>
           <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground hover:bg-muted/50">
             <Upload className="h-4 w-4" />
-            <span>Choose CSV file or drag here</span>
+            <span>{t("fleet.import.chooseFile")}</span>
             <input
               type="file"
               accept=".csv"
@@ -100,11 +102,11 @@ export default function ImportPage() {
       {results.length > 0 && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Preview ({results.length} rows)</CardTitle>
+            <CardTitle>{t("fleet.import.preview", { count: results.length })}</CardTitle>
             <div className="flex gap-2">
-              <Badge variant="default">{validCount} valid</Badge>
+              <Badge variant="default">{t("fleet.import.validCount", { count: validCount })}</Badge>
               {invalidCount > 0 && (
-                <Badge variant="destructive">{invalidCount} invalid</Badge>
+                <Badge variant="destructive">{t("fleet.import.invalidCount", { count: invalidCount })}</Badge>
               )}
             </div>
           </CardHeader>
@@ -113,12 +115,12 @@ export default function ImportPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Row</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Engine</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Errors</TableHead>
+                    <TableHead>{t("fleet.import.row")}</TableHead>
+                    <TableHead>{t("common.name")}</TableHead>
+                    <TableHead>{t("fleet.vehicles.type")}</TableHead>
+                    <TableHead>{t("fleet.vehicles.engine")}</TableHead>
+                    <TableHead>{t("common.status")}</TableHead>
+                    <TableHead>{t("fleet.import.errors")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -130,7 +132,7 @@ export default function ImportPage() {
                       <TableCell>{row.data.engineType}</TableCell>
                       <TableCell>
                         <Badge variant={row.valid ? "default" : "destructive"}>
-                          {row.valid ? "Valid" : "Invalid"}
+                          {row.valid ? t("fleet.import.valid") : t("fleet.import.invalid")}
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-xs text-xs text-destructive">
@@ -146,20 +148,20 @@ export default function ImportPage() {
                 onClick={handleImport}
                 disabled={importing || validCount === 0}
               >
-                {importing ? "Importing..." : `Import ${validCount} Vehicles`}
+                {importing ? t("fleet.import.importing") : t("fleet.import.importVehicles", { count: validCount })}
               </Button>
               <Link
                 href="/vehicles"
                 className={cn(buttonVariants({ variant: "outline" }))}
               >
-                View Vehicles
+                {t("fleet.import.viewVehicles")}
               </Link>
             </div>
             {importSummary && (
               <p className="text-sm text-muted-foreground">
-                Imported {importSummary.imported} vehicles.{" "}
+                {t("fleet.import.imported", { count: importSummary.imported })}{" "}
                 {importSummary.failed > 0 &&
-                  `${importSummary.failed} rows skipped due to validation errors.`}
+                  t("fleet.import.skipped", { count: importSummary.failed })}
               </p>
             )}
           </CardContent>

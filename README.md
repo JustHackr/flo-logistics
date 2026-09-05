@@ -1,12 +1,8 @@
-# FLO (Fab Logistics Operations)
+# FLO — Fab Logistics Operations
 
 Next.js logistics webapp with traffic-aware route optimization for Jakarta last-mile delivery.
 
-Live demo: [https://flo-logistics.vercel.app](https://flo-logistics.vercel.app)
-
-## Quick start (no API keys required)
-
-Routing works out of the box using free OSRM road distances and a local Jakarta traffic model. No `.env.local` file is needed for local development.
+## Quick start
 
 ```bash
 npm install
@@ -19,19 +15,34 @@ The `build` script runs `prisma migrate deploy` and `db:seed` automatically, so 
 
 ### How routing estimates work
 
-| Priority | Source | Cost |
-|----------|--------|------|
-| 1 (default) | OSRM public API + Jakarta traffic model | Free |
-| 2 (fallback) | Local Jakarta Haversine model | Free, offline |
-| 3 (optional) | Google Maps live traffic | Paid — requires billing |
+| Priority | Source |
+|----------|--------|
+| 1 (default) | OSRM + Jakarta traffic model |
+| 2 (fallback) | Local Jakarta Haversine model |
+| 3 (optional) | Google Maps live traffic |
 
 Set a departure time on the plan page to apply Jakarta rush-hour multipliers (e.g. weekday 08:00 vs 14:00).
 
-### Optional: Google Maps upgrade
+### Google Maps (optional)
 
-To enable live Google traffic, copy `.env.example` to `.env.local` and add a `GOOGLE_MAPS_API_KEY`. See `.env.example` for setup steps. This is **not required** for the demo.
+To enable live Google traffic and interactive maps on a deployment, set
+**server-side** environment variables (Vercel → Environment Variables, or
+`.env.local` locally). Do **not** use `NEXT_PUBLIC_` for secret values.
 
-To **visualize routes on Google Maps** (Plan Route and Logistics Dashboard), also set `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` and enable the **Maps JavaScript API** and **Directions API** in Google Cloud Console. Route maps use server polylines when available, otherwise the browser Directions API draws road-following paths.
+| Variable | Purpose |
+|----------|---------|
+| `GOOGLE_MAPS_API_KEY` | Routes API (traffic + polylines) |
+| `GOOGLE_DISTANCE_MATRIX_API_KEY` | Optional Distance Matrix fallback |
+| `GOOGLE_MAPS_JS_API_KEY` | Optional referrer-restricted Maps JS key (falls back to `GOOGLE_MAPS_API_KEY`) |
+
+The browser loads the Maps JS key only from `/api/routing/maps/js-config` after
+mount. Route geometry is computed server-side via `/api/routing/routes/polyline`.
+
+### AI assistant (optional)
+
+Set `AI_API_KEY` (and optionally `AI_BASE_URL` / `AI_MODEL`) on the server.
+Chat uses the shared deployment credentials or falls back to the built-in local
+operations helper.
 
 Demo warehouse: **Blok M Square**. Order coordinates are validated against Greater Jakarta (Jabodetabek) bounds. Generate sample CSVs at `/admin/mockup-data`.
 
@@ -45,7 +56,7 @@ npm run db:reset
 
 ### Production note
 
-The public OSRM demo server (`router.project-osrm.org`) has no SLA. For production at scale, consider self-hosting [OSRM](https://project-osrm.org/) (free, open source).
+The public OSRM demo server (`router.project-osrm.org`) has no SLA. For production at scale, consider self-hosting [OSRM](https://project-osrm.org/).
 
 ## Development
 

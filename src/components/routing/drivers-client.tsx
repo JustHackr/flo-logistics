@@ -36,6 +36,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { RiskBadge } from "@/components/risk-badge";
+import { useI18n } from "@/components/i18n/use-i18n";
 import type { RiskLevel } from "@/lib/vqi";
 
 type VehicleOption = {
@@ -78,6 +79,7 @@ export function DriversClient({
   drivers: DriverRow[];
   vehicles: VehicleOption[];
 }) {
+  const { t } = useI18n();
   const [drivers, setDrivers] = useState(initialDrivers);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -130,7 +132,7 @@ export function DriversClient({
         }
       );
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? "Failed to save driver");
+      if (!res.ok) throw new Error(data?.error ?? t("routing.drivers.saveFailed"));
 
       const vehicle = vehicles.find((v) => v.id === data.vehicleId);
       const row: DriverRow = {
@@ -157,7 +159,7 @@ export function DriversClient({
       setFormOpen(false);
       setForm(emptyForm);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to save driver");
+      setError(e instanceof Error ? e.message : t("routing.drivers.saveFailed"));
     } finally {
       setLoading(false);
     }
@@ -176,14 +178,14 @@ export function DriversClient({
         throw new Error(
           data?.error ??
             (res.status === 409
-              ? "Driver has route plans and cannot be deleted."
-              : "Failed to delete driver")
+              ? t("routing.drivers.deleteBlocked")
+              : t("routing.drivers.deleteFailed"))
         );
       }
       setDrivers((prev) => prev.filter((d) => d.id !== deleteId));
       setDeleteId(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to delete driver");
+      setError(e instanceof Error ? e.message : t("routing.drivers.deleteFailed"));
     } finally {
       setLoading(false);
     }
@@ -195,18 +197,17 @@ export function DriversClient({
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Drivers</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("routing.drivers.title")}</h2>
           <p className="text-muted-foreground">
-            Manage courier roster and vehicle assignments. Route optimization
-            selects the highest-VQI driver per vehicle type.{" "}
+            {t("routing.drivers.subtitle")}{" "}
             <Link href="/routing/methodology" className="font-medium text-primary hover:underline">
-              See matching guide
+              {t("routing.drivers.matchingGuide")}
             </Link>
           </p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Driver
+          {t("routing.drivers.addDriver")}
         </Button>
       </div>
 
@@ -219,11 +220,13 @@ export function DriversClient({
       {(showForm || editingId) && (
         <Card>
           <CardHeader>
-            <CardTitle>{editingId ? "Edit Driver" : "New Driver"}</CardTitle>
+            <CardTitle>
+              {editingId ? t("routing.drivers.editDriver") : t("routing.drivers.new")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="driver-name">Name</Label>
+              <Label htmlFor="driver-name">{t("common.name")}</Label>
               <Input
                 id="driver-name"
                 value={form.name}
@@ -231,7 +234,7 @@ export function DriversClient({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="driver-phone">Phone</Label>
+              <Label htmlFor="driver-phone">{t("routing.drivers.phone")}</Label>
               <Input
                 id="driver-phone"
                 value={form.phone}
@@ -240,7 +243,7 @@ export function DriversClient({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="driver-emp">Employee ID</Label>
+              <Label htmlFor="driver-emp">{t("routing.drivers.employeeId")}</Label>
               <Input
                 id="driver-emp"
                 value={form.employeeId}
@@ -248,7 +251,7 @@ export function DriversClient({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="driver-license">License</Label>
+              <Label htmlFor="driver-license">{t("routing.drivers.license")}</Label>
               <Input
                 id="driver-license"
                 value={form.licenseNumber}
@@ -256,7 +259,7 @@ export function DriversClient({
               />
             </div>
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>{t("common.status")}</Label>
               <Select
                 value={form.status}
                 onValueChange={(v) => setForm((p) => ({ ...p, status: v ?? "available" }))}
@@ -265,25 +268,29 @@ export function DriversClient({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="on_route">On route</SelectItem>
-                  <SelectItem value="off_duty">Off duty</SelectItem>
+                  <SelectItem value="available">{t("routing.drivers.statusAvailable")}</SelectItem>
+                  <SelectItem value="on_route">{t("routing.drivers.statusOnRoute")}</SelectItem>
+                  <SelectItem value="off_duty">{t("routing.drivers.statusOffDuty")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Assigned vehicle</Label>
+              <Label>{t("routing.drivers.assignedVehicle")}</Label>
               <Select
                 value={form.vehicleId}
                 onValueChange={(v) => setForm((p) => ({ ...p, vehicleId: v ?? "" }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select vehicle" />
+                  <SelectValue placeholder={t("common.selectVehicle")} />
                 </SelectTrigger>
                 <SelectContent>
                   {vehicles.map((v) => (
                     <SelectItem key={v.id} value={v.id}>
-                      {v.name} · {v.vehicleType} · VQI {v.vqi}
+                      {t("routing.drivers.vehicleOption", {
+                        name: v.name,
+                        type: v.vehicleType,
+                        vqi: v.vqi,
+                      })}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -294,7 +301,9 @@ export function DriversClient({
                 onClick={() => void saveDriver()}
                 disabled={loading || !form.name.trim() || !form.vehicleId}
               >
-                {editingId ? "Update Driver" : "Create Driver"}
+                {editingId
+                  ? t("routing.drivers.updateDriver")
+                  : t("routing.drivers.createDriver")}
               </Button>
               <Button
                 variant="outline"
@@ -304,7 +313,7 @@ export function DriversClient({
                   setForm(emptyForm);
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </CardContent>
@@ -313,22 +322,20 @@ export function DriversClient({
 
       <Card>
         <CardHeader>
-          <CardTitle>Driver roster</CardTitle>
-          <CardDescription>
-            Each driver is permanently assigned to one vehicle for dispatch matching.
-          </CardDescription>
+          <CardTitle>{t("routing.drivers.rosterTitle")}</CardTitle>
+          <CardDescription>{t("routing.drivers.rosterDescription")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-auto rounded-lg border">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Vehicle</TableHead>
+                  <TableHead>{t("common.name")}</TableHead>
+                  <TableHead>{t("common.contact")}</TableHead>
+                  <TableHead>{t("common.vehicle")}</TableHead>
                   <TableHead>VQI</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("common.status")}</TableHead>
+                  <TableHead className="text-right">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -371,7 +378,7 @@ export function DriversClient({
                 {drivers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
-                      No drivers yet.
+                      {t("routing.drivers.emptyHint")}
                     </TableCell>
                   </TableRow>
                 )}
@@ -384,17 +391,17 @@ export function DriversClient({
       <Dialog open={Boolean(deleteId)} onOpenChange={() => setDeleteId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete driver?</DialogTitle>
+            <DialogTitle>{t("routing.drivers.deleteTitle")}</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Drivers with existing route plans cannot be deleted.
+            {t("routing.drivers.deleteDescription")}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteId(null)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={() => void confirmDelete()} disabled={loading}>
-              Delete
+              {t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

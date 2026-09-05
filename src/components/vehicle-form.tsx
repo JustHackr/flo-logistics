@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { VehicleWithAnalysis } from "@/lib/types";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 type VehicleFormProps = {
   initial?: Partial<VehicleWithAnalysis>;
@@ -40,6 +41,7 @@ const defaultValues = {
 
 export function VehicleForm({ initial, mode }: VehicleFormProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const [form, setForm] = useState({
     ...defaultValues,
     name: initial?.name ?? defaultValues.name,
@@ -96,7 +98,7 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
 
     if (!res.ok) {
       const data = await res.json();
-      setError(data.error ?? "Failed to save vehicle");
+      setError(data.error ?? t("fleet.vehicles.saveFailed"));
       setLoading(false);
       return;
     }
@@ -113,13 +115,15 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
     <Card>
       <CardHeader>
         <CardTitle>
-          {mode === "create" ? "Add Vehicle" : "Edit Vehicle"}
+          {mode === "create"
+            ? t("fleet.vehicles.formCreateTitle")
+            : t("fleet.vehicles.formEditTitle")}
         </CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="name">Vehicle Name</Label>
+            <Label htmlFor="name">{t("fleet.vehicles.vehicleName")}</Label>
             <Input
               id="name"
               required
@@ -129,7 +133,7 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label>Vehicle Type</Label>
+            <Label>{t("fleet.vehicles.vehicleType")}</Label>
             <Select
               value={form.vehicleType}
               onValueChange={(v) => updateField("vehicleType", v ?? "van")}
@@ -138,14 +142,14 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="van">Van</SelectItem>
-                <SelectItem value="motorcycle">Motorcycle</SelectItem>
+                <SelectItem value="van">{t("fleet.vehicles.typeVan")}</SelectItem>
+                <SelectItem value="motorcycle">{t("fleet.vehicles.typeMotorcycle")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label>Engine Type</Label>
+            <Label>{t("fleet.vehicles.engine")}</Label>
             <Select
               value={form.engineType}
               onValueChange={(v) => updateField("engineType", v ?? "gasoline")}
@@ -154,15 +158,15 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="gasoline">Gasoline</SelectItem>
-                <SelectItem value="diesel">Diesel</SelectItem>
-                <SelectItem value="ev">EV</SelectItem>
+                <SelectItem value="gasoline">{t("fleet.vehicles.engineGasoline")}</SelectItem>
+                <SelectItem value="diesel">{t("fleet.vehicles.engineDiesel")}</SelectItem>
+                <SelectItem value="ev">{t("fleet.vehicles.engineEv")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="vehicleAgeYears">Vehicle Age (years)</Label>
+            <Label htmlFor="vehicleAgeYears">{t("fleet.vehicles.vehicleAgeYears")}</Label>
             <Input
               id="vehicleAgeYears"
               type="number"
@@ -174,7 +178,7 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="odometerKm">Odometer (km)</Label>
+            <Label htmlFor="odometerKm">{t("fleet.vehicles.odometerKm")}</Label>
             <Input
               id="odometerKm"
               type="number"
@@ -185,7 +189,7 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="kilometersPerFleet">Kilometers per Fleet</Label>
+            <Label htmlFor="kilometersPerFleet">{t("fleet.vehicles.kilometersPerFleet")}</Label>
             <Input
               id="kilometersPerFleet"
               type="number"
@@ -196,7 +200,7 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="vehicleLifetimeYears">Vehicle Lifetime (years)</Label>
+            <Label htmlFor="vehicleLifetimeYears">{t("fleet.vehicles.vehicleLifetimeYears")}</Label>
             <Input
               id="vehicleLifetimeYears"
               type="number"
@@ -208,7 +212,7 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="expectedLifetimeKm">Expected Lifetime (km)</Label>
+            <Label htmlFor="expectedLifetimeKm">{t("fleet.vehicles.expectedLifetimeKm")}</Label>
             <Input
               id="expectedLifetimeKm"
               type="number"
@@ -219,7 +223,7 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="maintenanceCostUnit">Maintenance Cost (Rp)</Label>
+            <Label htmlFor="maintenanceCostUnit">{t("fleet.vehicles.maintenanceCostUnit")}</Label>
             <Input
               id="maintenanceCostUnit"
               type="number"
@@ -231,7 +235,7 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="maintenanceIntervalKm">Maintenance Interval (km)</Label>
+            <Label htmlFor="maintenanceIntervalKm">{t("fleet.vehicles.maintenanceIntervalKm")}</Label>
             <Input
               id="maintenanceIntervalKm"
               type="number"
@@ -242,7 +246,7 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="lastMaintenanceDate">Last Maintenance Date</Label>
+            <Label htmlFor="lastMaintenanceDate">{t("fleet.vehicles.lastMaintenanceDate")}</Label>
             <Input
               id="lastMaintenanceDate"
               type="date"
@@ -252,7 +256,7 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="nextMaintenanceDate">Next Maintenance Date</Label>
+            <Label htmlFor="nextMaintenanceDate">{t("fleet.vehicles.nextMaintenanceDate")}</Label>
             <Input
               id="nextMaintenanceDate"
               type="date"
@@ -262,7 +266,7 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label>Data Source</Label>
+            <Label>{t("fleet.vehicles.dataSource")}</Label>
             <Select
               value={form.dataSource}
               onValueChange={(v) => updateField("dataSource", v ?? "manual")}
@@ -271,17 +275,17 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="manual">Manual</SelectItem>
-                <SelectItem value="csv">CSV Import</SelectItem>
+                <SelectItem value="manual">{t("fleet.vehicles.dataSourceManual")}</SelectItem>
+                <SelectItem value="csv">{t("fleet.vehicles.dataSourceCsv")}</SelectItem>
                 <SelectItem value="connector" disabled>
-                  Connector (coming soon)
+                  {t("fleet.vehicles.dataSourceConnector")}
                 </SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">{t("common.notes")}</Label>
             <Textarea
               id="notes"
               value={form.notes}
@@ -295,14 +299,18 @@ export function VehicleForm({ initial, mode }: VehicleFormProps) {
 
           <div className="flex gap-2 md:col-span-2">
             <Button type="submit" disabled={loading}>
-              {loading ? "Saving..." : mode === "create" ? "Create Vehicle" : "Update Vehicle"}
+              {loading
+                ? t("common.saving")
+                : mode === "create"
+                  ? t("fleet.vehicles.createVehicle")
+                  : t("fleet.vehicles.updateVehicle")}
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => router.push("/vehicles")}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
           </div>
         </form>

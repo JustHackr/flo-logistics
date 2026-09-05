@@ -40,27 +40,28 @@ import {
   VQI_WEIGHTS,
 } from "@/lib/vqi";
 import type { VehicleWithAnalysis } from "@/lib/types";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 const BENEFITS = [
   {
     icon: TrendingDown,
-    title: "Reduce Downtime",
-    body: "Spot high-risk vehicles before they break down, so fleets keep moving and deliveries stay on schedule.",
+    title: "reduceDowntimeTitle",
+    body: "reduceDowntimeBody",
   },
   {
     icon: Wallet,
-    title: "Optimize Maintenance Cost",
-    body: "Prioritize spending on units that need it most instead of fixed, calendar-based servicing.",
+    title: "optimizeCostTitle",
+    body: "optimizeCostBody",
   },
   {
     icon: CalendarClock,
-    title: "Plan Ahead",
-    body: "Predicted next-maintenance dates turn reactive repairs into scheduled, budgeted work.",
+    title: "planAheadTitle",
+    body: "planAheadBody",
   },
   {
     icon: ShieldAlert,
-    title: "Prioritize by Risk",
-    body: "A single 0-100 score ranks the whole fleet, so limited workshop capacity goes where it matters.",
+    title: "prioritizeRiskTitle",
+    body: "prioritizeRiskBody",
   },
 ];
 
@@ -102,27 +103,27 @@ const ACADEMIC_REFERENCES = [
 
 const METRIC_ROWS = [
   {
-    factor: "Vehicle Age",
+    factor: "vehicleAge",
     weight: VQI_WEIGHTS.age,
-    measures: "How far through its expected life (in years) the vehicle is.",
+    measures: "vehicleAgeMeasures",
     formula: "(age / lifetime years) × 30",
   },
   {
-    factor: "Odometer Wear",
+    factor: "odometerWear",
     weight: VQI_WEIGHTS.odometer,
-    measures: "Distance travelled vs. expected lifetime distance, adjusted per engine type.",
+    measures: "odometerWearMeasures",
     formula: "(odometer / expected km) × 30 × engine modifier",
   },
   {
-    factor: "Maintenance Cost",
+    factor: "maintenanceCost",
     weight: VQI_WEIGHTS.cost,
-    measures: "This vehicle's cost relative to the fleet average, adjusted per engine type.",
+    measures: "maintenanceCostMeasures",
     formula: "(cost × engine modifier / fleet avg) × 20",
   },
   {
-    factor: "Maintenance Planning",
+    factor: "maintenancePlanning",
     weight: VQI_WEIGHTS.planning,
-    measures: "How many days overdue the next scheduled maintenance is.",
+    measures: "maintenancePlanningMeasures",
     formula: "days overdue × 0.5",
   },
 ];
@@ -150,6 +151,7 @@ export function MethodologyClient({
   vehicles: VehicleWithAnalysis[];
   fleetAvgMaintenanceCost: number;
 }) {
+  const { t } = useI18n();
   const [selectedId, setSelectedId] = useState(vehicles[0]?.id ?? "");
   const selected = useMemo(
     () => vehicles.find((v) => v.id === selectedId) ?? vehicles[0],
@@ -170,11 +172,11 @@ export function MethodologyClient({
 
     return [
       {
-        factor: "Vehicle Age",
-        detail: `(${formatNumber(selected.vehicleAgeYears, 1)} yr ÷ ${formatNumber(
+        factor: t("fleet.methodology.vehicleAge"),
+        detail: `(${formatNumber(selected.vehicleAgeYears, 1)} ${t("fleet.methodology.yearsShort")} ÷ ${formatNumber(
           selected.vehicleLifetimeYears,
           1
-        )} yr) × ${VQI_WEIGHTS.age}`,
+        )} ${t("fleet.methodology.yearsShort")}) × ${VQI_WEIGHTS.age}`,
         raw: round1(
           (selected.vehicleAgeYears / selected.vehicleLifetimeYears) *
             VQI_WEIGHTS.age
@@ -183,7 +185,7 @@ export function MethodologyClient({
         max: VQI_WEIGHTS.age,
       },
       {
-        factor: "Odometer Wear",
+        factor: t("fleet.methodology.odometerWear"),
         detail: `(${formatNumber(selected.odometerKm)} ÷ ${formatNumber(
           selected.expectedLifetimeKm
         )}) × ${VQI_WEIGHTS.odometer} × ${odoModifier}`,
@@ -196,7 +198,7 @@ export function MethodologyClient({
         max: VQI_WEIGHTS.odometer,
       },
       {
-        factor: "Maintenance Cost",
+        factor: t("fleet.methodology.maintenanceCost"),
         detail: `(${formatCurrency(selected.maintenanceCostUnit)} × ${costModifier} ÷ ${formatCurrency(
           Math.round(fleetAvgMaintenanceCost)
         )}) × ${VQI_WEIGHTS.cost}`,
@@ -205,41 +207,40 @@ export function MethodologyClient({
         max: VQI_WEIGHTS.cost,
       },
       {
-        factor: "Maintenance Planning",
+        factor: t("fleet.methodology.maintenancePlanning"),
         detail:
           overdue > 0
-            ? `${overdue} days overdue × ${PLANNING_PENALTY_PER_DAY}`
-            : "Not overdue",
+            ? t("fleet.methodology.daysOverdue", { count: overdue, rate: PLANNING_PENALTY_PER_DAY })
+            : t("fleet.methodology.notOverdue"),
         raw: round1(overdue * PLANNING_PENALTY_PER_DAY),
         penalty: selected.penalties.planning,
         max: VQI_WEIGHTS.planning,
       },
     ];
-  }, [selected, fleetAvgMaintenanceCost]);
+  }, [selected, fleetAvgMaintenanceCost, t]);
 
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">
-          Metrics &amp; Methodology
+          {t("fleet.methodology.title")}
         </h2>
         <p className="text-muted-foreground">
-          How the Vehicle Quality Index (VQI) works, why it helps manage a logistics
-          fleet, and how scores feed routing driver dispatch (FLO v0.2).
+          {t("fleet.methodology.subtitle")}
         </p>
       </div>
 
       <section className="space-y-3">
-        <h3 className="text-lg font-semibold">Why predictive maintenance?</h3>
+        <h3 className="text-lg font-semibold">{t("fleet.methodology.whyPredictive")}</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {BENEFITS.map((benefit) => (
             <Card key={benefit.title}>
               <CardHeader className="pb-2">
                 <benefit.icon className="h-6 w-6 text-primary" />
-                <CardTitle className="text-base">{benefit.title}</CardTitle>
+                <CardTitle className="text-base">{t(`fleet.methodology.${benefit.title}`)}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">{benefit.body}</p>
+                <p className="text-sm text-muted-foreground">{t(`fleet.methodology.${benefit.body}`)}</p>
               </CardContent>
             </Card>
           ))}
@@ -247,32 +248,30 @@ export function MethodologyClient({
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-lg font-semibold">The VQI scoring matrix</h3>
+        <h3 className="text-lg font-semibold">{t("fleet.methodology.vqiTitle")}</h3>
         <p className="text-sm text-muted-foreground">
-          Every vehicle starts at a perfect{" "}
-          <span className="font-semibold text-foreground">100</span>. Four factors
-          subtract penalty points. The remaining score is the VQI.
+          {t("fleet.methodology.vqiDescription")}
         </p>
         <Card>
           <CardContent className="pt-6">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Factor</TableHead>
-                  <TableHead className="w-24">Max Points</TableHead>
-                  <TableHead>What it measures</TableHead>
-                  <TableHead>Penalty formula</TableHead>
+                  <TableHead>{t("fleet.methodology.factor")}</TableHead>
+                  <TableHead className="w-24">{t("fleet.methodology.maxPoints")}</TableHead>
+                  <TableHead>{t("fleet.methodology.whatItMeasures")}</TableHead>
+                  <TableHead>{t("fleet.methodology.penaltyFormula")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {METRIC_ROWS.map((row) => (
                   <TableRow key={row.factor}>
-                    <TableCell className="font-medium">{row.factor}</TableCell>
+                    <TableCell className="font-medium">{t(`fleet.methodology.${row.factor}`)}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{row.weight} pts</Badge>
+                      <Badge variant="secondary">{t("fleet.methodology.points", { count: row.weight })}</Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {row.measures}
+                      {t(`fleet.methodology.${row.measures}`)}
                     </TableCell>
                     <TableCell className="font-mono text-xs">
                       {row.formula}
@@ -288,9 +287,9 @@ export function MethodologyClient({
       <section className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">The formula</CardTitle>
+            <CardTitle className="text-base">{t("fleet.methodology.formulaTitle")}</CardTitle>
             <CardDescription>
-              Each penalty is capped at its maximum before being subtracted.
+              {t("fleet.methodology.formulaDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -301,19 +300,19 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
             </pre>
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2">
-                <Badge variant="destructive">High risk</Badge>
+                <Badge variant="destructive">{t("fleet.methodology.highRisk")}</Badge>
                 <span className="text-muted-foreground">
                   VQI &lt; {RISK_THRESHOLDS.highBelow}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="secondary">Medium risk</Badge>
+                <Badge variant="secondary">{t("fleet.methodology.mediumRisk")}</Badge>
                 <span className="text-muted-foreground">
                   {RISK_THRESHOLDS.highBelow} – {RISK_THRESHOLDS.lowAbove}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Badge>Low risk</Badge>
+                <Badge>{t("fleet.methodology.lowRisk")}</Badge>
                 <span className="text-muted-foreground">
                   VQI &gt; {RISK_THRESHOLDS.lowAbove}
                 </span>
@@ -324,25 +323,25 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Engine-type modifiers</CardTitle>
+            <CardTitle className="text-base">{t("fleet.methodology.engineModifiers")}</CardTitle>
             <CardDescription>
-              Different powertrains wear and cost differently.
+              {t("fleet.methodology.engineModifiersDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Engine</TableHead>
-                  <TableHead>Odometer ×</TableHead>
-                  <TableHead>Cost ×</TableHead>
+                  <TableHead>{t("fleet.methodology.engine")}</TableHead>
+                  <TableHead>{t("fleet.methodology.odometerMultiplier")}</TableHead>
+                  <TableHead>{t("fleet.methodology.costMultiplier")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {(["gasoline", "diesel", "ev"] as const).map((engine) => (
                   <TableRow key={engine}>
                     <TableCell className="font-medium uppercase">
-                      {engine}
+                      {t(`fleet.methodology.engine_${engine}`)}
                     </TableCell>
                     <TableCell>{ENGINE_ODOMETER_MODIFIERS[engine]}</TableCell>
                     <TableCell>{ENGINE_COST_MODIFIERS[engine]}</TableCell>
@@ -351,8 +350,7 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
               </TableBody>
             </Table>
             <p className="mt-3 text-xs text-muted-foreground">
-              EVs have fewer wear parts (lower odometer penalty); diesel units
-              trend slightly higher on both wear and cost.
+              {t("fleet.methodology.engineNote")}
             </p>
           </CardContent>
         </Card>
@@ -361,19 +359,16 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
       <section className="space-y-3">
         <h3 className="flex items-center gap-2 text-lg font-semibold">
           <Truck className="h-5 w-5 text-primary" />
-          VQI in routing dispatch
+          {t("fleet.methodology.routingDispatch")}
         </h3>
         <p className="text-sm text-muted-foreground">
-          The same VQI score powers driver selection on Plan Route: for each route
-          chunk, the highest-VQI available driver of the matching vehicle type
-          (car or motorcycle) is ranked first. Dispatch shows all candidates with
-          selection reason. Manage drivers at{" "}
+          {t("fleet.methodology.routingDispatchDescription")}{" "}
           <Link href="/routing/drivers" className="font-medium text-primary hover:underline">
-            Routing → Drivers
+            {t("fleet.methodology.driversLink")}
           </Link>
-          ; full routing formulas at{" "}
+          ; {t("fleet.methodology.formulasAt")}{" "}
           <Link href="/routing/methodology" className="font-medium text-primary hover:underline">
-            Routing Metrics &amp; Guide
+            {t("fleet.methodology.routingGuideLink")}
           </Link>
           .
         </p>
@@ -382,14 +377,12 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
             <Route className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
             <div className="space-y-1 text-muted-foreground">
               <p>
-                <span className="font-medium text-foreground">Selection rule:</span>{" "}
-                sort by VQI descending within vehicle type; skip drivers already
-                assigned or inactive.
+                <span className="font-medium text-foreground">{t("fleet.methodology.selectionRuleLabel")}</span>{" "}
+                {t("fleet.methodology.selectionRule")}
               </p>
               <p>
-                <span className="font-medium text-foreground">Demo EV fleet:</span>{" "}
-                Polytron Fox (motor listrik) and DFSK Gelora E / Wuling Formo Max EV
-                (van listrik) receive lower odometer/cost penalties and higher CFI scores on routes.
+                <span className="font-medium text-foreground">{t("fleet.methodology.demoEvLabel")}</span>{" "}
+                {t("fleet.methodology.demoEv")}
               </p>
             </div>
           </CardContent>
@@ -401,10 +394,10 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
           <div>
             <h3 className="flex items-center gap-2 text-lg font-semibold">
               <Gauge className="h-5 w-5 text-primary" />
-              Live calculation
+              {t("fleet.methodology.liveCalculation")}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Pick a vehicle to see exactly how its VQI is derived from real data.
+              {t("fleet.methodology.liveCalculationDescription")}
             </p>
           </div>
           {selected && (
@@ -433,17 +426,17 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
               <CardDescription className="uppercase">
                 {selected.vehicleType} · {selected.engineType} ·{" "}
                 {formatNumber(selected.odometerKm)} km ·{" "}
-                {formatNumber(selected.vehicleAgeYears, 1)} yr
+                {formatNumber(selected.vehicleAgeYears, 1)} {t("fleet.methodology.yearsShort")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Factor</TableHead>
-                    <TableHead>Calculation</TableHead>
-                    <TableHead className="text-right">Raw</TableHead>
-                    <TableHead className="text-right">Penalty (max)</TableHead>
+                    <TableHead>{t("fleet.methodology.factor")}</TableHead>
+                    <TableHead>{t("fleet.methodology.calculation")}</TableHead>
+                    <TableHead className="text-right">{t("fleet.methodology.raw")}</TableHead>
+                    <TableHead className="text-right">{t("fleet.methodology.penaltyMax")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -466,7 +459,7 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
                   ))}
                   <TableRow>
                     <TableCell colSpan={3} className="text-right font-medium">
-                      Total penalties
+                      {t("fleet.methodology.totalPenalties")}
                     </TableCell>
                     <TableCell className="text-right font-semibold text-destructive">
                       −{selected.penalties.total}
@@ -484,11 +477,11 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
                 </span>
                 <RiskBadge risk={selected.riskLevel} />
                 <span className="text-sm text-muted-foreground">
-                  Est. next service cost: {formatCurrency(selected.estimatedCost)}
+                  {t("fleet.methodology.estimatedServiceCost", { amount: formatCurrency(selected.estimatedCost) })}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Recommended action:</span>{" "}
+                <span className="font-medium text-foreground">{t("fleet.methodology.recommendedAction")}</span>{" "}
                 {selected.recommendedAction}
               </p>
             </CardContent>
@@ -499,21 +492,17 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
       <section className="space-y-3">
         <h3 className="flex items-center gap-2 text-lg font-semibold">
           <Library className="h-5 w-5 text-primary" />
-          References &amp; basis
+          {t("fleet.methodology.references")}
         </h3>
         <p className="text-sm text-muted-foreground">
-          The VQI is a rule-based scoring model adapted from established fleet
-          replacement-scoring practice (inverted so a higher score means a
-          healthier vehicle). It is a demo heuristic, not a copy of any single
-          standard; machine-learning health indexing is the roadmap for a future
-          phase.
+          {t("fleet.methodology.referencesDescription")}
         </p>
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Industry scoring models</CardTitle>
+              <CardTitle className="text-base">{t("fleet.methodology.industryModels")}</CardTitle>
               <CardDescription>
-                Fleet replacement-scoring systems that use the same factor family.
+                {t("fleet.methodology.industryModelsDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -536,9 +525,9 @@ max penalties: 30 + 30 + 20 + 20 = 100`}
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Academic literature</CardTitle>
+              <CardTitle className="text-base">{t("fleet.methodology.academicLiterature")}</CardTitle>
               <CardDescription>
-                Prognostics &amp; Health Management research on health indices and RUL.
+                {t("fleet.methodology.academicLiteratureDescription")}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

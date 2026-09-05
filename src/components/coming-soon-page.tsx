@@ -1,5 +1,8 @@
+"use client";
+
 import { Construction } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 export function ComingSoonPage({
   title,
@@ -8,6 +11,8 @@ export function ComingSoonPage({
   title: string;
   description?: string;
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="mx-auto flex max-w-lg flex-col items-center gap-4 py-16 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
@@ -21,7 +26,7 @@ export function ComingSoonPage({
       </div>
       <Card className="w-full">
         <CardContent className="py-6 text-sm text-muted-foreground">
-          Coming soon
+          {t("common.comingSoon")}
         </CardContent>
       </Card>
     </div>

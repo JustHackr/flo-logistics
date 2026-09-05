@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { connectorSchema } from "@/lib/schemas/connector";
+import { apiError } from "@/lib/i18n/api-errors";
+import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
   const { id } = await context.params;
   const connector = await prisma.dataConnector.findUnique({
     where: { id },
     include: { _count: { select: { vehicles: true } } },
   });
   if (!connector) {
-    return NextResponse.json({ error: "Connector not found" }, { status: 404 });
+    return apiError(getLocaleFromRequest(request), "connectorNotFound", 404);
   }
   return NextResponse.json(connector);
 }
@@ -33,18 +35,17 @@ export async function PUT(request: Request, context: RouteContext) {
 
     return NextResponse.json(connector);
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to update connector";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error("[connectors] update failed:", error);
+    return apiError(getLocaleFromRequest(request), "validation", 400);
   }
 }
 
-export async function DELETE(_request: Request, context: RouteContext) {
+export async function DELETE(request: Request, context: RouteContext) {
   const { id } = await context.params;
   try {
     await prisma.dataConnector.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {
-    return NextResponse.json({ error: "Connector not found" }, { status: 404 });
+    return apiError(getLocaleFromRequest(request), "connectorNotFound", 404);
   }
 }

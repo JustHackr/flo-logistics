@@ -52,6 +52,7 @@ import {
 } from "@/lib/routing/fuel-cost";
 import { resolveFuelProductForVehicle } from "@/lib/routing/fuel-prices";
 import { JAKARTA_WAREHOUSE } from "@/lib/routing/jakarta-demo-locations";
+import { useI18n } from "@/components/i18n/use-i18n";
 
 type DriverSummary = {
   id: string;
@@ -67,109 +68,96 @@ type DriverSummary = {
 const BENEFITS = [
   {
     icon: TrendingDown,
-    title: "Kurangi jarak tempuh",
-    body: "Nearest-neighbor TSP mengurutkan stop dari gudang Blok M sehingga kurir tidak bolak-balik melintasi Jakarta.",
+    key: "distance",
   },
   {
     icon: Clock,
-    title: "ETA realistis",
-    body: "Estimasi waktu memakai OSRM + kalibrasi rush hour Jakarta (06:30–10:00 & 16:00–20:00 WIB), atau Google live traffic jika API key tersedia.",
+    key: "eta",
   },
   {
     icon: Bike,
-    title: "Kendaraan tepat",
-    body: "Stop CAR_ONLY ke mobil, MOTORCYCLE_ONLY ke motor; stop BOTH dibagi agar rute tetap feasible.",
+    key: "vehicle",
   },
   {
     icon: Gauge,
-    title: "Armada sehat",
-    body: "Driver dipilih berdasarkan VQI tertinggi per tipe kendaraan — menjembatani predictive maintenance dan routing.",
+    key: "fleet",
   },
 ];
 
 const ORDER_STATUSES = [
-  { status: "RECEIVED", label: "Diterima" },
-  { status: "PREPARING", label: "Disiapkan" },
-  { status: "ON_ROUTE", label: "Dalam perjalanan" },
-  { status: "DELIVERED", label: "Terkirim" },
+  { status: "RECEIVED" },
+  { status: "PREPARING" },
+  { status: "ON_ROUTE" },
+  { status: "DELIVERED" },
 ];
 
 const ACCESS_ROWS = [
-  { access: "CAR_ONLY", vehicle: "Van", note: "Gang sempit tidak bisa, butuh van" },
-  { access: "MOTORCYCLE_ONLY", vehicle: "Motor", note: "Gang/perumahan padat, motor lebih lincah" },
-  { access: "BOTH", vehicle: "Van atau motor", note: "Dibagi ke set yang lebih ringan saat assignment" },
+  { access: "CAR_ONLY", key: "car" },
+  { access: "MOTORCYCLE_ONLY", key: "motorcycle" },
+  { access: "BOTH", key: "both" },
 ];
 
 const TRAFFIC_SOURCES = [
-  { priority: 1, source: "google_traffic", label: describeTrafficSource("google_traffic"), cost: "Berbayar" },
-  { priority: 2, source: "google", label: describeTrafficSource("google"), cost: "Berbayar" },
-  { priority: 3, source: "osrm_traffic", label: describeTrafficSource("osrm_traffic"), cost: "Gratis (demo)" },
-  { priority: 4, source: "estimated", label: describeTrafficSource("estimated"), cost: "Gratis, offline" },
+  { priority: 1, source: "google_traffic", label: describeTrafficSource("google_traffic") },
+  { priority: 2, source: "google", label: describeTrafficSource("google") },
+  { priority: 3, source: "osrm_traffic", label: describeTrafficSource("osrm_traffic") },
+  { priority: 4, source: "estimated", label: describeTrafficSource("estimated") },
 ];
 
 const RUSH_ROWS = [
-  { period: "Puncak pagi/sore (Sen–Jum 06:30–10:00, 16:00–20:00)", multiplier: "1.85×", speed: "11 km/jam" },
-  { period: "Siang (11:00–14:00)", multiplier: "1.45×", speed: "14 km/jam" },
-  { period: "Malam (22:00–05:00)", multiplier: "1.05×", speed: "20 km/jam" },
-  { period: "Akhir pekan", multiplier: "1.20×", speed: "17 km/jam" },
-  { period: "Normal", multiplier: "1.30×", speed: "15 km/jam" },
+  { period: "peak", multiplier: "1.85×", speed: 11 },
+  { period: "midday", multiplier: "1.45×", speed: 14 },
+  { period: "night", multiplier: "1.05×", speed: 20 },
+  { period: "weekend", multiplier: "1.20×", speed: 17 },
+  { period: "normal", multiplier: "1.30×", speed: 15 },
 ];
 
 const FUEL_PRODUCT_ROWS = [
-  { vehicle: "Motor + bensin", product: "Pertalite", code: resolveFuelProductForVehicle("motorcycle", "gasoline") },
-  { vehicle: "Van + bensin", product: "Pertamax", code: resolveFuelProductForVehicle("van", "gasoline") },
-  { vehicle: "Van diesel", product: "Biosolar", code: resolveFuelProductForVehicle("van", "diesel") },
-  { vehicle: "Motor EV (Polytron Fox)", product: "PLN EV charging", code: resolveFuelProductForVehicle("motorcycle", "ev") },
-  { vehicle: "Van EV (DFSK / Wuling)", product: "PLN EV charging", code: resolveFuelProductForVehicle("van", "ev") },
+  { vehicle: "motorcycleGasoline", product: "Pertalite", code: resolveFuelProductForVehicle("motorcycle", "gasoline") },
+  { vehicle: "vanGasoline", product: "Pertamax", code: resolveFuelProductForVehicle("van", "gasoline") },
+  { vehicle: "vanDiesel", product: "Biosolar", code: resolveFuelProductForVehicle("van", "diesel") },
+  { vehicle: "motorcycleEv", product: "PLN EV charging", code: resolveFuelProductForVehicle("motorcycle", "ev") },
+  { vehicle: "vanEv", product: "PLN EV charging", code: resolveFuelProductForVehicle("van", "ev") },
 ];
 
 const CONSUMPTION_ROWS = [
-  { vehicle: "Motor bensin", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.motorcycle.gasoline },
-  { vehicle: "Motor diesel", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.motorcycle.diesel },
-  { vehicle: "Van bensin", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.van.gasoline },
-  { vehicle: "Van diesel", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.van.diesel },
-  { vehicle: "Van EV", kwhPerKm: EV_KWH_PER_KM.van },
-  { vehicle: "Motor EV", kwhPerKm: EV_KWH_PER_KM.motorcycle },
+  { vehicle: "motorcycleGasoline", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.motorcycle.gasoline },
+  { vehicle: "motorcycleDiesel", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.motorcycle.diesel },
+  { vehicle: "vanGasoline", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.van.gasoline },
+  { vehicle: "vanDiesel", kmPerLiter: FUEL_CONSUMPTION_KM_PER_LITER.van.diesel },
+  { vehicle: "vanEv", kwhPerKm: EV_KWH_PER_KM.van },
+  { vehicle: "motorcycleEv", kwhPerKm: EV_KWH_PER_KM.motorcycle },
 ];
 
 const REFERENCES = [
   {
     title: "Vehicle Routing Problem (VRP) — Wikipedia",
-    note: "Kerangka klasik untuk mengoptimalkan rute multi-stop dari depot.",
+    key: "vrp",
     url: "https://en.wikipedia.org/wiki/Vehicle_routing_problem",
   },
   {
     title: "Open Source Routing Machine (OSRM)",
-    note: "Engine jarak jalan gratis yang dipakai sebagai sumber default demo.",
+    key: "osrm",
     url: "https://project-osrm.org/",
   },
   {
     title: "Google Routes API",
-    note: "Opsional — live traffic dan polyline jalan untuk visualisasi peta.",
+    key: "google",
     url: "https://developers.google.com/maps/documentation/routes",
   },
   {
     title: "Last-mile delivery in emerging markets",
-    note: "Konteks operasional last-mile di kota padat seperti Jakarta.",
+    key: "lastMile",
     url: "https://www.mckinsey.com/industries/travel-logistics-and-infrastructure/our-insights/the-last-mile-delivery-challenge-in-emerging-markets",
   },
 ];
-
-function formatWibLabel(date: Date) {
-  return new Intl.DateTimeFormat("id-ID", {
-    weekday: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: JAKARTA_TIMEZONE,
-    hour12: false,
-  }).format(date);
-}
 
 export function RoutingMethodologyClient({
   drivers,
 }: {
   drivers: DriverSummary[];
 }) {
+  const { t, locale } = useI18n();
   const [departureInput, setDepartureInput] = useState(() => {
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -182,11 +170,14 @@ export function RoutingMethodologyClient({
   const trafficDemo = useMemo(() => {
     if (Number.isNaN(departureDate.getTime())) return null;
     return {
-      label: formatWibLabel(departureDate),
+      label: new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-US", {
+        weekday: "short", hour: "2-digit", minute: "2-digit",
+        timeZone: JAKARTA_TIMEZONE, hour12: false,
+      }).format(departureDate),
       multiplier: getJakartaTrafficMultiplier(departureDate),
       speedKmh: getJakartaMaxEffectiveSpeedKmh(departureDate),
     };
-  }, [departureDate]);
+  }, [departureDate, locale]);
 
   const sortedDrivers = useMemo(
     () => [...drivers].sort((a, b) => b.vqi - a.vqi),
@@ -203,26 +194,28 @@ export function RoutingMethodologyClient({
     <div className="space-y-8">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">
-          Routing Metrics &amp; Methodology
+          {t("routing.methodology.title")}
         </h2>
         <p className="text-muted-foreground">
-          How Jakarta last-mile route optimization works — from order assignment
-          and CSV import to traffic-aware ETAs, DTI/CFI delivery metrics, Pertamina
-          fuel costing, and VQI-based driver dispatch.
+          {t("routing.methodology.subtitle")}
         </p>
       </div>
 
       <section className="space-y-3">
-        <h3 className="text-lg font-semibold">Why route optimization?</h3>
+        <h3 className="text-lg font-semibold">{t("routing.methodology.whyOptimization")}</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {BENEFITS.map((benefit) => (
-            <Card key={benefit.title}>
+            <Card key={benefit.key}>
               <CardHeader className="pb-2">
                 <benefit.icon className="h-6 w-6 text-primary" />
-                <CardTitle className="text-base">{benefit.title}</CardTitle>
+                <CardTitle className="text-base">
+                  {t(`routing.methodology.benefits.${benefit.key}.title`)}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">{benefit.body}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t(`routing.methodology.benefits.${benefit.key}.body`)}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -230,12 +223,12 @@ export function RoutingMethodologyClient({
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-lg font-semibold">Order lifecycle</h3>
+        <h3 className="text-lg font-semibold">{t("routing.methodology.orderLifecycle")}</h3>
         <div className="flex flex-wrap items-center gap-2">
           {ORDER_STATUSES.map((item, idx) => (
             <div key={item.status} className="flex items-center gap-2">
               <Badge variant={idx === ORDER_STATUSES.length - 1 ? "default" : "secondary"}>
-                {item.label}
+                {t(`routing.methodology.status.${item.status.toLowerCase()}`)}
               </Badge>
               {idx < ORDER_STATUSES.length - 1 && (
                 <span className="text-muted-foreground">→</span>
@@ -248,26 +241,26 @@ export function RoutingMethodologyClient({
       <section className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Vehicle assignment</CardTitle>
+            <CardTitle className="text-base">{t("routing.methodology.vehicleAssignment")}</CardTitle>
             <CardDescription>
-              Max {DEFAULT_MAX_STOPS_PER_ROUTE} stops per route chunk.
+              {t("routing.methodology.maxStops", { count: DEFAULT_MAX_STOPS_PER_ROUTE })}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Access</TableHead>
-                  <TableHead>Vehicle</TableHead>
-                  <TableHead>Note</TableHead>
+                  <TableHead>{t("routing.methodology.access")}</TableHead>
+                  <TableHead>{t("routing.methodology.vehicle")}</TableHead>
+                  <TableHead>{t("routing.methodology.note")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {ACCESS_ROWS.map((row) => (
                   <TableRow key={row.access}>
                     <TableCell className="font-mono text-xs">{row.access}</TableCell>
-                    <TableCell>{row.vehicle}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{row.note}</TableCell>
+                    <TableCell>{t(`routing.methodology.accessRows.${row.access}.vehicle`)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{t(`routing.methodology.accessRows.${row.access}.note`)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -277,36 +270,31 @@ export function RoutingMethodologyClient({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Route optimization</CardTitle>
+            <CardTitle className="text-base">{t("routing.methodology.routeOptimization")}</CardTitle>
             <CardDescription>
-              Nearest-neighbor round-trip from warehouse.
+              {t("routing.methodology.routeOptimizationDescription")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <pre className="overflow-x-auto rounded-lg bg-muted p-4 font-mono text-sm">
-{`1. Start at warehouse (${JAKARTA_WAREHOUSE.name})
-2. Pick nearest unvisited stop (by drive time)
-3. Repeat until all stops visited
-4. Return to warehouse`}
+{t("routing.methodology.optimizationSteps", { warehouse: JAKARTA_WAREHOUSE.name })}
             </pre>
             <p className="text-xs text-muted-foreground">
-              Demo heuristic — production systems often use OR-Tools or similar
-              for larger fleets. Good enough for ≤15 stops per route.
+              {t("routing.methodology.optimizationNote")}
             </p>
           </CardContent>
         </Card>
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-lg font-semibold">Traffic estimation cascade</h3>
+        <h3 className="text-lg font-semibold">{t("routing.methodology.trafficCascade")}</h3>
         <Card>
           <CardContent className="pt-6">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">Priority</TableHead>
-                  <TableHead>Source</TableHead>
-                  <TableHead>Cost</TableHead>
+                  <TableHead className="w-16">{t("routing.methodology.priority")}</TableHead>
+                  <TableHead>{t("routing.methodology.source")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -314,7 +302,6 @@ export function RoutingMethodologyClient({
                   <TableRow key={row.source}>
                     <TableCell>{row.priority}</TableCell>
                     <TableCell>{row.label}</TableCell>
-                    <TableCell>{row.cost}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -326,46 +313,48 @@ export function RoutingMethodologyClient({
       <section className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Jakarta traffic model</CardTitle>
-            <CardDescription>Timezone: {JAKARTA_TIMEZONE} (WIB)</CardDescription>
+            <CardTitle className="text-base">{t("routing.methodology.trafficModel")}</CardTitle>
+            <CardDescription>{t("routing.methodology.timezone")}: {JAKARTA_TIMEZONE} (WIB)</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Period</TableHead>
-                  <TableHead>× Duration</TableHead>
-                  <TableHead>Max speed</TableHead>
+                  <TableHead>{t("routing.methodology.period")}</TableHead>
+                  <TableHead>{t("routing.methodology.durationMultiplier")}</TableHead>
+                  <TableHead>{t("routing.methodology.maxSpeed")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {RUSH_ROWS.map((row) => (
                   <TableRow key={row.period}>
-                    <TableCell className="text-sm">{row.period}</TableCell>
+                    <TableCell className="text-sm">{t(`routing.methodology.periods.${row.period}`)}</TableCell>
                     <TableCell>{row.multiplier}</TableCell>
-                    <TableCell>{row.speed}</TableCell>
+                    <TableCell>{row.speed} km/{locale === "id" ? "jam" : "h"}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
             <p className="mt-3 text-xs text-muted-foreground">
-              OSRM calibration ×{OSRM_URBAN_CALIBRATION_FACTOR}; per-stop service{" "}
-              {DELIVERY_STOP_SERVICE_MIN} min (parkir + serah terima).
+              {t("routing.methodology.calibrationNote", {
+                factor: OSRM_URBAN_CALIBRATION_FACTOR,
+                minutes: DELIVERY_STOP_SERVICE_MIN,
+              })}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Emissions estimate</CardTitle>
-            <CardDescription>CO₂ by engine type × total distance</CardDescription>
+            <CardTitle className="text-base">{t("routing.methodology.emissionsEstimate")}</CardTitle>
+            <CardDescription>{t("routing.methodology.emissionsDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Engine</TableHead>
-                  <TableHead>Factor</TableHead>
+                  <TableHead>{t("routing.methodology.engine")}</TableHead>
+                  <TableHead>{t("routing.methodology.factor")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -384,35 +373,33 @@ export function RoutingMethodologyClient({
       <section className="space-y-3">
         <h3 className="flex items-center gap-2 text-lg font-semibold">
           <Fuel className="h-5 w-5 text-primary" />
-          Trip fuel cost &amp; savings
+          {t("routing.methodology.fuelCostSavings")}
         </h3>
         <p className="text-sm text-muted-foreground">
-          Pertamina DKI Jakarta prices (live fetch or fallback) are matched to each
-          vehicle type. Trip cost appears on Plan Route, Logistics Dashboard, Overview,
-          and{" "}
+          {t("routing.methodology.fuelDescription")}{" "}
           <Link href="/system/gas-price" className="font-medium text-primary hover:underline">
-            System → Gas Price
+            {t("routing.methodology.gasPriceLink")}
           </Link>
           .
         </p>
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Fuel product mapping</CardTitle>
-              <CardDescription>Vehicle type + engine → Pertamina product</CardDescription>
+              <CardTitle className="text-base">{t("routing.methodology.fuelMapping")}</CardTitle>
+              <CardDescription>{t("routing.methodology.fuelMappingDescription")}</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Fleet</TableHead>
-                    <TableHead>Product</TableHead>
+                    <TableHead>{t("routing.methodology.fleet")}</TableHead>
+                    <TableHead>{t("routing.methodology.product")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {FUEL_PRODUCT_ROWS.map((row) => (
                     <TableRow key={row.code}>
-                      <TableCell className="text-sm">{row.vehicle}</TableCell>
+                      <TableCell className="text-sm">{t(`routing.methodology.vehicleLabels.${row.vehicle}`)}</TableCell>
                       <TableCell>{row.product}</TableCell>
                     </TableRow>
                   ))}
@@ -423,21 +410,21 @@ export function RoutingMethodologyClient({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Consumption assumptions</CardTitle>
-              <CardDescription>Jakarta urban last-mile averages</CardDescription>
+              <CardTitle className="text-base">{t("routing.methodology.consumptionAssumptions")}</CardTitle>
+              <CardDescription>{t("routing.methodology.consumptionDescription")}</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Vehicle</TableHead>
-                    <TableHead>Rate</TableHead>
+                    <TableHead>{t("routing.methodology.vehicle")}</TableHead>
+                    <TableHead>{t("routing.methodology.rate")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {CONSUMPTION_ROWS.map((row) => (
                     <TableRow key={row.vehicle}>
-                      <TableCell className="text-sm">{row.vehicle}</TableCell>
+                      <TableCell className="text-sm">{t(`routing.methodology.vehicleLabels.${row.vehicle}`)}</TableCell>
                       <TableCell className="font-mono text-xs">
                         {"kmPerLiter" in row && row.kmPerLiter != null
                           ? `${row.kmPerLiter} km/L`
@@ -460,27 +447,24 @@ baselineDistance = Σ 2 × haversine(warehouse, stop) × 1.35
 savings = baselineFuelCost − optimizedFuelCost`}
             </pre>
             <p className="text-xs text-muted-foreground">
-              Naive baseline models a separate warehouse round-trip per stop (no
-              route sharing). Optimized routes use nearest-neighbor TSP distance.
-              Demo EV fleet uses Polytron Fox (motor) and DFSK Gelora E / Wuling Formo Max EV (van).
+              {t("routing.methodology.baselineNote")}
             </p>
           </CardContent>
         </Card>
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-lg font-semibold">Demo geography</h3>
+        <h3 className="text-lg font-semibold">{t("routing.methodology.demoGeography")}</h3>
         <Card>
           <CardContent className="flex items-start gap-3 pt-6">
             <MapPinned className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
             <div className="space-y-1 text-sm">
               <p>
-                Warehouse: <span className="font-medium">{JAKARTA_WAREHOUSE.name}</span>{" "}
+                {t("routing.methodology.warehouse")}: <span className="font-medium">{JAKARTA_WAREHOUSE.name}</span>{" "}
                 ({JAKARTA_WAREHOUSE.address})
               </p>
               <p className="text-muted-foreground">
-                Order coordinates validated against Greater Jakarta (Jabodetabek)
-                bounds. Demo addresses are paired with real street coordinates.
+                {t("routing.methodology.geographyNote")}
               </p>
             </div>
           </CardContent>
@@ -488,12 +472,11 @@ savings = baselineFuelCost − optimizedFuelCost`}
       </section>
 
       <section className="space-y-3">
-        <h3 className="text-lg font-semibold">VQI driver selection</h3>
+        <h3 className="text-lg font-semibold">{t("routing.methodology.driverSelection")}</h3>
         <p className="text-sm text-muted-foreground">
-          For each route chunk, the system picks the highest-VQI available driver
-          of the matching vehicle type (car or motorcycle). See also{" "}
+          {t("routing.methodology.selectionDescription")}{" "}
           <Link href="/methodology" className="font-medium text-primary hover:underline">
-            Predictive Maintenance Metrics &amp; Guide
+            {t("routing.methodology.maintenanceGuide")}
           </Link>
           .
         </p>
@@ -513,7 +496,7 @@ savings = baselineFuelCost − optimizedFuelCost`}
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Motor ({motorcycleDrivers.length})</CardTitle>
+              <CardTitle className="text-base">{t("routing.methodology.motorcycle")} ({motorcycleDrivers.length})</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {motorcycleDrivers.map((d) => (
@@ -532,7 +515,7 @@ savings = baselineFuelCost − optimizedFuelCost`}
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Clock className="h-4 w-4" />
-              Live demo — Jakarta traffic
+              {t("routing.methodology.liveTraffic")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -545,8 +528,8 @@ savings = baselineFuelCost − optimizedFuelCost`}
             {trafficDemo && (
               <div className="rounded-lg bg-muted p-4 text-sm space-y-1">
                 <div>WIB: <span className="font-medium">{trafficDemo.label}</span></div>
-                <div>Traffic multiplier: <span className="font-bold">{trafficDemo.multiplier}×</span></div>
-                <div>Max effective speed: <span className="font-bold">{trafficDemo.speedKmh} km/jam</span></div>
+                <div>{t("routing.methodology.trafficMultiplier")}: <span className="font-bold">{trafficDemo.multiplier}×</span></div>
+                <div>{t("routing.methodology.maxEffectiveSpeed")}: <span className="font-bold">{trafficDemo.speedKmh} km/{locale === "id" ? "jam" : "h"}</span></div>
               </div>
             )}
           </CardContent>
@@ -556,7 +539,7 @@ savings = baselineFuelCost − optimizedFuelCost`}
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Truck className="h-4 w-4" />
-              Live demo — driver ranking
+              {t("routing.methodology.liveDriverRanking")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -594,12 +577,10 @@ savings = baselineFuelCost − optimizedFuelCost`}
       <section className="space-y-3">
         <h3 className="flex items-center gap-2 text-lg font-semibold">
           <Library className="h-5 w-5 text-primary" />
-          References &amp; basis
+          {t("routing.methodology.references")}
         </h3>
         <p className="text-sm text-muted-foreground">
-          Routing uses rule-based heuristics adapted for Jakarta last-mile demo.
-          Traffic calibration reflects typical urban delivery speeds, not real-time
-          probe data unless Google Maps is connected.
+          {t("routing.methodology.referencesDescription")}
         </p>
         <Card>
           <CardContent className="space-y-4 pt-6">
@@ -614,7 +595,7 @@ savings = baselineFuelCost − optimizedFuelCost`}
                   <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   {ref.title}
                 </a>
-                <p className="text-xs text-muted-foreground">{ref.note}</p>
+                <p className="text-xs text-muted-foreground">{t(`routing.methodology.referenceNotes.${ref.key}`)}</p>
               </div>
             ))}
           </CardContent>
@@ -625,7 +606,7 @@ savings = baselineFuelCost − optimizedFuelCost`}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Delivery Trip Index (DTI)</CardTitle>
-            <CardDescription>End-to-end SLA: receivedAt → deliveredAt vs planned</CardDescription>
+            <CardDescription>{t("routing.methodology.dtiDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <pre className="overflow-x-auto rounded-lg bg-muted p-4 font-mono text-xs">
@@ -636,13 +617,12 @@ slack       = actualLead − plannedLead
 DTI = 100 − min(100, max(0, slackMin) × ${DTI_PENALTY_PER_MIN})`}
             </pre>
             <p className="text-xs text-muted-foreground">
-              Variance drivers: traffic, weather, stop service time, warehouse prep delay,
-              route deviation, vehicle reliability, address accuracy.
+              {t("routing.methodology.dtiVariance")}
             </p>
             <div className="flex flex-wrap gap-2 text-xs">
-              <Badge variant="destructive">High &lt; {DTI_THRESHOLDS.highBelow}</Badge>
-              <Badge variant="secondary">Medium {DTI_THRESHOLDS.highBelow}–{DTI_THRESHOLDS.lowAbove}</Badge>
-              <Badge>Low &gt; {DTI_THRESHOLDS.lowAbove}</Badge>
+              <Badge variant="destructive">{t("routing.methodology.high")} &lt; {DTI_THRESHOLDS.highBelow}</Badge>
+              <Badge variant="secondary">{t("routing.methodology.medium")} {DTI_THRESHOLDS.highBelow}–{DTI_THRESHOLDS.lowAbove}</Badge>
+              <Badge>{t("routing.methodology.low")} &gt; {DTI_THRESHOLDS.lowAbove}</Badge>
             </div>
           </CardContent>
         </Card>
@@ -650,13 +630,13 @@ DTI = 100 − min(100, max(0, slackMin) × ${DTI_PENALTY_PER_MIN})`}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Carbon Footprint Index (CFI)</CardTitle>
-            <CardDescription>100 = EV-equivalent; 0 = diesel on same distance</CardDescription>
+            <CardDescription>{t("routing.methodology.cfiDescription")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Engine</TableHead>
+                  <TableHead>{t("routing.methodology.engine")}</TableHead>
                   <TableHead>kg CO₂/km</TableHead>
                 </TableRow>
               </TableHeader>
@@ -679,34 +659,29 @@ DTI = 100 − min(100, max(0, slackMin) × ${DTI_PENALTY_PER_MIN})`}
       <section className="space-y-3">
         <h3 className="flex items-center gap-2 text-lg font-semibold">
           <FileBarChart className="h-5 w-5 text-primary" />
-          Reports &amp; dashboards
+          {t("routing.methodology.reportsDashboards")}
         </h3>
         <p className="text-sm text-muted-foreground">
-          Logistics KPIs aggregate DTI, CFI, fuel cost, and route metrics across
-          active and completed routes. Charts on Overview and Logistics Dashboard;
-          exportable CSV and print layout on{" "}
+          {t("routing.methodology.reportsDescription")}{" "}
           <Link href="/routing/reports" className="font-medium text-primary hover:underline">
-            Routing → Reports
+            {t("routing.methodology.reportsLink")}
           </Link>
           .
         </p>
         <Card>
           <CardContent className="pt-6 text-sm text-muted-foreground space-y-2">
             <p>
-              <span className="font-medium text-foreground">Route report rows:</span>{" "}
-              route id, driver, vehicle, stops, distance, duration, DTI avg, CFI avg,
-              fuel cost, savings vs naive baseline.
+              <span className="font-medium text-foreground">{t("routing.methodology.routeReportRows")}</span>{" "}
+              {t("routing.methodology.routeReportDetail")}
             </p>
             <p>
-              <span className="font-medium text-foreground">Delivery report rows:</span>{" "}
-              per-stop order id, status, planned vs actual lead time, DTI score,
-              allocated emissions (CFI).
+              <span className="font-medium text-foreground">{t("routing.methodology.deliveryReportRows")}</span>{" "}
+              {t("routing.methodology.deliveryReportDetail")}
             </p>
             <p>
-              <span className="font-medium text-foreground">Order import:</span> CSV
-              template at{" "}
+              <span className="font-medium text-foreground">{t("routing.methodology.orderImport")}</span> CSV
+              {t("routing.methodology.orderImportDetail")}{" "}
               <code className="rounded bg-muted px-1">/public/templates/routing-orders-template.csv</code>{" "}
-              — bulk upload from Orders page.
             </p>
           </CardContent>
         </Card>
@@ -715,24 +690,22 @@ DTI = 100 − min(100, max(0, slackMin) × ${DTI_PENALTY_PER_MIN})`}
       <section className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-2 font-medium text-foreground">
           <ScanEye className="h-4 w-4" />
-          Computer Vision (roadmap)
+          {t("routing.methodology.cvRoadmap")}
         </div>
         <p className="mt-1">
-          ODOL Detection and Hub Congestion Detection are scaffolded under Computer
-          Vision in the sidebar — planned for overload monitoring and hub queue
-          analytics. Routing metrics above remain independent of CV inputs today.
+          {t("routing.methodology.cvRoadmapDescription")}
         </p>
       </section>
 
       <section className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-2 font-medium text-foreground">
           <Route className="h-4 w-4" />
-          Visualize routes on Plan Route
+          {t("routing.methodology.visualizeRoutes")}
         </div>
         <p className="mt-1">
-          Set <code className="rounded bg-muted px-1">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> to
-          render waypoints and road-following polylines on Google Maps. See also{" "}
-          <Leaf className="inline h-3.5 w-3.5" /> emissions per route on the preview card.
+          {t("routing.methodology.visualizePrefix")} <code className="rounded bg-muted px-1">GOOGLE_MAPS_JS_API_KEY</code> ({t("routing.methodology.or")}{" "}
+          <code className="rounded bg-muted px-1">GOOGLE_MAPS_API_KEY</code>) {t("routing.methodology.visualizeSuffix")}{" "}
+          <Leaf className="inline h-3.5 w-3.5" /> {t("routing.methodology.emissionsPreview")}
         </p>
       </section>
     </div>

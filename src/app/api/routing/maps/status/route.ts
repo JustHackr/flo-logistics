@@ -6,10 +6,24 @@ import {
 } from "@/lib/routing/estimator";
 import {
   getGoogleMapsStatus,
-  isPublicGoogleMapsConfigured,
+  isMapsJsConfigured,
 } from "@/lib/routing/google-maps";
+import {
+  checkRateLimit,
+  getClientKey,
+  rateLimitExceededBody,
+} from "@/lib/rate-limit";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const limit = checkRateLimit({
+    key: `maps-status:${getClientKey(req)}`,
+    limit: 60,
+    windowMs: 60_000,
+  });
+  if (!limit.ok) {
+    const { body, init } = rateLimitExceededBody(limit.retryAfterSec);
+    return NextResponse.json(body, init);
+  }
   const [googleStatus, osrmReachable] = await Promise.all([
     getGoogleMapsStatus(),
     checkOsrmReachable(),
@@ -26,14 +40,14 @@ export async function GET() {
   } else if (osrmReachable) {
     primarySource = "osrm_traffic";
     message =
-      "Using OSRM road distances with Jakarta rush-hour traffic calibration. No API keys required.";
+      "Using OSRM road distances with Jakarta rush-hour traffic calibration.";
   } else {
     primarySource = "estimated";
     message =
       "OSRM is temporarily unavailable. Using local Jakarta traffic estimates.";
   }
 
-  const mapVisualizationConfigured = isPublicGoogleMapsConfigured();
+  const mapVisualizationConfigured = isMapsJsConfigured();
 
   return NextResponse.json({
     ...googleStatus,
@@ -45,6 +59,6 @@ export async function GET() {
     mapVisualizationConfigured,
     mapVisualizationMessage: mapVisualizationConfigured
       ? "Google Maps JavaScript API configured for route visualization."
-      : "Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to render routes on Google Maps.",
+      : "Set GOOGLE_MAPS_JS_API_KEY (or GOOGLE_MAPS_API_KEY) in server env to render routes on Google Maps.",
   });
 }

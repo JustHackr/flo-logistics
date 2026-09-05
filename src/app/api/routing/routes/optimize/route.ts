@@ -33,8 +33,26 @@ import {
   getFleetAvgMaintenanceCost,
 } from "@/lib/vehicle-service";
 import type { EngineType, VehicleType } from "@/lib/types";
+import {
+  checkRateLimit,
+  getClientKey,
+  rateLimitExceededBody,
+} from "@/lib/rate-limit";
+import { apiError } from "@/lib/i18n/api-errors";
+import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
 
 export async function POST(request: Request) {
+  const locale = getLocaleFromRequest(request);
+  const limit = checkRateLimit({
+    key: `optimize:${getClientKey(request)}`,
+    limit: 8,
+    windowMs: 60_000,
+  });
+  if (!limit.ok) {
+    const { body, init } = rateLimitExceededBody(limit.retryAfterSec);
+    return NextResponse.json(body, init);
+  }
+
   try {
     const body = await request.json();
     const parsed = optimizeRouteRequestSchema.parse(body);
@@ -47,10 +65,7 @@ export async function POST(request: Request) {
 
     const warehouse = await prisma.warehouse.findFirst();
     if (!warehouse) {
-      return NextResponse.json(
-        { error: "No warehouse found. Run db:seed first." },
-        { status: 400 }
-      );
+      return apiError(locale, "validation", 400);
     }
 
     const fuelPrices = await ensureFuelPriceSnapshot();
@@ -60,29 +75,18 @@ export async function POST(request: Request) {
     });
 
     if (orders.length !== orderIds.length) {
-      return NextResponse.json(
-        { error: "One or more orders were not found" },
-        { status: 400 }
-      );
+      return apiError(locale, "orderNotFound", 400);
     }
 
     // Only optimize not-yet-delivered orders.
     const activeOrders = orders.filter((o) => o.status !== "DELIVERED");
     if (activeOrders.length === 0) {
-      return NextResponse.json(
-        { error: "All selected orders are already delivered" },
-        { status: 400 }
-      );
+      return apiError(locale, "validation", 400);
     }
 
     for (const o of activeOrders) {
       if (!isWithinJakartaBounds(o.lat, o.lng)) {
-        return NextResponse.json(
-          {
-            error: `Order address for "${o.recipientAddress}" is outside Jakarta bounds (demo validation).`,
-          },
-          { status: 400 }
-        );
+        return apiError(locale, "validation", 400);
       }
     }
 
@@ -95,10 +99,7 @@ export async function POST(request: Request) {
     );
 
     if (driversVan.length === 0 && driversMotorcycle.length === 0) {
-      return NextResponse.json(
-        { error: "No eligible drivers found (need van or motorcycle vehicles)." },
-        { status: 400 }
-      );
+      return apiError(locale, "driverNotFound", 400);
     }
 
     // Fleet-wide average maintenance cost for the existing VQI model.
@@ -124,10 +125,7 @@ export async function POST(request: Request) {
     const eligibleMotorcycleRoutes = routeChunks.motorcycleChunks;
 
     if (eligibleVanRoutes.length === 0 && eligibleMotorcycleRoutes.length === 0) {
-      return NextResponse.json(
-        { error: "No eligible routes could be formed for the selected orders." },
-        { status: 400 }
-      );
+      return apiError(locale, "optimizeFailed", 400);
     }
 
     const vanMatching = rankDriversByVqi(enrichedDrivers, "van");
@@ -278,7 +276,11 @@ export async function POST(request: Request) {
         );
 
         const routePath = waypointsToRoutePath(waypoints);
-        const encodedPolyline = await computeRoutePolyline(routePath, routeStartAt);
+        const encodedPolyline = await computeRoutePolyline(
+          routePath,
+          routeStartAt,
+          locale
+        );
 
         const fuelSavings = calculateTripFuelSavings({
           optimizedDistanceKm: totalDistanceKm,
@@ -426,9 +428,11 @@ export async function POST(request: Request) {
       plans: planPreviews,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to optimize route";
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error(
+      "[optimize] failed:",
+      error instanceof Error ? error.message : "unknown error"
+    );
+    return apiError(locale, "optimizeFailed", 400);
   }
 }
 

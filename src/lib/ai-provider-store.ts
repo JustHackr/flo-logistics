@@ -1,78 +1,39 @@
-import { prisma } from "@/lib/prisma";
+import "server-only";
 import {
   aiProviderSettingsSchema,
   DEFAULT_AI_PROVIDER_SETTINGS,
-  isAiProviderConfigured,
-  maskApiKey,
   type AiProviderSettings,
-  type AiProviderSettingsPublic,
+  type AiProviderStatus,
 } from "@/lib/ai-settings";
 
-const CONFIG_ID = "default";
-
-export async function getAiProviderSettings(): Promise<AiProviderSettings | null> {
-  const row = await prisma.aiProviderConfig.findUnique({
-    where: { id: CONFIG_ID },
-  });
-  if (!row) return null;
+/**
+ * AI provider credentials come exclusively from server-side environment
+ * variables (set in Vercel project settings). They are never accepted from
+ * users, never stored in the database, and never sent to the browser.
+ *
+ * - AI_API_KEY   (required to enable the LLM assistant)
+ * - AI_BASE_URL  (optional, defaults to MiniMax's OpenAI-compatible API)
+ * - AI_MODEL     (optional, defaults to MiniMax-Text-01)
+ */
+export function getAiProviderSettings(): AiProviderSettings | null {
+  const apiKey = process.env.AI_API_KEY?.trim();
+  if (!apiKey) return null;
 
   const parsed = aiProviderSettingsSchema.safeParse({
-    apiKey: row.apiKey,
-    baseUrl: row.baseUrl,
-    model: row.model,
+    apiKey,
+    baseUrl:
+      process.env.AI_BASE_URL?.trim() || DEFAULT_AI_PROVIDER_SETTINGS.baseUrl,
+    model: process.env.AI_MODEL?.trim() || DEFAULT_AI_PROVIDER_SETTINGS.model,
   });
+
   return parsed.success ? parsed.data : null;
 }
 
-export async function getAiProviderSettingsPublic(): Promise<AiProviderSettingsPublic> {
-  const settings = await getAiProviderSettings();
-  if (!isAiProviderConfigured(settings)) {
-    return {
-      baseUrl: DEFAULT_AI_PROVIDER_SETTINGS.baseUrl,
-      model: DEFAULT_AI_PROVIDER_SETTINGS.model,
-      hasApiKey: false,
-    };
+/** Public status for the UI — contains no secret values. */
+export function getAiProviderStatus(): AiProviderStatus {
+  const settings = getAiProviderSettings();
+  if (!settings) {
+    return { configured: false, model: DEFAULT_AI_PROVIDER_SETTINGS.model };
   }
-
-  return {
-    baseUrl: settings.baseUrl,
-    model: settings.model,
-    hasApiKey: true,
-    apiKeyMasked: maskApiKey(settings.apiKey),
-  };
-}
-
-export async function saveAiProviderSettings(
-  input: AiProviderSettings | Omit<AiProviderSettings, "apiKey"> & { apiKey?: string }
-): Promise<AiProviderSettingsPublic> {
-  const existing = await getAiProviderSettings();
-  const apiKey =
-    input.apiKey?.trim() || existing?.apiKey?.trim() || "";
-
-  const settings = aiProviderSettingsSchema.parse({
-    apiKey,
-    baseUrl: input.baseUrl,
-    model: input.model,
-  });
-
-  await prisma.aiProviderConfig.upsert({
-    where: { id: CONFIG_ID },
-    create: {
-      id: CONFIG_ID,
-      apiKey: settings.apiKey,
-      baseUrl: settings.baseUrl,
-      model: settings.model,
-    },
-    update: {
-      apiKey: settings.apiKey,
-      baseUrl: settings.baseUrl,
-      model: settings.model,
-    },
-  });
-
-  return getAiProviderSettingsPublic();
-}
-
-export async function clearAiProviderSettings() {
-  await prisma.aiProviderConfig.deleteMany({ where: { id: CONFIG_ID } });
+  return { configured: true, model: settings.model };
 }
