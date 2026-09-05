@@ -219,7 +219,7 @@ export function GasPriceClient({
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Price history</CardTitle>
-          <CardDescription>Recent snapshots stored in BALON.</CardDescription>
+          <CardDescription>Recent snapshots stored in FLO.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           {history.map((row) => (

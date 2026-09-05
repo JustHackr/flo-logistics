@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const AI_CHAT_HISTORY_KEY = "balon-ai-chat-history";
+export const AI_CHAT_HISTORY_KEY = "flo-ai-chat-history";
 
 const chatMessageSchema = z.object({
   id: z.string(),
@@ -22,7 +22,7 @@ export const WELCOME_CHAT_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "Hi — I'm your BALON supply chain & logistics operations expert. Ask about routes, drivers, orders, fleet health, fuel, or delivery KPIs.",
+    "Hi — I'm your FLO supply chain & logistics operations expert. Ask about routes, drivers, orders, fleet health, fuel, or delivery KPIs.",
 };
 
 export function defaultChatMessages(): ChatMessage[] {

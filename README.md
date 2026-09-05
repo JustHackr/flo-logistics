@@ -1,6 +1,8 @@
-# BALON (blibliPU)
+# FLO (Fab Logistics Operations)
 
 Next.js logistics webapp with traffic-aware route optimization for Jakarta last-mile delivery.
+
+Live demo: [https://flo-logistics.vercel.app](https://flo-logistics.vercel.app)
 
 ## Quick start (no API keys required)
 

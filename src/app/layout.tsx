@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BALON – Blibli Analytic Logistic Optimization & Maintenance",
+  title: "FLO – Fab Logistics Operations",
   description:
-    "BALON: Predictive maintenance and routing optimization for Blibli logistics fleets in Jakarta.",
+    "FLO: Predictive maintenance and routing optimization for Jakarta last-mile logistics fleets.",
 };
 
 export default function RootLayout({

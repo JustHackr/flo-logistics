@@ -200,7 +200,7 @@ function BrandSubtitle() {
   return (
     <>
       <p className="text-xs text-muted-foreground">
-        Blibli Analytic Logistic Optimization &amp; Maintenance
+        Fab Logistics Operations
       </p>
       <p className="text-[10px] font-medium text-muted-foreground/80">v0.2</p>
     </>
@@ -210,7 +210,7 @@ function BrandSubtitle() {
 function BrandHeader() {
   return (
     <div className="border-b px-6 py-5">
-      <h1 className="text-lg font-semibold tracking-tight">BALON</h1>
+      <h1 className="text-lg font-semibold tracking-tight">FLO</h1>
       <BrandSubtitle />
     </div>
   );
@@ -238,7 +238,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SheetTrigger>
               <SheetContent side="left" className="flex w-72 flex-col gap-0 p-0">
                 <SheetHeader className="border-b px-6 py-5">
-                  <SheetTitle>BALON</SheetTitle>
+                  <SheetTitle>FLO</SheetTitle>
                   <BrandSubtitle />
                 </SheetHeader>
                 <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
@@ -247,7 +247,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SheetContent>
             </Sheet>
             <div>
-              <span className="font-semibold">BALON</span>
+              <span className="font-semibold">FLO</span>
               <span className="ml-2 text-[10px] font-medium text-muted-foreground">
                 v0.2
               </span>

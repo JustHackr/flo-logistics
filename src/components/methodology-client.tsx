@@ -225,7 +225,7 @@ export function MethodologyClient({
         </h2>
         <p className="text-muted-foreground">
           How the Vehicle Quality Index (VQI) works, why it helps manage a logistics
-          fleet, and how scores feed routing driver dispatch (BALON v0.2).
+          fleet, and how scores feed routing driver dispatch (FLO v0.2).
         </p>
       </div>
 

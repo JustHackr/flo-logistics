@@ -325,7 +325,7 @@ async function buildOperationsResponse(): Promise<ChatResponse> {
 async function buildGeneralResponse(): Promise<ChatResponse> {
   return {
     reply: [
-      "I can answer questions about **BALON** using live data from your fleet, orders, and routes.",
+      "I can answer questions about **FLO** using live data from your fleet, orders, and routes.",
       "",
       "Try one of the suggested prompts, for example:",
       "• Logistics reports summary",

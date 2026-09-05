@@ -8,7 +8,7 @@ export type LlmChatMessage = {
   content: string;
 };
 
-const LOGISTICS_EXPERT_SYSTEM = `You are the BALON Supply Chain Operations Assistant — a senior logistics, fleet, and last-mile delivery expert for Blibli's Jakarta operations (BALON: Blibli Analytic Logistic Optimization & Maintenance).
+const LOGISTICS_EXPERT_SYSTEM = `You are the FLO Supply Chain Operations Assistant — a senior logistics, fleet, and last-mile delivery expert for Jakarta last-mile operations (FLO: Fab Logistics Operations).
 
 YOUR ROLE:
 - Help operators understand delivery performance, routes, drivers, orders, fleet health (VQI), maintenance, fuel costs, emissions, DTI/CFI metrics, and warehouse logistics.
@@ -139,7 +139,7 @@ export async function testOpenAiCompatibleConnection(
   const reply = await callOpenAiCompatibleChat({
     settings,
     userMessage:
-      "Reply with exactly: BALON logistics assistant ready. (This is a connection test.)",
+      "Reply with exactly: FLO logistics assistant ready. (This is a connection test.)",
     companyContext: "Test context — no live data required for this ping.",
   });
 

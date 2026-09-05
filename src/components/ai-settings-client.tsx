@@ -130,7 +130,7 @@ export function AiSettingsClient() {
         </div>
         <p className="mt-1 text-muted-foreground">
           Connect an OpenAI-compatible API (e.g. MiniMax). Settings apply to
-          everyone using this BALON site.
+          everyone using this FLO site.
         </p>
       </div>
 
@@ -236,7 +236,7 @@ export function AiSettingsClient() {
             <strong className="text-foreground">
               supply chain operations &amp; logistics expert
             </strong>{" "}
-            for BALON. It answers using live fleet, order, and route data injected
+            for FLO. It answers using live fleet, order, and route data injected
             on each request.
           </p>
           <p>

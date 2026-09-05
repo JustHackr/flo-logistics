@@ -171,7 +171,7 @@ async function fetchPertaminaPostPayload() {
     Accept: "application/json, text/plain, */*",
     Referer: PERTAMINA_FUEL_SOURCE_URL,
     Origin: "https://pertaminapatraniaga.com",
-    "User-Agent": "BALON/1.0 (+https://pertaminapatraniaga.com)",
+    "User-Agent": "FLO/1.0 (+https://pertaminapatraniaga.com)",
   };
 
   const slugUrl = `${PERTAMINA_API_BASE}/v1/post/get-by-slug/page/harga-terbaru-bbm?language=id`;
