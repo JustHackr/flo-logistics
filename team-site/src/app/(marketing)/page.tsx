@@ -1,8 +1,8 @@
 "use client";
 
 import { JourneyCard } from "@/components/JourneyCard";
+import { HeroMapIllustration } from "@/components/HeroMapIllustration";
 import { PartnerRail } from "@/components/PartnerRail";
-import { RouteMotif } from "@/components/RouteMotif";
 import { ButtonLink, SectionHeading } from "@/components/ui";
 import { useLocale } from "@/components/LocaleProvider";
 
@@ -22,7 +22,7 @@ export default function HomePage() {
     <div lang={locale}>
       <section className="relative overflow-hidden bg-blue text-white">
         <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[46%] lg:block">
-          <RouteMotif className="absolute top-10 right-[-8%] h-[120%] w-auto opacity-90" tone="yellow" />
+          <HeroMapIllustration className="absolute top-10 right-[-6%] h-[120%] w-auto opacity-95" />
         </div>
         <div className="relative mx-auto max-w-6xl px-4 pt-16 pb-24 sm:px-6 sm:pt-20 sm:pb-28">
           <p className="animate-fade-up text-[11px] font-semibold tracking-[0.18em] text-blue-soft uppercase">
