@@ -30,7 +30,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="id"
+      lang="en"
       className={`${sora.variable} ${manrope.variable} h-full`}
     >
       <body className="min-h-full font-sans antialiased">{children}</body>

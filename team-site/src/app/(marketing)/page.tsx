@@ -1,114 +1,87 @@
+"use client";
+
 import { JourneyCard } from "@/components/JourneyCard";
 import { PartnerRail } from "@/components/PartnerRail";
 import { RouteMotif } from "@/components/RouteMotif";
 import { ButtonLink, SectionHeading } from "@/components/ui";
+import { useLocale } from "@/components/LocaleProvider";
 
-const journey = [
-  {
-    phase: "Fase 01",
-    title: "Pra-Seleksi",
-    description:
-      "Ideasi FLO dan proposal awal: logistik hijau & tangguh berbasis AI.",
-    href: "/pre-selection",
-  },
-  {
-    phase: "Fase 02",
-    title: "Semifinal",
-    description:
-      "Prototipe live dan video pitch — validasi teknis di depan juri.",
-    href: "/semifinal",
-  },
-  {
-    phase: "Fase 03",
-    title: "Final",
-    description:
-      "Demo lengkap, presentasi, dan paket submission untuk babak final.",
-    href: "/final",
-  },
-];
-
-const capabilities = [
-  {
-    code: "01",
-    title: "Predict",
-    body: "Skor risiko SLA real-time dari histori pengiriman, lalu lintas, dan beban hub.",
-  },
-  {
-    code: "02",
-    title: "Route",
-    body: "Optimasi multi-stop yang menyeimbangkan ETA, biaya operasional, dan jejak karbon.",
-  },
-  {
-    code: "03",
-    title: "Verify",
-    body: "Computer vision untuk kepatuhan armada dan aset tanpa inspeksi manual penuh.",
-  },
-];
+const phaseHrefs = ["/pre-selection", "/semifinal", "/final"];
 
 export default function HomePage() {
+  const { t, dict, locale } = useLocale();
+  const journey = dict.home.journey.map((step, i) => ({
+    phase: step.phase,
+    title: step.title,
+    description: step.description,
+    cta: step.cta,
+    href: phaseHrefs[i],
+  }));
+
   return (
-    <div>
+    <div lang={locale}>
       <section className="relative overflow-hidden bg-blue text-white">
         <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[46%] lg:block">
           <RouteMotif className="absolute top-10 right-[-8%] h-[120%] w-auto opacity-90" tone="yellow" />
         </div>
         <div className="relative mx-auto max-w-6xl px-4 pt-16 pb-24 sm:px-6 sm:pt-20 sm:pb-28">
           <p className="animate-fade-up text-[11px] font-semibold tracking-[0.18em] text-blue-soft uppercase">
-            AI Open Innovation Challenge 2026 · Case Blibli
+            {t("home.eyebrow")}
           </p>
           <h1 className="animate-fade-up-delay-1 font-display mt-4 max-w-3xl text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">
-            One intelligence layer for every delivery.
+            {t("home.headline")}
           </h1>
           <p className="animate-fade-up-delay-2 mt-5 max-w-xl text-lg leading-relaxed text-white/85 sm:text-xl">
-            <span className="font-semibold text-yellow">FLO</span> — Fab
-            Logistics Operations: prediksi SLA, routing rendah karbon, dan
-            kepatuhan visual armada untuk supply chain Blibli.
+            <span className="font-semibold text-yellow">
+              {t("home.ledeStrong")}
+            </span>
+            {t("home.ledeRest")}
           </p>
           <p className="mt-3 max-w-xl text-sm text-white/70">
-            Dibangun Quasarian Radr-Lyon Dynasty · SMAS Pilar Indonesia
+            {t("home.builtBy")}
           </p>
 
           <div className="mt-10 flex flex-wrap gap-3">
             <ButtonLink href="/flo-logistics/demo" variant="yellow">
-              Live Demo
+              {t("home.primaryCta")}
             </ButtonLink>
             <ButtonLink
               href="/about"
               variant="secondary"
               className="border-white/40 text-white hover:border-white hover:bg-white/10"
             >
-              Tentang Tim
+              {t("home.secondaryCta")}
             </ButtonLink>
             <ButtonLink
               href="/presentation"
               variant="ghost"
               className="text-white hover:bg-white/10"
             >
-              Presentasi
+              {t("home.tertiaryCta")}
             </ButtonLink>
           </div>
 
           <p className="mt-12 font-mono text-[11px] tracking-[0.14em] text-yellow uppercase">
-            01 Predict — 02 Route — 03 Verify
+            {t("home.moduleEyebrow")}
           </p>
         </div>
       </section>
 
       <section className="border-b border-border bg-surface px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-6xl">
-          <PartnerRail label="Sekolah · universitas · lab · case provider" />
+          <PartnerRail label={t("home.partnersLabel")} />
         </div>
       </section>
 
       <section className="px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-6xl">
           <SectionHeading
-            eyebrow="Sistem"
-            title="Tiga modul, satu lapisan keputusan"
-            description="FLO mengorkestrasi prediksi, routing, dan verifikasi visual pada data operasional yang sama — agar rekomendasi tetap koheren di lapangan."
+            eyebrow={t("home.systemEyebrow")}
+            title={t("home.systemTitle")}
+            description={t("home.systemDescription")}
           />
           <div className="mt-10 grid gap-4 lg:grid-cols-3">
-            {capabilities.map((item) => (
+            {dict.home.capabilities.map((item) => (
               <article
                 key={item.code}
                 className="border border-border bg-surface p-6"
@@ -131,13 +104,21 @@ export default function HomePage() {
       <section className="border-t border-border bg-surface-muted/50 px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-6xl">
           <SectionHeading
-            eyebrow="Kompetisi"
-            title="Perjalanan kompetisi"
-            description="Dari proposal hingga final — jejak FLO bersama Quasarian Radr-Lyon Dynasty."
+            eyebrow={t("home.competitionEyebrow")}
+            title={t("home.competitionTitle")}
+            description={t("home.competitionDescription")}
           />
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {journey.map((item, index) => (
-              <JourneyCard key={item.href} {...item} index={index} />
+              <JourneyCard
+                key={item.href}
+                phase={item.phase}
+                title={item.title}
+                description={item.description}
+                href={item.href}
+                cta={item.cta}
+                index={index}
+              />
             ))}
           </div>
         </div>

@@ -2,11 +2,15 @@ import type { Metadata } from "next";
 import { PresentationDeck } from "@/components/PresentationDeck";
 
 export const metadata: Metadata = {
-  title: "Presentasi FLO",
+  title: "FLO Presentation",
   description:
-    "Slide deck final Quasarian Radr-Lyon Dynasty — FLO Logistics Intelligence.",
+    "Presentation deck from Quasarian Radr-Lyon Dynasty — FLO Logistics Intelligence.",
 };
 
 export default function PresentationPage() {
-  return <PresentationDeck />;
+  return (
+    <div lang="en">
+      <PresentationDeck />
+    </div>
+  );
 }

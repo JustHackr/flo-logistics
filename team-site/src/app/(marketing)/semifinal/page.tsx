@@ -1,44 +1,37 @@
-import type { Metadata } from "next";
-import { ButtonLink, PageIntro, TextLink } from "@/components/ui";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Semifinal",
-};
+import { ButtonLink, PageIntro, TextLink } from "@/components/ui";
+import { useLocale } from "@/components/LocaleProvider";
 
 const LIVE_APP = "https://flo-logistics.vercel.app/";
 const YOUTUBE_ID = "S3ME4D5sduM";
 
 export default function SemifinalPage() {
+  const { t, locale } = useLocale();
   return (
-    <div className="px-4 py-16 sm:px-6 sm:py-20">
+    <div lang={locale} className="px-4 py-16 sm:px-6 sm:py-20">
       <div className="mx-auto max-w-4xl">
         <PageIntro
-          eyebrow="Fase 02 · Semifinal"
-          title="Semifinal"
-          description={
-            <>
-              Babak semifinal menampilkan prototipe FLO yang dapat diakses
-              secara live beserta video penjelasan untuk juri — bukti bahwa ide
-              pra-seleksi sudah berjalan sebagai produk.
-            </>
-          }
+          eyebrow={t("semifinal.eyebrow")}
+          title={t("semifinal.title")}
+          description={<>{t("semifinal.lede")}</>}
         />
 
         <div className="mt-8">
           <ButtonLink href={LIVE_APP} external>
-            Buka FLO Live App
+            {t("semifinal.liveCta")}
           </ButtonLink>
         </div>
 
         <div className="mt-12">
           <h2 className="font-display text-2xl font-bold text-ink">
-            Video pitch
+            {t("semifinal.videoHeading")}
           </h2>
           <div className="mt-4 aspect-video overflow-hidden border border-border bg-ink">
             <iframe
               className="h-full w-full"
               src={`https://www.youtube.com/embed/${YOUTUBE_ID}`}
-              title="FLO Semifinal — Quasarian Radr-Lyon Dynasty"
+              title={t("semifinal.videoTitle")}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
             />
@@ -49,15 +42,15 @@ export default function SemifinalPage() {
             rel="noopener noreferrer"
             className="mt-3 inline-block text-sm font-medium text-blue hover:underline"
           >
-            Buka di YouTube →
+            {t("semifinal.openYoutube")}
           </a>
         </div>
 
         <div className="mt-10 flex flex-wrap items-center gap-4">
           <ButtonLink href="/final" variant="secondary">
-            Lanjut ke Final →
+            {t("semifinal.nextCta")}
           </ButtonLink>
-          <TextLink href="/pre-selection">← Kembali ke Pra-Seleksi</TextLink>
+          <TextLink href="/pre-selection">{t("semifinal.backCta")}</TextLink>
         </div>
       </div>
     </div>

@@ -1,45 +1,25 @@
-import type { Metadata } from "next";
+"use client";
+
 import { ButtonLink, PageIntro, TextLink } from "@/components/ui";
+import { useLocale } from "@/components/LocaleProvider";
 
-export const metadata: Metadata = {
-  title: "Final",
-};
-
-const resources = [
-  {
-    title: "Live Demo",
-    description: "Coba FLO secara interaktif di lingkungan demo.",
-    href: "/flo-logistics/demo",
-    cta: "Buka Demo",
-  },
-  {
-    title: "Presentasi",
-    description: "Deck slide final — navigasi keyboard, siap diekspor PDF.",
-    href: "/presentation",
-    cta: "Buka Presentasi",
-  },
-  {
-    title: "Paket Unduhan",
-    description:
-      "Sumber FLO siap dijalankan lokal (Node + SQLite). Ekstrak, lalu npm run setup && npm run dev.",
-    href: "/flo-logistics/downloads/flo-logistics-local.zip",
-    cta: "Download Package",
-  },
+const RESOURCE_HREFS = [
+  "/flo-logistics/demo",
+  "/presentation",
+  "/flo-logistics/downloads/flo-logistics-local.zip",
 ];
 
 export default function FinalPage() {
+  const { t, dict, locale } = useLocale();
+  const resources = dict.final.resources.map((item, i) => ({ ...item, href: RESOURCE_HREFS[i] }));
+
   return (
-    <div className="px-4 py-16 sm:px-6 sm:py-20">
+    <div lang={locale} className="px-4 py-16 sm:px-6 sm:py-20">
       <div className="mx-auto max-w-4xl">
         <PageIntro
-          eyebrow="Fase 03 · Final"
-          title="Final"
-          description={
-            <>
-              Babak final menghadirkan demo produk, presentasi lengkap, dan
-              paket dokumen untuk evaluasi juri.
-            </>
-          }
+          eyebrow={t("final.eyebrow")}
+          title={t("final.title")}
+          description={<>{t("final.lede")}</>}
         />
 
         <div className="mt-10 grid gap-4 sm:grid-cols-3">
@@ -72,8 +52,9 @@ export default function FinalPage() {
         </div>
 
         <p className="mt-10 text-sm text-muted">
-          Kembali ke <TextLink href="/">beranda</TextLink> atau lihat{" "}
-          <TextLink href="/about">profil tim</TextLink>.
+          {`${t("final.homeLink")} · ${t("final.profileLink")}`}{" "}
+          <TextLink href="/">{t("nav.home")}</TextLink> /{" "}
+          <TextLink href="/about">{t("nav.about")}</TextLink>.
         </p>
       </div>
     </div>

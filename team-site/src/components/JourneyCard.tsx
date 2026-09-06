@@ -4,6 +4,7 @@ type JourneyCardProps = {
   phase: string;
   title: string;
   description: string;
+  cta: string;
   href: string;
   index: number;
 };
@@ -12,6 +13,7 @@ export function JourneyCard({
   phase,
   title,
   description,
+  cta,
   href,
   index,
 }: JourneyCardProps) {
@@ -33,7 +35,7 @@ export function JourneyCard({
         {description}
       </p>
       <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-blue transition group-hover:gap-3">
-        Lihat detail
+        {cta}
         <span aria-hidden>→</span>
       </span>
     </Link>

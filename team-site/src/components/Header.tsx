@@ -4,14 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { SiteImage } from "@/components/SiteImage";
-
-const navLinks = [
-  { href: "/", label: "Beranda" },
-  { href: "/about", label: "Tentang" },
-  { href: "/pre-selection", label: "Pra-Seleksi" },
-  { href: "/semifinal", label: "Semifinal" },
-  { href: "/final", label: "Final" },
-];
+import { LocaleSwitcher } from "@/components/LocaleSwitcher";
+import { useLocale } from "@/components/LocaleProvider";
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -21,6 +15,15 @@ function isActive(pathname: string, href: string) {
 export function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { t, locale } = useLocale();
+
+  const navLinks = [
+    { href: "/", label: t("nav.home") },
+    { href: "/about", label: t("nav.about") },
+    { href: "/pre-selection", label: t("nav.preSelection") },
+    { href: "/semifinal", label: t("nav.semifinal") },
+    { href: "/final", label: t("nav.final") },
+  ];
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/80 bg-[#f7f9fc]/92 backdrop-blur-md">
@@ -28,7 +31,7 @@ export function Header() {
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-sm focus:bg-yellow focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-yellow-ink"
       >
-        Lewati ke konten
+        {t("common.skipToContent")}
       </a>
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
         <Link href="/" className="group flex min-w-0 items-center gap-3">
@@ -54,7 +57,7 @@ export function Header() {
 
         <nav
           className="hidden items-center gap-1 md:flex"
-          aria-label="Navigasi utama"
+          aria-label={t("common.primaryMenu")}
         >
           {navLinks.map((link) => {
             const active = isActive(pathname, link.href);
@@ -76,11 +79,12 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <LocaleSwitcher className="hidden sm:inline-flex" />
           <a
             href="/flo-logistics/demo"
             className="shrink-0 rounded-sm bg-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-blue-deep"
           >
-            Live Demo
+            {t("common.liveDemo")}
           </a>
           <button
             type="button"
@@ -89,7 +93,7 @@ export function Header() {
             aria-controls="mobile-nav"
             onClick={() => setOpen((v) => !v)}
           >
-            <span className="sr-only">Menu</span>
+            <span className="sr-only">{t("common.openMenu")}</span>
             <span aria-hidden className="flex flex-col gap-1.5">
               <span className="block h-0.5 w-4 bg-ink" />
               <span className="block h-0.5 w-4 bg-ink" />
@@ -103,7 +107,7 @@ export function Header() {
         <nav
           id="mobile-nav"
           className="border-t border-border bg-surface px-4 py-3 md:hidden"
-          aria-label="Navigasi mobile"
+          aria-label={t("common.mobileMenu")}
         >
           <ul className="flex flex-col gap-1">
             {navLinks.map((link) => {
@@ -125,9 +129,13 @@ export function Header() {
                 </li>
               );
             })}
+            <li className="pt-2">
+              <LocaleSwitcher />
+            </li>
           </ul>
         </nav>
       ) : null}
+      <p className="sr-only">Locale: {locale}</p>
     </header>
   );
 }

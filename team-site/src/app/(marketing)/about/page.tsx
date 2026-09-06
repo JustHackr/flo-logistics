@@ -1,62 +1,28 @@
-import type { Metadata } from "next";
+"use client";
+
 import { Avatar } from "@/components/Avatar";
 import { PartnerRail } from "@/components/PartnerRail";
 import { SiteImage } from "@/components/SiteImage";
 import { PageIntro, TextLink } from "@/components/ui";
-
-export const metadata: Metadata = {
-  title: "Tentang Kami",
-};
-
-const members = [
-  {
-    name: "Justin Raditya Rizki",
-    role: "Project Lead",
-    detail: "Founder of stetoradr.com",
-    href: "https://stetoradr.com",
-    initials: "JR",
-  },
-  {
-    name: "Arsene Matthew E. Naftali",
-    role: "AI Engineer",
-    detail: "Founder of optivox.site",
-    href: "https://optivox.site",
-    initials: "AM",
-  },
-  {
-    name: "Nabiil Zhafran Alrilo Tarigan",
-    role: "Designer & Interface",
-    detail: "Co-founder of Foodloop AI",
-    href: null as string | null,
-    initials: "NZ",
-  },
-];
+import { useLocale } from "@/components/LocaleProvider";
 
 export default function AboutPage() {
+  const { t, dict, locale } = useLocale();
+
   return (
-    <div className="px-4 py-16 sm:px-6 sm:py-20">
+    <div lang={locale} className="px-4 py-16 sm:px-6 sm:py-20">
       <div className="mx-auto max-w-6xl">
         <PageIntro
-          eyebrow="Tentang Kami"
-          title="Quasarian Radr-Lyon Dynasty"
-          description={
-            <>
-              Tiga anggota dari{" "}
-              <span className="font-semibold text-ink">
-                SMAS Pilar Indonesia
-              </span>{" "}
-              yang membangun FLO — sistem kecerdasan logistik untuk AI Open
-              Innovation Challenge 2026 (Case Provider: Blibli), dengan dukungan
-              ekosistem FabLab Jababeka dan Universitas Presiden.
-            </>
-          }
+          eyebrow={t("about.title")}
+          title={t("about.headline")}
+          description={<>{t("about.lede")}</>}
         />
 
         <figure className="mt-10 overflow-hidden border border-border bg-surface">
           <div className="relative aspect-[16/10] w-full">
             <SiteImage
               src="/images/team-fablab.png"
-              alt="Tim Quasarian Radr-Lyon Dynasty di FABLAB — Justin Raditya Rizki, Arsene Matthew E. Naftali, dan Nabiil Zhafran Alrilo Tarigan"
+              alt={t("about.photoAlt")}
               fill
               sizes="(max-width: 768px) 100vw, 1152px"
               className="object-cover object-center"
@@ -64,43 +30,52 @@ export default function AboutPage() {
             />
           </div>
           <figcaption className="border-t border-border px-4 py-3 text-sm text-muted sm:px-5">
-            Tim FLO di FabLab — SMAS Pilar Indonesia.
+            {t("about.caption")}
           </figcaption>
         </figure>
 
         <div className="mt-12 grid gap-4 lg:grid-cols-3">
-          {members.map((m) => (
-            <article
-              key={m.name}
-              className="flex flex-col border border-border bg-surface p-6"
-            >
-              <Avatar initials={m.initials} />
-              <h2 className="font-display mt-5 text-lg font-bold text-ink">
-                {m.name}
-              </h2>
-              <p className="mt-1 text-sm font-semibold text-blue">{m.role}</p>
-              {m.href ? (
-                <a
-                  href={m.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 text-sm text-muted underline-offset-4 transition hover:text-ink hover:underline"
-                >
-                  {m.detail}
-                </a>
-              ) : (
-                <p className="mt-3 text-sm text-muted">{m.detail}</p>
-              )}
-            </article>
-          ))}
+          {dict.about.members.map((member) => {
+            const initials = member.name
+              .split(" ")
+              .map((part) => part[0])
+              .slice(0, 2)
+              .join("");
+            return (
+              <article
+                key={member.name}
+                className="flex flex-col border border-border bg-surface p-6"
+              >
+                <Avatar initials={initials} />
+                <h2 className="font-display mt-5 text-lg font-bold text-ink">
+                  {member.name}
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-blue">
+                  {member.role}
+                </p>
+                {member.detailHref ? (
+                  <a
+                    href={member.detailHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 text-sm text-muted underline-offset-4 transition hover:text-ink hover:underline"
+                  >
+                    {member.detail}
+                  </a>
+                ) : (
+                  <p className="mt-3 text-sm text-muted">{member.detail}</p>
+                )}
+              </article>
+            );
+          })}
         </div>
 
         <div className="mt-14 border border-border bg-surface p-6 sm:p-8">
-          <PartnerRail label="Afiliasi & mitra" />
+          <PartnerRail label={t("about.partnersLabel")} />
           <p className="mt-6 text-sm text-muted">
-            Lihat juga{" "}
-            <TextLink href="/presentation">deck presentasi</TextLink> atau{" "}
-            <TextLink href="/final">paket final</TextLink>.
+            {`${t("about.presentationLink")} · ${t("about.packageLink")}`}{" "}
+            <TextLink href="/presentation">{t("home.tertiaryCta")}</TextLink>{" "}
+            / <TextLink href="/final">{t("about.packageLink")}</TextLink>.
           </p>
         </div>
       </div>
