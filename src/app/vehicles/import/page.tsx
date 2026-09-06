@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { validateCsvRow } from "@/lib/csv";
 import type { CsvValidationResult } from "@/lib/csv";
+import { withBasePath } from "@/lib/base-path";
 import { useI18n } from "@/components/i18n/use-i18n";
 
 export default function ImportPage() {
@@ -76,7 +77,7 @@ export default function ImportPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <a
-            href="/templates/vehicles-template.csv"
+            href={withBasePath("/templates/vehicles-template.csv")}
             download
             className={cn(buttonVariants({ variant: "outline" }), "inline-flex")}
           >

@@ -1,32 +1,36 @@
 @import "tailwindcss";
 
 :root {
-  --background: #070f1c;
-  --foreground: #e8eef8;
-  --surface: #0d1a2e;
-  --surface-elevated: #132338;
-  --border: rgba(148, 183, 220, 0.14);
-  --muted: #8fa3bf;
-  --navy: #0a1628;
-  --indigo: #3b4fd9;
-  --indigo-soft: #5b6ef0;
-  --teal: #2dd4bf;
-  --teal-dim: #14b8a6;
-  --glow: rgba(45, 212, 191, 0.18);
+  --background: #f4f6f9;
+  --foreground: #0c1726;
+  --surface: #ffffff;
+  --surface-muted: #e9edf4;
+  --border: #c8d0de;
+  --muted: #5a6b82;
+  --ink: #0c1726;
+  --blue: #0b52ff;
+  --blue-deep: #0838b8;
+  --blue-soft: #dbe6ff;
+  --yellow: #ffcf37;
+  --yellow-ink: #101010;
+  --navy: #071433;
+  --success-ink: #0b52ff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
-  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-muted: var(--surface-muted);
   --color-border: var(--border);
   --color-muted: var(--muted);
+  --color-ink: var(--ink);
+  --color-blue: var(--blue);
+  --color-blue-deep: var(--blue-deep);
+  --color-blue-soft: var(--blue-soft);
+  --color-yellow: var(--yellow);
+  --color-yellow-ink: var(--yellow-ink);
   --color-navy: var(--navy);
-  --color-indigo: var(--indigo);
-  --color-indigo-soft: var(--indigo-soft);
-  --color-teal: var(--teal);
-  --color-teal-dim: var(--teal-dim);
   --font-sans: var(--font-body);
   --font-display: var(--font-display);
 }
@@ -43,30 +47,38 @@ body {
 }
 
 ::selection {
-  background: rgba(45, 212, 191, 0.35);
-  color: #fff;
+  background: rgba(11, 82, 255, 0.22);
+  color: var(--ink);
 }
 
-.site-bg {
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+.site-shell {
   background:
-    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(59, 79, 217, 0.35), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(45, 212, 191, 0.12), transparent 50%),
-    radial-gradient(ellipse 50% 30% at 50% 100%, rgba(20, 184, 166, 0.08), transparent 60%),
-    linear-gradient(180deg, #070f1c 0%, #0a1628 45%, #07101c 100%);
+    linear-gradient(180deg, #f7f9fc 0%, #f4f6f9 48%, #eef2f8 100%);
 }
 
-.grid-overlay {
-  background-image:
-    linear-gradient(rgba(148, 183, 220, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 183, 220, 0.04) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: linear-gradient(180deg, black 0%, transparent 85%);
+.blueprint-band {
+  background: var(--blue);
+  color: white;
+  clip-path: polygon(0 0, 100% 0, 100% 88%, 0 100%);
+}
+
+.hairline {
+  border-color: var(--border);
 }
 
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -74,30 +86,28 @@ body {
   }
 }
 
-@keyframes pulse-glow {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
 .animate-fade-up {
-  animation: fade-up 0.7s ease-out both;
+  animation: fade-up 0.55s ease-out both;
 }
 
 .animate-fade-up-delay-1 {
-  animation: fade-up 0.7s ease-out 0.12s both;
+  animation: fade-up 0.55s ease-out 0.08s both;
 }
 
 .animate-fade-up-delay-2 {
-  animation: fade-up 0.7s ease-out 0.24s both;
+  animation: fade-up 0.55s ease-out 0.16s both;
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 3.5s ease-in-out infinite;
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  .animate-fade-up,
+  .animate-fade-up-delay-1,
+  .animate-fade-up-delay-2 {
+    animation: none;
+  }
 }
 
 /* Presentation print: one slide per page */
@@ -134,8 +144,8 @@ body {
     break-after: page;
     opacity: 1 !important;
     transform: none !important;
-    background: #0a1628 !important;
-    color: #e8eef8 !important;
+    background: #f4f6f9 !important;
+    color: #0c1726 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }

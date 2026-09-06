@@ -7,10 +7,11 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="site-bg relative flex min-h-full flex-col">
-      <div className="pointer-events-none absolute inset-0 grid-overlay" aria-hidden />
+    <div className="site-shell relative flex min-h-full flex-col">
       <Header />
-      <main className="relative z-10 flex-1">{children}</main>
+      <main id="main-content" className="relative z-10 flex-1">
+        {children}
+      </main>
       <Footer />
     </div>
   );

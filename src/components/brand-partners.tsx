@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useI18n } from "@/components/i18n/use-i18n";
+import { withBasePath } from "@/lib/base-path";
 import { cn } from "@/lib/utils";
 
 const PARTNERS = [
@@ -70,7 +71,7 @@ export function BrandPartners({
               )}
             >
               <Image
-                src={partner.src}
+                src={withBasePath(partner.src)}
                 alt={partner.alt}
                 fill
                 sizes="80px"

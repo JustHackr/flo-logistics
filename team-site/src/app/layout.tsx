@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Manrope, Sora } from "next/font/google";
+import { Outfit, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 
-const sora = Sora({
+const outfit = Outfit({
   variable: "--font-display",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["500", "600", "700", "800"],
 });
 
-const manrope = Manrope({
+const sourceSans = Source_Sans_3({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -16,11 +16,11 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: {
-    default: "Quasarian Radr-Lyon Dynasty · FLO",
-    template: "%s · Quasarian Radr-Lyon Dynasty",
+    default: "FLO · Quasarian Radr-Lyon Dynasty",
+    template: "%s · FLO",
   },
   description:
-    "Tim Quasarian Radr-Lyon Dynasty — FLO untuk AI Open Innovation Challenge 2026 (Blibli).",
+    "FLO — Fab Logistics Operations oleh Quasarian Radr-Lyon Dynasty untuk AI Open Innovation Challenge 2026 (Blibli).",
 };
 
 export default function RootLayout({
@@ -29,7 +29,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${sora.variable} ${manrope.variable} h-full`}>
+    <html
+      lang="id"
+      className={`${outfit.variable} ${sourceSans.variable} h-full`}
+    >
       <body className="min-h-full font-sans antialiased">{children}</body>
     </html>
   );

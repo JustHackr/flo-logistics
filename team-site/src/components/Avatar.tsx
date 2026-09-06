@@ -1,16 +1,14 @@
 type AvatarProps = {
   initials: string;
-  gradient: string;
   size?: "md" | "lg";
 };
 
-export function Avatar({ initials, gradient, size = "lg" }: AvatarProps) {
-  const dim = size === "lg" ? "h-24 w-24 text-2xl" : "h-14 w-14 text-lg";
+export function Avatar({ initials, size = "lg" }: AvatarProps) {
+  const dim = size === "lg" ? "h-20 w-20 text-xl" : "h-12 w-12 text-base";
 
   return (
     <div
-      className={`flex ${dim} items-center justify-center rounded-full font-[family-name:var(--font-display)] font-semibold text-white shadow-lg ring-2 ring-white/10`}
-      style={{ background: gradient }}
+      className={`flex ${dim} items-center justify-center rounded-sm bg-blue font-display font-bold text-white`}
       aria-hidden
     >
       {initials}

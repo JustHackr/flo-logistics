@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { SiteImage } from "@/components/SiteImage";
+import { PARTNERS } from "@/lib/partners";
 
 type Slide = {
   id: string;
@@ -8,6 +10,29 @@ type Slide = {
   title: string;
   body: ReactNode;
 };
+
+function PartnerLogoGrid() {
+  return (
+    <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
+      {PARTNERS.map((partner) => (
+        <div
+          key={partner.name}
+          className="flex h-20 items-center justify-center border border-border bg-surface px-3"
+        >
+          <span className={`relative block ${partner.boxClass}`}>
+            <SiteImage
+              src={partner.src}
+              alt={partner.alt}
+              fill
+              sizes="140px"
+              className="object-contain"
+            />
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const slides: Slide[] = [
   {
@@ -17,21 +42,14 @@ const slides: Slide[] = [
     body: (
       <div className="flex w-full max-w-4xl flex-col gap-8">
         <p className="text-lg text-muted sm:text-xl">
-          Memperkenalkan <span className="text-teal font-medium">FLO</span> —
+          Memperkenalkan <span className="font-semibold text-blue">FLO</span> —
           Fab Logistics Operations: kecerdasan buatan untuk logistik hijau
           &amp; tangguh.
         </p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {["Blibli", "FabLab", "Kemenko", "Pemprov DKI"].map((name) => (
-            <div
-              key={name}
-              className="flex h-20 items-center justify-center rounded-lg border border-dashed border-border bg-white/5 text-sm font-medium text-muted"
-            >
-              Logo {name}
-            </div>
-          ))}
-        </div>
-        <p className="text-sm text-muted">SMAS Pilar Indonesia</p>
+        <PartnerLogoGrid />
+        <p className="text-sm text-muted">
+          SMAS Pilar Indonesia · Universitas Presiden · FabLab Jababeka · Blibli
+        </p>
       </div>
     ),
   },
@@ -40,22 +58,17 @@ const slides: Slide[] = [
     eyebrow: "Masalah",
     title: "Logistik hijau & tangguh untuk Blibli",
     body: (
-      <ul className="max-w-3xl space-y-4 text-base leading-relaxed text-muted sm:text-lg">
-        <li className="border-l-2 border-teal/60 pl-4">
-          Keterlambatan pengiriman dan risiko SLA yang sulit diprediksi secara
-          dini.
-        </li>
-        <li className="border-l-2 border-teal/60 pl-4">
-          Rute yang belum optimal — biaya operasional &amp; jejak karbon tinggi.
-        </li>
-        <li className="border-l-2 border-teal/60 pl-4">
-          Kepatuhan armada &amp; infrastruktur yang masih bergantung pada
-          inspeksi manual.
-        </li>
-        <li className="border-l-2 border-teal/60 pl-4">
-          Kebutuhan solusi AI yang berdaulat, aman, dan selaras regulasi
-          Indonesia.
-        </li>
+      <ul className="max-w-3xl space-y-4 text-left text-base leading-relaxed text-muted sm:text-lg">
+        {[
+          "Keterlambatan pengiriman dan risiko SLA yang sulit diprediksi secara dini.",
+          "Rute yang belum optimal — biaya operasional & jejak karbon tinggi.",
+          "Kepatuhan armada & infrastruktur yang masih bergantung pada inspeksi manual.",
+          "Kebutuhan solusi AI yang berdaulat, aman, dan selaras regulasi Indonesia.",
+        ].map((item) => (
+          <li key={item} className="border-l-4 border-blue pl-4">
+            {item}
+          </li>
+        ))}
       </ul>
     ),
   },
@@ -79,13 +92,8 @@ const slides: Slide[] = [
             d: "Prediksi risiko kerusakan sebelum mengganggu operasi.",
           },
         ].map((m) => (
-          <div
-            key={m.t}
-            className="rounded-xl border border-border bg-white/5 p-5"
-          >
-            <h3 className="font-[family-name:var(--font-display)] text-lg font-semibold text-teal">
-              {m.t}
-            </h3>
+          <div key={m.t} className="border border-border bg-surface p-5 text-left">
+            <h3 className="font-display text-lg font-bold text-blue">{m.t}</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted">{m.d}</p>
           </div>
         ))}
@@ -97,7 +105,7 @@ const slides: Slide[] = [
     eyebrow: "Modul 1",
     title: "Prediksi risiko SLA & keterlambatan",
     body: (
-      <div className="max-w-3xl space-y-4 text-base text-muted sm:text-lg">
+      <div className="max-w-3xl space-y-4 text-left text-base text-muted sm:text-lg">
         <p>
           Model prediktif memperkirakan kemungkinan keterlambatan berdasarkan
           histori pengiriman, kondisi lalu lintas, cuaca, dan beban hub.
@@ -115,7 +123,7 @@ const slides: Slide[] = [
     eyebrow: "Modul 2",
     title: "Routing optimal + jejak karbon",
     body: (
-      <div className="max-w-3xl space-y-4 text-base text-muted sm:text-lg">
+      <div className="max-w-3xl space-y-4 text-left text-base text-muted sm:text-lg">
         <p>
           Optimasi rute menyeimbangkan kecepatan layanan dengan efisiensi energi
           dan emisi — mendukung agenda logistik hijau Blibli.
@@ -133,7 +141,7 @@ const slides: Slide[] = [
     eyebrow: "Modul 3",
     title: "Computer Vision untuk kepatuhan",
     body: (
-      <div className="max-w-3xl space-y-4 text-base text-muted sm:text-lg">
+      <div className="max-w-3xl space-y-4 text-left text-base text-muted sm:text-lg">
         <p>
           CV membantu memverifikasi kondisi armada, packing, dan infrastruktur
           secara otomatis — mengurangi ketergantungan inspeksi manual.
@@ -151,7 +159,7 @@ const slides: Slide[] = [
     eyebrow: "Penekanan utama",
     title: "Sovereign AI & kerangka regulasi",
     body: (
-      <div className="max-w-4xl space-y-5">
+      <div className="max-w-4xl space-y-5 text-left">
         <p className="text-base text-muted sm:text-lg">
           Lebih dari 90% data enterprise/pemerintah masih di infrastruktur asing.
           FLO dibangun self-hostable di infrastruktur lokal — data logistik,
@@ -172,11 +180,8 @@ const slides: Slide[] = [
               d: "Kewajiban penyelenggara sistem elektronik, jejak audit, dan keamanan transaksi digital operasional.",
             },
           ].map((item) => (
-            <div
-              key={item.t}
-              className="rounded-xl border border-teal/30 bg-teal/5 p-4"
-            >
-              <h3 className="font-[family-name:var(--font-display)] text-base font-semibold text-teal">
+            <div key={item.t} className="border border-blue/30 bg-blue-soft/50 p-4">
+              <h3 className="font-display text-base font-bold text-blue">
                 {item.t}
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted">{item.d}</p>
@@ -206,12 +211,12 @@ const slides: Slide[] = [
           ].map((step, i) => (
             <div
               key={step}
-              className="rounded-lg border border-border bg-white/5 p-4 text-center"
+              className="border border-border bg-surface p-4 text-center"
             >
-              <span className="text-xs tracking-widest text-teal">
+              <span className="font-mono text-xs tracking-widest text-blue">
                 0{i + 1}
               </span>
-              <p className="mt-2 text-sm font-medium text-foreground">{step}</p>
+              <p className="mt-2 text-sm font-semibold text-ink">{step}</p>
             </div>
           ))}
         </div>
@@ -235,11 +240,9 @@ const slides: Slide[] = [
         ].map((s) => (
           <div
             key={s.l}
-            className="rounded-xl border border-border bg-gradient-to-b from-indigo/20 to-transparent p-6 text-center"
+            className="border border-border bg-surface p-6 text-center"
           >
-            <p className="font-[family-name:var(--font-display)] text-3xl font-semibold text-teal">
-              {s.v}
-            </p>
+            <p className="font-display text-3xl font-bold text-blue">{s.v}</p>
             <p className="mt-2 text-sm text-muted">{s.l}</p>
           </div>
         ))}
@@ -251,17 +254,17 @@ const slides: Slide[] = [
     eyebrow: "Bisnis & roadmap",
     title: "Jalur implementasi",
     body: (
-      <ol className="max-w-3xl space-y-4 text-base text-muted sm:text-lg">
+      <ol className="max-w-3xl space-y-4 text-left text-base text-muted sm:text-lg">
         <li>
-          <span className="font-semibold text-foreground">Fase 1 — Pilot:</span>{" "}
+          <span className="font-semibold text-ink">Fase 1 — Pilot:</span>{" "}
           prediksi SLA + dashboard di satu koridor/hub.
         </li>
         <li>
-          <span className="font-semibold text-foreground">Fase 2 — Scale:</span>{" "}
+          <span className="font-semibold text-ink">Fase 2 — Scale:</span>{" "}
           routing karbon &amp; CV kepatuhan di multi-hub.
         </li>
         <li>
-          <span className="font-semibold text-foreground">Fase 3 — Platform:</span>{" "}
+          <span className="font-semibold text-ink">Fase 3 — Platform:</span>{" "}
           API internal, governance AI, dan perluasan mitra logistik.
         </li>
       </ol>
@@ -272,14 +275,13 @@ const slides: Slide[] = [
     eyebrow: "Terima kasih",
     title: "Mari wujudkan logistik yang lebih cerdas",
     body: (
-      <div className="max-w-2xl space-y-6 text-center">
-        <p className="text-lg text-muted">
-          Quasarian Radr-Lyon Dynasty · FLO
-        </p>
+      <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 text-center">
+        <p className="text-lg text-muted">Quasarian Radr-Lyon Dynasty · FLO</p>
+        <PartnerLogoGrid />
         <p className="text-sm text-muted">
           Demo: /flo-logistics/demo · Presentasi dapat diekspor PDF (Print)
         </p>
-        <p className="text-teal">Pertanyaan &amp; diskusi terbuka</p>
+        <p className="font-semibold text-blue">Pertanyaan &amp; diskusi terbuka</p>
       </div>
     ),
   },
@@ -317,47 +319,38 @@ export function PresentationDeck() {
   }, [go, index, total]);
 
   return (
-    <div className="presentation-root relative min-h-screen bg-[#070f1c] text-foreground">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-30 print:hidden"
-        style={{
-          backgroundImage: "url(/flo-logistics/images/slide-bg.png)",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      />
-      <div className="no-print fixed top-0 right-0 left-0 z-20 flex items-center justify-between gap-3 border-b border-border/60 bg-[#070f1c]/90 px-4 py-2 backdrop-blur">
+    <div className="presentation-root relative min-h-screen bg-background text-foreground">
+      <div className="no-print fixed top-0 right-0 left-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-surface/95 px-4 py-3">
         <a
           href="/flo-logistics/"
-          className="text-xs text-muted transition hover:text-teal"
+          className="min-h-10 min-w-10 text-sm font-medium text-muted transition hover:text-blue"
         >
           ← Kembali ke situs
         </a>
-        <p className="text-xs text-muted">
+        <p className="hidden text-xs text-muted sm:block">
           ← → untuk navigasi · Print untuk PDF
         </p>
-        <p className="text-xs font-medium text-teal">
+        <p className="font-mono text-xs font-semibold text-blue">
           {index + 1} / {total}
         </p>
       </div>
 
-      {/* Screen mode: one active slide */}
-      <div className="print:hidden flex min-h-screen items-center justify-center px-6 pt-14 pb-20">
+      <div className="print:hidden relative flex min-h-screen items-center justify-center px-6 pt-16 pb-24">
         {slides.map((slide, i) => (
           <section
             key={slide.id}
-            className={`presentation-slide absolute inset-0 flex flex-col items-center justify-center px-6 pt-16 pb-20 transition-opacity duration-300 ${
+            className={`presentation-slide absolute inset-0 flex flex-col items-center justify-center px-6 pt-16 pb-24 transition-opacity duration-300 ${
               i === index ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
             aria-hidden={i !== index}
           >
             <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
-              {slide.eyebrow && (
-                <p className="mb-3 text-xs tracking-[0.25em] text-teal uppercase">
+              {slide.eyebrow ? (
+                <p className="mb-3 text-[11px] font-semibold tracking-[0.18em] text-blue uppercase">
                   {slide.eyebrow}
                 </p>
-              )}
-              <h1 className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight text-foreground sm:text-4xl md:text-5xl">
+              ) : null}
+              <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl md:text-5xl">
                 {slide.title}
               </h1>
               <div className="mt-8 flex w-full justify-center">{slide.body}</div>
@@ -366,7 +359,6 @@ export function PresentationDeck() {
         ))}
       </div>
 
-      {/* Print mode: all slides stacked as pages */}
       <div className="hidden print:block">
         {slides.map((slide) => (
           <section
@@ -374,12 +366,12 @@ export function PresentationDeck() {
             className="presentation-slide flex flex-col items-center justify-center px-12"
           >
             <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
-              {slide.eyebrow && (
-                <p className="mb-3 text-xs tracking-[0.25em] text-teal uppercase">
+              {slide.eyebrow ? (
+                <p className="mb-3 text-[11px] font-semibold tracking-[0.18em] text-blue uppercase">
                   {slide.eyebrow}
                 </p>
-              )}
-              <h1 className="font-[family-name:var(--font-display)] text-4xl font-semibold text-foreground">
+              ) : null}
+              <h1 className="font-display text-4xl font-bold text-ink">
                 {slide.title}
               </h1>
               <div className="mt-8 flex w-full justify-center">{slide.body}</div>
@@ -388,23 +380,24 @@ export function PresentationDeck() {
         ))}
       </div>
 
-      <div className="no-print fixed right-0 bottom-0 left-0 z-20 flex items-center justify-center gap-3 border-t border-border/60 bg-[#070f1c]/90 px-4 py-3 backdrop-blur">
+      <div className="no-print fixed right-0 bottom-0 left-0 z-20 flex items-center justify-center gap-3 border-t border-border bg-surface/95 px-4 py-3">
         <button
           type="button"
           onClick={() => go(index - 1)}
-          className="rounded-md border border-border px-4 py-2 text-sm text-muted hover:border-teal/40 hover:text-foreground"
+          className="min-h-11 rounded-sm border border-border px-4 py-2.5 text-sm font-medium text-muted hover:border-ink hover:text-ink"
         >
           Sebelumnya
         </button>
-        <div className="flex gap-1.5">
+        <div className="flex gap-2">
           {slides.map((s, i) => (
             <button
               key={s.id}
               type="button"
               aria-label={`Slide ${i + 1}`}
+              aria-current={i === index ? "true" : undefined}
               onClick={() => go(i)}
-              className={`h-2 w-2 rounded-full transition ${
-                i === index ? "bg-teal" : "bg-white/20 hover:bg-white/40"
+              className={`h-3 w-3 rounded-full transition ${
+                i === index ? "bg-blue" : "bg-border hover:bg-muted"
               }`}
             />
           ))}
@@ -412,7 +405,7 @@ export function PresentationDeck() {
         <button
           type="button"
           onClick={() => go(index + 1)}
-          className="rounded-md bg-teal px-4 py-2 text-sm font-semibold text-navy hover:bg-teal-dim"
+          className="min-h-11 rounded-sm bg-blue px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-deep"
         >
           Berikutnya
         </button>

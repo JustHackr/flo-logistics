@@ -34,6 +34,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useI18n } from "@/components/i18n/use-i18n";
+import { withBasePath } from "@/lib/base-path";
 import { toIntlLocale } from "@/lib/i18n/config";
 import { GoogleMapsStatusBanner } from "./google-maps-status-banner";
 
@@ -428,7 +429,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
             </p>
             <div className="flex flex-wrap gap-2">
               <a
-                href="/templates/routing-orders-template.csv"
+                href={withBasePath("/templates/routing-orders-template.csv")}
                 download
                 className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
               >
