@@ -1,0 +1,18 @@
+[Unit]
+Description=Quasarian FLO team site (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/flo-logistics-src/team-site
+Environment=NODE_ENV=production
+Environment=PORT=3010
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3010
+Restart=on-failure
+RestartSec=5
+MemoryMax=512M
+
+[Install]
+WantedBy=multi-user.target

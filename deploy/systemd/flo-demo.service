@@ -1,0 +1,21 @@
+[Unit]
+Description=Quasarian FLO logistics demo (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/flo-logistics-src
+Environment=NODE_ENV=production
+Environment=PORT=3011
+Environment=DATABASE_URL=file:/opt/flo-logistics-src/dev.db
+Environment=FLO_SESSION_SECRET=flo-prod-change-me-radr-2026
+Environment=NEXT_BASE_PATH=/flo-logistics/demo
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3011
+Restart=on-failure
+RestartSec=5
+MemoryMax=768M
+
+[Install]
+WantedBy=multi-user.target

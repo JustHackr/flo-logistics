@@ -1,0 +1,28 @@
+services:
+  team-site:
+    build:
+      context: ../team-site
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+
+  flo-demo:
+    build:
+      context: ..
+      args:
+        NEXT_BASE_PATH: /flo-logistics/demo
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: file:/data/dev.db
+      FLO_SESSION_SECRET: ${FLO_SESSION_SECRET:-flo-demo-session-secret-change-me}
+      NEXT_BASE_PATH: /flo-logistics/demo
+    volumes:
+      - flo-sqlite:/data
+
+volumes:
+  flo-sqlite:
