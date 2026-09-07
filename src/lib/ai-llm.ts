@@ -3,6 +3,7 @@ import { getRoutingLogisticsOverview } from "@/lib/routing-overview";
 import { formatCurrencyShort } from "@/lib/format";
 import type { AiProviderSettings } from "@/lib/ai-settings";
 import type { Locale } from "@/lib/i18n/config";
+import { stripReasoningBlocks } from "@/lib/ai-reasoning";
 
 export type LlmChatMessage = {
   role: "user" | "assistant" | "system";
@@ -83,18 +84,25 @@ export async function callOpenAiCompatibleChat(input: {
   history?: Array<{ role: "user" | "assistant"; content: string }>;
   companyContext: string;
   locale?: Locale;
+  /** Replace the default logistics-assistant system prompt entirely. */
+  systemPrompt?: string;
+  /** Completion budget. Reasoning models spend part of this on thinking. */
+  maxTokens?: number;
 }): Promise<string> {
   const url = `${normalizeBaseUrl(input.settings.baseUrl)}/chat/completions`;
 
+  const language =
+    input.locale === "id"
+      ? "Answer in natural Bahasa Indonesia. Keep FLO, VQI, DTI, CFI, ODOL, product names, and other operational acronyms unchanged."
+      : "Answer in English.";
+
+  const systemContent =
+    input.systemPrompt !== undefined
+      ? `${input.systemPrompt}\n\nLANGUAGE: ${language}`
+      : `${LOGISTICS_EXPERT_SYSTEM}\n\nLANGUAGE: ${language}\n\n---\nLIVE COMPANY DATA (authoritative; do not contradict):\n${input.companyContext}`;
+
   const messages: LlmChatMessage[] = [
-    {
-      role: "system",
-      content: `${LOGISTICS_EXPERT_SYSTEM}\n\nLANGUAGE: ${
-        input.locale === "id"
-          ? "Answer in natural Bahasa Indonesia. Keep FLO, VQI, DTI, CFI, ODOL, product names, and other operational acronyms unchanged."
-          : "Answer in English."
-      }\n\n---\nLIVE COMPANY DATA (authoritative; do not contradict):\n${input.companyContext}`,
-    },
+    { role: "system", content: systemContent },
     ...(input.history ?? []).slice(-8),
     { role: "user", content: input.userMessage },
   ];
@@ -109,9 +117,9 @@ export async function callOpenAiCompatibleChat(input: {
       model: input.settings.model,
       messages,
       temperature: 0.3,
-      max_tokens: 1200,
+      max_tokens: input.maxTokens ?? 1200,
     }),
-    signal: AbortSignal.timeout(60_000),
+    signal: AbortSignal.timeout(90_000),
   });
 
   if (!res.ok) {
@@ -133,7 +141,8 @@ export async function callOpenAiCompatibleChat(input: {
     choices?: Array<{ message?: { content?: string } }>;
   } = await res.json();
 
-  const content = json.choices?.[0]?.message?.content?.trim();
+  const raw = json.choices?.[0]?.message?.content ?? "";
+  const content = stripReasoningBlocks(raw);
   if (!content) {
     throw new Error("LLM returned an empty response");
   }
