@@ -1,0 +1,19 @@
+---
+description: Always use the justhackr GitHub account for all GitHub operations in this workspace
+globs:
+alwaysApply: true
+---
+
+# GitHub Account: justhackr
+
+All GitHub operations in this workspace must use the **`justhackr`** GitHub account.
+
+When performing any GitHub-related action, the agent MUST:
+
+- Use `justhackr` (case-insensitive) as the GitHub username/owner in any URL, API call, CLI command, PR/issue reference, or repo target.
+- Prefer the `gh` CLI authenticated as `justhackr` (verify with `gh auth status` before use; if a different account is active, switch with `gh auth switch --user justhackr`).
+- For git operations, the origin remote must point to a repo under `github.com/justhackr/...` (current remote: `https://github.com/JustHackr/flo-logistics.git`). Do not push to or reference repos owned by other accounts.
+- When opening issues, PRs, discussions, or workflow runs, target the `justhackr` account (or a repo it owns), never the user's personal accounts.
+- Commit author/email should remain whatever is configured locally (do not override `user.name`/`user.email`), but the **target account** for all remote interactions is `justhackr`.
+
+If a task requires a different GitHub account, stop and ask the user before proceeding.

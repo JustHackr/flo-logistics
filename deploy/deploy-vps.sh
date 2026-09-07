@@ -3,13 +3,17 @@
 # Usage:
 #   ./deploy/deploy-vps.sh [user@host]
 #   ./deploy/deploy-vps.sh --demo-only [user@host]
+#   ./deploy/deploy-vps.sh --skip-seed [user@host]
+#   ./deploy/deploy-vps.sh --demo-only --skip-seed [user@host]
 set -euo pipefail
 
 DEMO_ONLY=0
+SKIP_SEED=0
 HOST="ubuntu@43.134.182.44"
 for arg in "$@"; do
   case "$arg" in
     --demo-only) DEMO_ONLY=1 ;;
+    --skip-seed) SKIP_SEED=1 ;;
     -*)
       echo "Unknown option: $arg" >&2
       exit 1
@@ -86,15 +90,21 @@ else
 fi
 
 echo "==> Building FLO demo on VPS"
-ssh "$HOST" bash -s <<'REMOTE'
+ssh "$HOST" bash -s <<REMOTE
 set -euo pipefail
 export NODE_OPTIONS=--max-old-space-size=1536
 export NEXT_BASE_PATH=/flo-logistics/demo
 export DATABASE_URL=file:./dev.db
 export FLO_SESSION_SECRET=flo-prod-change-me-radr-2026
 cd /opt/flo-logistics-src
-# Drop leftover SQLite from prior final-round deploys so migrate/seed match baseline schema
-rm -f dev.db dev.db-journal prisma/dev.db prisma/dev.db-journal
+if [[ "${SKIP_SEED}" -eq 1 ]]; then
+  export SKIP_SEED=true
+  echo "SKIP_SEED=true — keeping existing SQLite (if any)"
+else
+  # Drop leftover SQLite from prior final-round deploys so migrate/seed match baseline schema
+  # (seed itself also no-ops when a route was updated in the last hour unless FORCE_SEED=1)
+  rm -f dev.db dev.db-journal prisma/dev.db prisma/dev.db-journal
+fi
 npm ci
 npx prisma generate
 npx prisma migrate deploy
@@ -108,6 +118,7 @@ systemctl is-active flo-demo
 curl -sI -o /dev/null -w "demo home %{http_code}\n" http://127.0.0.1:3011/flo-logistics/demo/ || true
 curl -sI -o /dev/null -w "demo login %{http_code}\n" http://127.0.0.1:3011/flo-logistics/demo/login || true
 curl -s -o /dev/null -w "demo api %{http_code}\n" http://127.0.0.1:3011/flo-logistics/demo/api/vehicles || true
+curl -s -o /dev/null -w "demo health %{http_code}\n" http://127.0.0.1:3011/flo-logistics/demo/api/health || true
 REMOTE
 
 echo "==> Public smoke checks"
@@ -116,5 +127,10 @@ curl -sL -o /dev/null -w "about %{http_code}\n" "https://radr.nxtdev.xyz/flo-log
 curl -sL -o /dev/null -w "presentation %{http_code}\n" "https://radr.nxtdev.xyz/flo-logistics/presentation"
 curl -sL -o /dev/null -w "demo home %{http_code}\n" "https://radr.nxtdev.xyz/flo-logistics/demo"
 curl -sI -o /dev/null -w "demo login %{http_code}\n" "https://radr.nxtdev.xyz/flo-logistics/demo/login"
+curl -sL -o /dev/null -w "sovereign %{http_code}\n" "https://radr.nxtdev.xyz/flo-logistics/demo/sovereign-ai"
+curl -sL -o /dev/null -w "cv tour %{http_code}\n" "https://radr.nxtdev.xyz/flo-logistics/demo/computer-vision/tour"
+curl -s -o /dev/null -w "health %{http_code}\n" "https://radr.nxtdev.xyz/flo-logistics/demo/api/health"
 echo "Team: https://radr.nxtdev.xyz/flo-logistics/"
 echo "Demo: https://radr.nxtdev.xyz/flo-logistics/demo"
+echo "Sovereign AI: https://radr.nxtdev.xyz/flo-logistics/demo/sovereign-ai"
+echo "CV tour: https://radr.nxtdev.xyz/flo-logistics/demo/computer-vision/tour"
