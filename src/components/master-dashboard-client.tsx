@@ -229,6 +229,26 @@ export function MasterDashboardClient({ data }: { data: MasterOverview }) {
           <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
             {t("home.subtitle")}
           </p>
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <Badge
+              variant="outline"
+              className="border-primary/30 text-primary"
+            >
+              {t("home.sovereignBadge")}
+            </Badge>
+            <Link
+              href="/sovereign-ai"
+              className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
+            >
+              {t("home.sovereignLink")}
+            </Link>
+            <Link
+              href="/computer-vision/tour"
+              className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
+            >
+              {t("home.cvTourLink")}
+            </Link>
+          </div>
         </div>
         <WelcomeTutorial />
       </div>

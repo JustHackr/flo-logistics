@@ -153,6 +153,45 @@ main > * {
   }
 }
 
+/* Login landing — subtle Jakarta route motif (decorative only). */
+@keyframes flo-route-dash {
+  to {
+    stroke-dashoffset: -48;
+  }
+}
+
+.flo-route-dash {
+  stroke-dasharray: 6 6;
+  animation: flo-route-dash 6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flo-route-dash {
+    animation: none;
+  }
+}
+
+/* Login landing — soft dot grid that fades into the sidebar background. */
+.flo-dot-grid {
+  background-image: radial-gradient(
+    oklch(0.54 0.17 252 / 0.18) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(
+    ellipse at top left,
+    oklch(0.28 0.04 255 / 0.55) 0%,
+    oklch(0.28 0.04 255 / 0.25) 40%,
+    transparent 80%
+  );
+  mask-image: radial-gradient(
+    ellipse at top left,
+    oklch(0.28 0.04 255 / 0.55) 0%,
+    oklch(0.28 0.04 255 / 0.25) 40%,
+    transparent 80%
+  );
+}
+
 /* Hub congestion — prominent calibrate guidance */
 @keyframes hub-calibrate-pulse {
   0%,

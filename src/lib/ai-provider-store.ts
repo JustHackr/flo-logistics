@@ -8,21 +8,34 @@ import {
 
 /**
  * AI provider credentials come exclusively from server-side environment
- * variables (set in Vercel project settings). They are never accepted from
- * users, never stored in the database, and never sent to the browser.
+ * variables. They are never accepted from users, never stored in the
+ * database, and never sent to the browser.
  *
- * - AI_API_KEY   (required to enable the LLM assistant)
- * - AI_BASE_URL  (optional, defaults to MiniMax's OpenAI-compatible API)
- * - AI_MODEL     (optional, defaults to MiniMax-Text-01)
+ * Sovereign AI (default):
+ * - No outbound LLM calls. The in-process local assistant answers from
+ *   live SQLite data (`src/lib/ai-chat.ts`).
+ *
+ * External LLM (opt-in only):
+ * - AI_ALLOW_EXTERNAL=true  (required opt-in to leave sovereign mode)
+ * - AI_API_KEY              (required)
+ * - AI_BASE_URL             (required when external is enabled)
+ * - AI_MODEL                (optional; defaults to a generic label)
  */
+function isExternalLlmAllowed(): boolean {
+  const flag = process.env.AI_ALLOW_EXTERNAL?.trim().toLowerCase();
+  return flag === "1" || flag === "true" || flag === "yes";
+}
+
 export function getAiProviderSettings(): AiProviderSettings | null {
+  if (!isExternalLlmAllowed()) return null;
+
   const apiKey = process.env.AI_API_KEY?.trim();
-  if (!apiKey) return null;
+  const baseUrl = process.env.AI_BASE_URL?.trim();
+  if (!apiKey || !baseUrl) return null;
 
   const parsed = aiProviderSettingsSchema.safeParse({
     apiKey,
-    baseUrl:
-      process.env.AI_BASE_URL?.trim() || DEFAULT_AI_PROVIDER_SETTINGS.baseUrl,
+    baseUrl,
     model: process.env.AI_MODEL?.trim() || DEFAULT_AI_PROVIDER_SETTINGS.model,
   });
 
@@ -33,7 +46,15 @@ export function getAiProviderSettings(): AiProviderSettings | null {
 export function getAiProviderStatus(): AiProviderStatus {
   const settings = getAiProviderSettings();
   if (!settings) {
-    return { configured: false, model: DEFAULT_AI_PROVIDER_SETTINGS.model };
+    return {
+      configured: false,
+      model: DEFAULT_AI_PROVIDER_SETTINGS.model,
+      mode: "local",
+    };
   }
-  return { configured: true, model: settings.model };
+  return {
+    configured: true,
+    model: settings.model,
+    mode: "external",
+  };
 }

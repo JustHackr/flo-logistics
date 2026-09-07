@@ -24,11 +24,17 @@ export type AiProviderSettings = z.infer<typeof aiProviderSettingsSchema>;
 
 /**
  * Safe-to-share provider status. Never includes the API key or base URL —
- * only whether the server-side provider is configured and which model runs.
+ * only whether an external provider is active and which mode the assistant
+ * is running in (sovereign/local by default).
  */
+export type AiProviderMode = "local" | "external";
+
 export type AiProviderStatus = {
+  /** True only when an external OpenAI-compatible provider is active. */
   configured: boolean;
   model: string;
+  /** Sovereign default: in-process local assistant. */
+  mode: AiProviderMode;
 };
 
 /** @deprecated Prefer AiProviderStatus — kept as an alias for older imports. */
@@ -37,10 +43,14 @@ export type AiProviderSettingsPublic = AiProviderStatus;
 export function isAiProviderPublicConfigured(
   status: AiProviderStatus | null | undefined
 ): boolean {
-  return Boolean(status?.configured);
+  return Boolean(status?.configured && status.mode === "external");
 }
 
+/**
+ * Defaults used only when AI_ALLOW_EXTERNAL=true and AI_API_KEY is set.
+ * No hard-coded third-party host — operators must supply AI_BASE_URL.
+ */
 export const DEFAULT_AI_PROVIDER_SETTINGS: Omit<AiProviderSettings, "apiKey"> = {
-  baseUrl: "https://api.minimax.io/v1",
-  model: "MiniMax-Text-01",
+  baseUrl: "",
+  model: "local-operations-helper",
 };

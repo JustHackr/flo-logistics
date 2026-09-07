@@ -2,6 +2,17 @@
 
 Next.js logistics webapp with traffic-aware route optimization for Jakarta last-mile delivery.
 
+## Sovereign AI (default)
+
+FLO answers operational questions with an **on-deployment assistant** that reads live SQLite data. Prompts do not leave the server unless an operator opts into an external OpenAI-compatible LLM.
+
+| Mode | When | Behavior |
+|------|------|----------|
+| Sovereign (default) | No `AI_ALLOW_EXTERNAL` | In-process helper (`src/lib/ai-chat.ts`) |
+| External (opt-in) | `AI_ALLOW_EXTERNAL=true` + `AI_API_KEY` + `AI_BASE_URL` | OpenAI-compatible chat completions |
+
+See [SECURITY.md](./SECURITY.md) and the in-app **Sovereign AI** page (`/sovereign-ai`) for the full privacy posture. Maps, live traffic, and Pertamina fuel prices remain optional external services because they cannot run fully offline.
+
 ## Quick start
 
 ```bash
@@ -9,9 +20,21 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000/routing/orders](http://localhost:3000/routing/orders) to view seeded demo orders, select several, and generate an optimized route plan.
+Open [http://localhost:3000/login](http://localhost:3000/login) and pick a demo
+persona (all accounts share the password `demo1234`):
 
-The `build` script runs `prisma migrate deploy` and `db:seed` automatically, so production builds also include demo warehouse, drivers, and orders.
+| Persona | Email | Role |
+|---------|-------|------|
+| Demo Admin | admin@flo.demo | ADMIN |
+| Ops Manager | ops@flo.demo | OPS_MANAGER |
+| Bima Nugraha (driver) | driver@flo.demo | DRIVER |
+| Warehouse Lead | warehouse@flo.demo | WAREHOUSE |
+
+After signing in, the demo lands on the role's default workspace
+(`/routing/plan` for drivers, `/computer-vision/load-detection` for warehouse,
+`/routing/dashboard` for ops).
+
+The `build` script runs `prisma migrate deploy` and `db:seed` automatically, so production builds also include demo warehouse, drivers, and orders. Seed skips if a route plan was updated in the last hour (set `FORCE_SEED=true` to override, or `SKIP_SEED=true` to never reseed).
 
 ### How routing estimates work
 
@@ -38,13 +61,20 @@ To enable live Google traffic and interactive maps on a deployment, set
 The browser loads the Maps JS key only from `/api/routing/maps/js-config` after
 mount. Route geometry is computed server-side via `/api/routing/routes/polyline`.
 
-### AI assistant (optional)
+### AI assistant
 
-Set `AI_API_KEY` (and optionally `AI_BASE_URL` / `AI_MODEL`) on the server.
-Chat uses the shared deployment credentials or falls back to the built-in local
-operations helper.
+**Default:** sovereign local assistant (no API key required).
 
-Demo warehouse: **Blok M Square**. Order coordinates are validated against Greater Jakarta (Jabodetabek) bounds. Generate sample CSVs at `/admin/mockup-data`.
+**Optional external LLM** (leave sovereign mode):
+
+| Variable | Purpose |
+|----------|---------|
+| `AI_ALLOW_EXTERNAL` | Must be `true` to enable outbound LLM calls |
+| `AI_API_KEY` | Bearer token for the provider |
+| `AI_BASE_URL` | OpenAI-compatible base URL (required when external is enabled) |
+| `AI_MODEL` | Model id (optional) |
+
+Demo warehouse: **Blok M Square**. Order coordinates are validated against Greater Jakarta (Jabodetabek) bounds. Generate sample CSVs at `/admin/mockup-data`. Guided computer-vision walkthrough (no webcam): `/computer-vision/tour`. Admin-only business-process visualisation (n8n-style node map): `/admin/process-map`.
 
 ### Database
 
@@ -58,6 +88,8 @@ npm run db:reset
 
 The public OSRM demo server (`router.project-osrm.org`) has no SLA. For production at scale, consider self-hosting [OSRM](https://project-osrm.org/).
 
+Health probe: `GET /api/health` → `{ ok, db, provider }`.
+
 ## Development
 
 ```bash
@@ -70,3 +102,4 @@ npm run db:seed  # Seed demo data
 ## Learn more
 
 - [Next.js Documentation](https://nextjs.org/docs)
+- Live demo: https://radr.nxtdev.xyz/flo-logistics/demo

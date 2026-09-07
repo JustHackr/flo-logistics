@@ -209,9 +209,18 @@ export function CvSessionReportsPanel({
         </CardHeader>
         <CardContent>
           {summary.recent.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {t("cv.sessions.empty")}
-            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {t("cv.sessions.empty")}
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                render={<Link href="/computer-vision/tour" />}
+              >
+                {t("cv.sessions.tryTour")}
+              </Button>
+            </div>
           ) : (
             <div className="overflow-x-auto rounded-lg border">
               <Table>
