@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import Link from "next/link";
 import { ExternalLink, RefreshCw } from "lucide-react";
@@ -67,7 +68,7 @@ export function GasPriceClient({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/system/fuel-prices", { method: "POST" });
+      const res = await fetch(withBasePath("/api/system/fuel-prices"), { method: "POST" });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error ?? t("errors.requestFailed"));
       setSnapshot(json.snapshot);

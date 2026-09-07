@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FileBarChart } from "lucide-react";
@@ -127,7 +128,7 @@ export function LogisticsDashboardClient() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/routing/logistics/overview");
+      const res = await fetch(withBasePath("/api/routing/logistics/overview"));
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error ?? t("routing.dashboard.loadFailed"));
       setData(json);
@@ -147,7 +148,7 @@ export function LogisticsDashboardClient() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`/api/routing/orders/${orderId}/status`, {
+      const res = await fetch(withBasePath(`/api/routing/orders/${orderId}/status`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "DELIVERED" }),

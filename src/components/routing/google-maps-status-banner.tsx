@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,7 +35,7 @@ export function GoogleMapsStatusBanner() {
 
     async function load() {
       try {
-        const res = await fetch("/api/routing/maps/status");
+        const res = await fetch(withBasePath("/api/routing/maps/status"));
         const data = (await res.json()) as RoutingStatus;
         if (!cancelled) setStatus(data);
       } catch {

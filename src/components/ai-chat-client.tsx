@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -19,6 +20,16 @@ import {
 } from "@/lib/ai-settings";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/components/i18n/use-i18n";
+
+function assistantModeLabel(
+  status: AiProviderStatus | null,
+  t: (key: string, params?: Record<string, string | number>) => string
+) {
+  if (isAiProviderPublicConfigured(status)) {
+    return t("ai.chat.onlineModel", { model: status?.model ?? "LLM" });
+  }
+  return t("ai.chat.sovereignDefault");
+}
 
 function renderMarkdownLite(text: string) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
@@ -65,7 +76,7 @@ export function AiChatClient() {
   }, [historyReady]);
 
   useEffect(() => {
-    void fetch("/api/ai/settings")
+    void fetch(withBasePath("/api/ai/settings"))
       .then((res) => res.json())
       .then((json: AiProviderStatus) => setProviderStatus(json))
       .catch(() => setProviderStatus(null));
@@ -100,7 +111,7 @@ export function AiChatClient() {
       });
 
       try {
-        const res = await fetch("/api/ai/chat", {
+        const res = await fetch(withBasePath("/api/ai/chat"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -159,10 +170,14 @@ export function AiChatClient() {
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-sm font-semibold">{t("ai.chat.askFlo")}</h2>
             <p className="truncate text-xs text-muted-foreground">
-              {llmConfigured
-                ? t("ai.chat.onlineModel", { model: providerStatus?.model ?? "LLM" })
-                : t("ai.chat.localAnswers")}
+              {assistantModeLabel(providerStatus, t)}
             </p>
+            <Link
+              href="/sovereign-ai"
+              className="text-[11px] font-medium text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
+            >
+              {t("ai.chat.whySovereign")}
+            </Link>
           </div>
           {hasConversation && (
             <Button
@@ -179,9 +194,18 @@ export function AiChatClient() {
           <div
             className={cn(
               "h-2.5 w-2.5 shrink-0 rounded-full",
-              llmConfigured ? "bg-emerald-500" : "bg-amber-500"
+              llmConfigured ? "bg-emerald-500" : "bg-sky-500"
             )}
-            title={llmConfigured ? t("ai.chat.connected") : t("ai.chat.localAssistant")}
+            title={
+              llmConfigured
+                ? t("ai.chat.connected")
+                : t("ai.chat.sovereignDefault")
+            }
+            aria-label={
+              llmConfigured
+                ? t("ai.chat.connected")
+                : t("ai.chat.sovereignDefault")
+            }
           />
         </div>
 

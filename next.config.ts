@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_BASE_PATH: basePath || "",
   },
+  // Allow curl/browser tools on a different loopback origin during local dev.
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   serverExternalPackages: ["better-sqlite3", "@prisma/adapter-better-sqlite3"],
   outputFileTracingIncludes: {
     "/*": ["./dev.db", "./prisma/dev.db"],

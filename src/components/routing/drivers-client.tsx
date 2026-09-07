@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import Link from "next/link";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -170,7 +171,7 @@ export function DriversClient({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/routing/drivers/${deleteId}`, {
+      const res = await fetch(withBasePath(`/api/routing/drivers/${deleteId}`), {
         method: "DELETE",
       });
       const data = await res.json();

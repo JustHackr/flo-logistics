@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Wifi, RefreshCw } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -141,7 +142,7 @@ export function ConnectorsClient({
 
   async function handleDelete() {
     if (!deleteId) return;
-    const res = await fetch(`/api/connectors/${deleteId}`, {
+    const res = await fetch(withBasePath(`/api/connectors/${deleteId}`), {
       method: "DELETE",
     });
     if (res.ok) {

@@ -49,7 +49,7 @@ export default function ImportPage() {
     if (validRows.length === 0) return;
 
     setImporting(true);
-    const res = await fetch("/api/vehicles/import", {
+    const res = await fetch(withBasePath("/api/vehicles/import"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rows: validRows }),

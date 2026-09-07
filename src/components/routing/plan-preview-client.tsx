@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useEffect, useMemo, useState } from "react";
 import type { TrafficSource } from "@/lib/routing/estimator";
 import type { RouteWaypoint } from "@/lib/routing/waypoints";
@@ -103,7 +104,7 @@ export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/routing/routes/optimize", {
+      const res = await fetch(withBasePath("/api/routing/routes/optimize"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -129,7 +130,7 @@ export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
     setError(null);
     setSaving(true);
     try {
-      const res = await fetch("/api/routing/routes/optimize", {
+      const res = await fetch(withBasePath("/api/routing/routes/optimize"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

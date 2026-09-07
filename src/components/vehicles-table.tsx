@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Pencil, Trash2 } from "lucide-react";
@@ -87,7 +88,7 @@ export function VehiclesTable({
   async function handleDelete() {
     if (!deleteId) return;
     setDeleting(true);
-    const res = await fetch(`/api/vehicles/${deleteId}`, { method: "DELETE" });
+    const res = await fetch(withBasePath(`/api/vehicles/${deleteId}`), { method: "DELETE" });
     if (res.ok) {
       setVehicles((prev) => prev.filter((v) => v.id !== deleteId));
     }

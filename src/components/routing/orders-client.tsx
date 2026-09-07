@@ -117,7 +117,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch("/api/routing/orders");
+      const res = await fetch(withBasePath("/api/routing/orders"));
       const data = (await res.json()) as any;
       if (!res.ok) throw new Error(data?.error ?? t("routing.orders.loadFailed"));
       setOrders(data as OrderRow[]);
@@ -180,7 +180,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
         accessRequirement: createForm.accessRequirement,
       };
 
-      const res = await fetch("/api/routing/orders", {
+      const res = await fetch(withBasePath("/api/routing/orders"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -211,7 +211,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
       complete: async (result) => {
         try {
           setImporting(true);
-          const res = await fetch("/api/routing/orders/import", {
+          const res = await fetch(withBasePath("/api/routing/orders/import"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ rows: result.data }),
@@ -238,7 +238,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`/api/routing/orders/${orderId}`, {
+      const res = await fetch(withBasePath(`/api/routing/orders/${orderId}`), {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -267,7 +267,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`/api/routing/orders/${orderId}`, {
+      const res = await fetch(withBasePath(`/api/routing/orders/${orderId}`), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -292,7 +292,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch(`/api/routing/orders/${orderId}/status`, {
+      const res = await fetch(withBasePath(`/api/routing/orders/${orderId}/status`), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status }),

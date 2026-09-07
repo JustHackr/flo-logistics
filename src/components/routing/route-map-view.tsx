@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   APIProvider,
@@ -31,7 +32,7 @@ function useMapsJsConfig() {
 
     async function load() {
       try {
-        const res = await fetch("/api/routing/maps/js-config");
+        const res = await fetch(withBasePath("/api/routing/maps/js-config"));
         const json = (await res.json()) as MapsJsConfig & {
           error?: string;
           message?: string;
@@ -132,7 +133,7 @@ function RoadPathLoader({
 
     async function loadRoute() {
       try {
-        const res = await fetch("/api/routing/routes/polyline", {
+        const res = await fetch(withBasePath("/api/routing/routes/polyline"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

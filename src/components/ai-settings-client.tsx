@@ -1,5 +1,6 @@
 "use client";
 
+import { withBasePath } from "@/lib/base-path";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Settings, Sparkles } from "lucide-react";
@@ -20,10 +21,14 @@ export function AiSettingsClient() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/ai/settings");
+      const res = await fetch(withBasePath("/api/ai/settings"));
       const json = (await res.json()) as AiProviderStatus & { error?: string };
       if (!res.ok) throw new Error(json.error ?? t("errors.generic"));
-      setStatus({ configured: json.configured, model: json.model });
+      setStatus({
+        configured: json.configured,
+        model: json.model,
+        mode: json.mode ?? (json.configured ? "external" : "local"),
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("errors.generic"));
       setStatus(null);
@@ -41,7 +46,7 @@ export function AiSettingsClient() {
     setError(null);
     setTestResult(null);
     try {
-      const res = await fetch("/api/ai/test-connection", { method: "POST" });
+      const res = await fetch(withBasePath("/api/ai/test-connection"), { method: "POST" });
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error ?? t("errors.network"));
       setTestResult(json.sample ?? t("ai.settings.connectionSuccess"));
@@ -79,6 +84,10 @@ export function AiSettingsClient() {
               </p>
               <dl className="grid gap-2 text-sm">
                 <div className="flex justify-between gap-4">
+                  <dt className="text-muted-foreground">{t("ai.settings.mode")}</dt>
+                  <dd className="font-medium">{t("ai.settings.modeExternal")}</dd>
+                </div>
+                <div className="flex justify-between gap-4">
                   <dt className="text-muted-foreground">{t("ai.settings.model")}</dt>
                   <dd className="font-medium tabular-nums">{status.model}</dd>
                 </div>
@@ -97,9 +106,17 @@ export function AiSettingsClient() {
               </Button>
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              {t("ai.settings.notConfigured")}
-            </p>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">
+                {t("ai.settings.sovereignActive")}
+              </p>
+              <p>{t("ai.settings.notConfigured")}</p>
+              <p>
+                <Link href="/sovereign-ai" className="font-medium underline">
+                  {t("ai.settings.learnSovereign")}
+                </Link>
+              </p>
+            </div>
           )}
 
           {testResult && (
