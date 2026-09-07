@@ -22,6 +22,11 @@ import {
   Sparkles,
   PackageSearch,
   Warehouse,
+  ShieldCheck,
+  Clapperboard,
+  LogOut,
+  Workflow,
+  PencilRuler,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -39,6 +44,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  canAccessPath,
+  type SessionUser,
+} from "@/lib/auth/roles";
+import { logoutAction } from "@/app/actions/auth";
 
 type NavItem = {
   href: string;
@@ -63,6 +73,12 @@ const navGroups: NavGroup[] = [
         labelKey: "nav.items.logistics",
         icon: Truck,
       },
+      {
+        href: "/sovereign-ai",
+        labelKey: "nav.items.sovereignAi",
+        icon: ShieldCheck,
+        badgeKey: "nav.badges.sovereign",
+      },
     ],
   },
   {
@@ -84,6 +100,12 @@ const navGroups: NavGroup[] = [
   {
     labelKey: "nav.groups.computerVision",
     items: [
+      {
+        href: "/computer-vision/tour",
+        labelKey: "nav.items.cvTour",
+        icon: Clapperboard,
+        badgeKey: "nav.badges.demo",
+      },
       {
         href: "/computer-vision/load-detection",
         labelKey: "nav.items.loadDetection",
@@ -124,6 +146,22 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    labelKey: "nav.groups.floBusinessProcess",
+    items: [
+      {
+        href: "/admin/process-map",
+        labelKey: "nav.items.floVisualization",
+        icon: Workflow,
+      },
+      {
+        href: "/admin/designer",
+        labelKey: "nav.items.floDesigner",
+        icon: PencilRuler,
+        badgeKey: "nav.badges.ai",
+      },
+    ],
+  },
+  {
     labelKey: "nav.groups.system",
     items: [
       { href: "/system/gas-price", labelKey: "nav.items.gasPrice", icon: Fuel },
@@ -143,35 +181,41 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-const allHrefs = navGroups.flatMap((group) =>
-  group.items.map((item) => item.href)
-);
-
 /**
  * A link is active only if it is the longest nav href matching the current
  * pathname, so /vehicles/import highlights "Import CSV" without also
  * highlighting "Vehicles".
  */
-function useActiveHref() {
+function useActiveHref(hrefs: string[]) {
   const pathname = usePathname();
   return React.useMemo(() => {
     let best: string | null = null;
-    for (const href of allHrefs) {
+    for (const href of hrefs) {
       if (pathname === href || pathname.startsWith(href + "/")) {
         if (!best || href.length > best.length) best = href;
       }
     }
     return best;
-  }, [pathname]);
+  }, [pathname, hrefs]);
 }
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
-  const activeHref = useActiveHref();
+function NavLinks({
+  onNavigate,
+  groups,
+}: {
+  onNavigate?: () => void;
+  groups: NavGroup[];
+}) {
+  const hrefs = React.useMemo(
+    () => groups.flatMap((g) => g.items.map((i) => i.href)),
+    [groups],
+  );
+  const activeHref = useActiveHref(hrefs);
   const { t } = useI18n();
 
   return (
     <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
-      {navGroups.map((group, groupIndex) => (
+      {groups.map((group, groupIndex) => (
         <div
           key={group.labelKey ?? groupIndex}
           className="flex flex-col gap-0.5"
@@ -234,7 +278,7 @@ function BrandHeader() {
             {t("chrome.appName")}
           </h1>
           <span className="text-[10px] font-medium text-muted-foreground/70">
-            v0.2
+            v0.3
           </span>
         </div>
         <p className="truncate text-xs text-muted-foreground">
@@ -245,16 +289,62 @@ function BrandHeader() {
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+function UserFooter({ user }: { user: SessionUser }) {
+  const { t } = useI18n();
+  return (
+    <div className="shrink-0 border-t border-sidebar-border p-3">
+      <div className="rounded-xl bg-muted/50 px-3 py-2.5 ring-1 ring-foreground/5">
+        <p className="truncate text-sm font-medium">{user.name}</p>
+        <p className="truncate text-[11px] text-muted-foreground">{user.email}</p>
+        <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.14em] text-primary/80">
+          {t(`auth.roles.${user.role}.name`)}
+        </p>
+        <form action={logoutAction} className="mt-2">
+          <Button
+            type="submit"
+            variant="ghost"
+            size="sm"
+            className="h-8 w-full justify-start gap-2 px-2 text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            {t("auth.signOut")}
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export function AppShell({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user: SessionUser;
+}) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const { t } = useI18n();
+
+  const filteredGroups = React.useMemo(() => {
+    return navGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) =>
+          canAccessPath(user.role, item.href),
+        ),
+      }))
+      .filter((group) => group.items.length > 0);
+  }, [user.role]);
 
   return (
     <TooltipProvider>
       <div className="flex min-h-screen bg-background">
         <aside className="hidden w-60 shrink-0 border-r border-sidebar-border bg-sidebar md:flex md:flex-col">
           <BrandHeader />
-          <NavLinks />
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <NavLinks groups={filteredGroups} />
+          </div>
+          <UserFooter user={user} />
         </aside>
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/80 bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/80 md:px-6">
@@ -284,8 +374,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     </p>
                   </SheetHeader>
                   <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-                    <NavLinks onNavigate={() => setMobileOpen(false)} />
+                    <NavLinks
+                      groups={filteredGroups}
+                      onNavigate={() => setMobileOpen(false)}
+                    />
                   </div>
+                  <UserFooter user={user} />
                 </SheetContent>
               </Sheet>
               <div className="min-w-0">
@@ -296,6 +390,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
             <div className="hidden min-w-0 md:block" />
             <div className="ml-auto flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
+              <span className="hidden text-xs text-muted-foreground sm:inline">
+                {user.name}
+              </span>
               <LanguageToggle />
               <CoreWorkflowOnboarding />
               <BrandPartners className="shrink-0" />

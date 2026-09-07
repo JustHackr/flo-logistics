@@ -6,6 +6,8 @@ import {
   JAKARTA_WAREHOUSE,
 } from "../src/lib/routing/jakarta-demo-locations";
 import { refreshFuelPricesFromPertamina } from "../src/lib/fuel-price-service";
+import { hashPassword } from "../src/lib/auth/password";
+import { DEMO_ACCOUNTS } from "../src/lib/auth/roles";
 
 const adapter = new PrismaBetterSqlite3({
   url: process.env.DATABASE_URL ?? "file:./dev.db",
@@ -60,6 +62,41 @@ function daysFromNow(days: number) {
 }
 
 async function main() {
+  const forceSeed =
+    process.env.FORCE_SEED === "1" ||
+    process.env.FORCE_SEED?.toLowerCase() === "true";
+  const skipSeed =
+    process.env.SKIP_SEED === "1" ||
+    process.env.SKIP_SEED?.toLowerCase() === "true";
+
+  if (skipSeed && !forceSeed) {
+    const existingVehicles = await prisma.vehicle.count();
+    if (existingVehicles > 0) {
+      console.log(
+        `SKIP_SEED set — leaving existing SQLite data untouched (${existingVehicles} vehicles).`
+      );
+      return;
+    }
+    console.log("SKIP_SEED set but database is empty — seeding baseline demo data.");
+  }
+
+  // Avoid wiping judge-created demo state during a hot redeploy: if any route
+  // plan was touched in the last hour, keep the DB unless FORCE_SEED=1.
+  if (!forceSeed) {
+    const recent = await prisma.routePlan.findFirst({
+      where: {
+        updatedAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
+      },
+      select: { id: true, updatedAt: true },
+    });
+    if (recent) {
+      console.log(
+        `Skipping seed — route plan ${recent.id} updated at ${recent.updatedAt.toISOString()} (within 1h). Set FORCE_SEED=1 to override.`
+      );
+      return;
+    }
+  }
+
   // Routing tables must be cleared before vehicles because Driver -> Vehicle uses
   // `onDelete: Restrict`.
   await prisma.routeStop.deleteMany();
@@ -71,6 +108,18 @@ async function main() {
 
   await prisma.vehicle.deleteMany();
   await prisma.dataConnector.deleteMany();
+  await prisma.user.deleteMany();
+
+  for (const account of DEMO_ACCOUNTS) {
+    await prisma.user.create({
+      data: {
+        email: account.email,
+        name: account.name,
+        role: account.role,
+        passwordHash: hashPassword(account.password),
+      },
+    });
+  }
 
   const connectors = await Promise.all([
     prisma.dataConnector.create({
@@ -298,9 +347,10 @@ async function main() {
 
   const driverCount = await prisma.driver.count();
   const vehicleCount = await prisma.vehicle.count();
+  const userCount = await prisma.user.count();
   const fuelSnapshot = await refreshFuelPricesFromPertamina();
   console.log(
-    `Seeded ${vehicleCount} vehicles, 5 connectors, 1 warehouse (${warehouse.name}), ${driverCount} drivers, ${seedOrders.length} orders, and fuel prices (${fuelSnapshot.items.length} products, fetched ${fuelSnapshot.fetchedAt}).`
+    `Seeded ${userCount} users, ${vehicleCount} vehicles, 5 connectors, 1 warehouse (${warehouse.name}), ${driverCount} drivers, ${seedOrders.length} orders, and fuel prices (${fuelSnapshot.items.length} products, fetched ${fuelSnapshot.fetchedAt}).`
   );
 }
 

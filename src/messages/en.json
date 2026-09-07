@@ -30,7 +30,8 @@
       "computerVision": "Computer Vision",
       "routing": "Routing",
       "fleet": "Fleet",
-      "system": "System"
+      "system": "System",
+      "floBusinessProcess": "Flo Business Process"
     },
     "items": {
       "home": "Home",
@@ -49,12 +50,135 @@
       "vehicles": "Vehicles",
       "gasPrice": "Gas Price",
       "connectors": "Connectors",
-      "mockupData": "Mockup Data"
+      "processMap": "Process Map",
+      "mockupData": "Mockup Data",
+      "sovereignAi": "Sovereign AI",
+      "cvTour": "CV Tour",
+      "floVisualization": "Flo Visualization",
+      "floDesigner": "Flo Designer"
     },
     "badges": {
       "ai": "AI",
       "future": "Future",
-      "admin": "Admin"
+      "admin": "Admin",
+      "sovereign": "Private",
+      "demo": "Demo"
+    }
+  },
+  "auth": {
+    "demoBadge": "Judge demo access",
+    "eyebrow": "Fab Logistics Operations",
+    "title": "Sign in to FLO",
+    "subtitle": "Sign in with a role to explore FLO — predictive maintenance, traffic-aware routing, and warehouse computer vision for Fab Logistics.",
+    "valueProp": "Operations cockpit for Jakarta delivery: keep the fleet healthy, plan every route around real traffic, and verify every bag at the dock.",
+    "capabilities": {
+      "maintenance": {
+        "title": "Predictive maintenance",
+        "body": "VQI scores each vehicle against age, odometer and expected lifetime, with a rule-based predictor for high-risk units."
+      },
+      "routing": {
+        "title": "Traffic-aware routing",
+        "body": "Jakarta traffic multipliers, road distance calibration and nearest-neighbour optimisation produce round-trips that respect real congestion."
+      },
+      "cv": {
+        "title": "Warehouse computer vision",
+        "body": "Live browser-only box detection and passage counting verify dock loading and hub throughput."
+      }
+    },
+    "stats": {
+      "vehicles": "vehicles in seed",
+      "orders": "Jakarta demo orders",
+      "drivers": "drivers rostered",
+      "live": "Live from demo DB"
+    },
+    "quickTitle": "Pick a demo persona",
+    "quickHint": "Click a role to sign in instantly. All demo accounts share the password demo1234.",
+    "signedIn": {
+      "title": "You're signed in",
+      "hint": "Continue where you left off, or pick another persona below to switch accounts.",
+      "continue": "Continue to dashboard",
+      "switch": "Switch account"
+    },
+    "credentialsTitle": "Email & password",
+    "credentialsHint": "Use any seeded demo account below — passwords are demo1234.",
+    "email": "Email",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "orCredentials": "or use credentials",
+    "loginAs": "Click to sign in",
+    "signOut": "Sign out",
+    "footer": "Blibli × Garuda × FabLab — competition demo build.",
+    "passwordNote": "Demo only — credentials are seeded locally and not for production use.",
+    "roles": {
+      "ADMIN": {
+        "name": "Admin",
+        "scope": "Full access to every dashboard, admin tool, and AI setting."
+      },
+      "OPS_MANAGER": {
+        "name": "Ops Manager",
+        "scope": "Fleet, routing, reports, AI assistant and computer-vision tours."
+      },
+      "DRIVER": {
+        "name": "Driver",
+        "scope": "Assigned routes and the live plan view only."
+      },
+      "WAREHOUSE": {
+        "name": "Warehouse Lead",
+        "scope": "Orders and computer-vision loading checks."
+      }
+    }
+  },
+  "processMap": {
+    "title": "Business process map",
+    "subtitle": "Live FLO pipeline — from data inputs to operational outputs. Click any node for technical detail. Live counts come straight from the seeded demo database.",
+    "legend": {
+      "input": "Input",
+      "process": "Process",
+      "output": "Output"
+    },
+    "inspect": "Inspect",
+    "noNodeSelected": "Click any node to see its inputs, processes, outputs, and the code that implements it.",
+    "fitView": "Fit view",
+    "sections": {
+      "input": "Inputs",
+      "process": "Processes",
+      "output": "Outputs",
+      "code": "Code references",
+      "live": "Live from demo DB"
+    }
+  },
+  "designer": {
+    "title": "Flo Designer",
+    "subtitle": "Describe a process in natural language and FLO scaffolds a node graph on a blank canvas. Refine it iteratively.",
+    "prompt": {
+      "placeholder": "e.g. Create an e-commerce customer service schema",
+      "send": "Generate",
+      "refinePlaceholder": "e.g. Integrate with FLO live data",
+      "refine": "Apply",
+      "thinking": "Designing...",
+      "errorParse": "The model returned something the canvas could not parse. Try again or refine.",
+      "errorNoKey": "Connect an LLM API key in AI Settings first.",
+      "errorRate": "The model could not respond in time. Try a shorter prompt.",
+      "errorProvider": "The LLM provider returned an error. Check AI Settings and try again.",
+      "errorUnauthorized": "Admin role required to use Flo Designer.",
+      "errorNetwork": "The request did not reach the server. Check your connection and try again.",
+      "empty": "Generated graph is empty.",
+      "errorShape": "The model returned a graph but it did not match the expected shape. Try again or refine."
+    },
+    "canvas": {
+      "empty": "Blank canvas. Send a prompt to start.",
+      "layoutHint": "Drag nodes, zoom with the wheel, click a node for details."
+    },
+    "node": {
+      "generated": "Generated",
+      "integrated": "Integrated with FLO",
+      "inputs": "Inputs",
+      "outputs": "Outputs"
+    },
+    "history": {
+      "title": "Recent prompts",
+      "empty": "No prompts yet."
     }
   },
   "common": {
@@ -235,7 +359,8 @@
     },
     "charts": {
       "vqiDistribution": "VQI Distribution",
-      "orderPipeline": "hsl(var(--primary))"
+      "orderPipeline": "hsl(var(--primary))",
+      "orderPipelineEmpty": "No pipeline activity yet — try the guided CV tour or plan a route."
     },
     "fuelPrices": {
       "fetched": "Fuel prices fetched {time}",
@@ -271,7 +396,10 @@
       "lowRisk": "Vehicles with VQI above {threshold} — within acceptable health range.",
       "upcomingMaintenance": "Sum of estimated next-service costs for vehicles with predicted maintenance within the next 90 days.",
       "fleetMaintenanceBudget": "Sum of maintenanceCostUnit across all vehicles — total recorded maintenance spend per fleet unit."
-    }
+    },
+    "sovereignBadge": "Sovereign by default",
+    "sovereignLink": "How FLO keeps data private →",
+    "cvTourLink": "Computer vision tour →"
   },
   "onboarding": {
     "welcome": {
@@ -504,15 +632,17 @@
       "sources": "Sources",
       "askFlo": "Ask FLO",
       "onlineModel": "Online · {model}",
-      "localAnswers": "Built-in answers",
+      "localAnswers": "Sovereign · built-in answers",
       "clearShort": "Clear",
       "connected": "Connected",
-      "localAssistant": "Local assistant",
+      "localAssistant": "Sovereign assistant",
       "tryAsking": "Try asking",
       "typing": "FLO is typing…",
       "checkingLiveData": "Checking live data…",
       "messagePlaceholder": "Ask about routes, fleet, or reports…",
-      "loading": "Loading assistant…"
+      "loading": "Loading assistant…",
+      "sovereignDefault": "Sovereign · on-device assistant (default)",
+      "whySovereign": "Why does this matter?"
     },
     "settings": {
       "title": "AI settings",
@@ -523,18 +653,22 @@
       "systemInstructions": "System instructions",
       "testConnection": "Test connection",
       "connectionSuccess": "Connection successful",
-      "description": "The Company Assistant uses a server-configured OpenAI-compatible provider for logistics and fleet questions.",
+      "description": "By default the Company Assistant runs in sovereign mode: answers stay on this server from live SQLite data. An external OpenAI-compatible LLM is optional and opt-in only.",
       "providerStatus": "Provider status",
       "loadingStatus": "Loading status…",
       "assistantReady": "Assistant ready",
       "serverManaged": "Server-managed",
       "testing": "Testing…",
-      "notConfigured": "Not configured",
+      "notConfigured": "External LLM is disabled. FLO is using the sovereign on-device assistant (no outbound model calls).",
       "connected": "Connected.",
       "personaTitle": "Assistant persona",
-      "personaDescription": "The AI is configured as a supply chain operations and logistics expert for FLO. It answers using live fleet, order, and route data injected on each request.",
+      "personaDescription": "In sovereign mode, FLO answers with an in-process operations helper over live fleet, order, and route data. No prompts leave this deployment unless an operator opts into an external LLM.",
       "scopeDescription": "Questions outside logistics are politely declined with suggestions to ask about routes, drivers, orders, or maintenance.",
-      "openAssistant": "Open Company Assistant"
+      "openAssistant": "Open Company Assistant",
+      "sovereignActive": "Sovereign AI active",
+      "learnSovereign": "Read the Sovereign AI posture →",
+      "mode": "Mode",
+      "modeExternal": "External (opt-in)"
     },
     "prompts": {
       "fleetSummary": "Summarize fleet performance",
@@ -758,7 +892,7 @@
       "latestHubOverstay": "Latest hub overstay %",
       "runSession": "Run a CV session to populate",
       "recentReports": "Recent session reports",
-      "empty": "Finished timed sessions from Load Detection and Hub Congestion appear here automatically.",
+      "empty": "No timed sessions yet. Open the guided tour (works without a webcam) or run Load Detection / Hub Congestion.",
       "when": "When",
       "type": "Type",
       "duration": "Duration",
@@ -769,7 +903,44 @@
       "peakCapacity": "Peak {peak}/{max}",
       "visitsOverstay": "{visits} visits · {percent}% overstay",
       "overCap": "Over-cap {duration} · conf {confidence}",
-      "peakOccupied": "Peak {peak} · occupied {duration}"
+      "peakOccupied": "Peak {peak} · occupied {duration}",
+      "tryTour": "Try the guided CV tour"
+    },
+    "tour": {
+      "title": "Computer vision tour",
+      "subtitle": "Walk through FLO’s warehouse CV demos with sample frames — no webcam required. Open any step live when you have a camera.",
+      "autoAdvance": "Auto-advance every 15s",
+      "stepsLabel": "CV tour steps",
+      "openLive": "Open live demo",
+      "viewPlaceholder": "View live page",
+      "nextStep": "Next step",
+      "onDeviceNote": "Live CV inference runs in the browser on your device. Frames are not uploaded to a cloud model.",
+      "steps": {
+        "load": {
+          "title": "Load Detection",
+          "body": "Count cartons in a bag bay or on a conveyor and alert when capacity is exceeded.",
+          "metric1Label": "Sample peak capacity",
+          "metric1Value": "12 / 15 boxes",
+          "metric2Label": "Avg confidence",
+          "metric2Value": "0.91"
+        },
+        "odol": {
+          "title": "ODOL Detection",
+          "body": "Gate check for over-dimension / over-load vehicles. Live camera flow is marked coming soon; this frame shows the intended signal.",
+          "metric1Label": "Gate signal",
+          "metric1Value": "OVER HEIGHT",
+          "metric2Label": "Status",
+          "metric2Value": "Prototype"
+        },
+        "hub": {
+          "title": "Hub Congestion",
+          "body": "Track dock occupancy and overstay risk so hub controllers can clear bays before queues form.",
+          "metric1Label": "Peak concurrent",
+          "metric1Value": "5 visits",
+          "metric2Label": "Overstay share",
+          "metric2Value": "22%"
+        }
+      }
     }
   },
   "routing": {
@@ -1607,5 +1778,56 @@
       "csvPreview": "CSV preview",
       "previewSummary": "{rows} data rows · {columns} columns"
     }
+  },
+  "sovereign": {
+    "badge": "Sovereign AI",
+    "title": "Private by default. External by choice.",
+    "subtitle": "FLO is built so logistics data, prompts, and CV frames stay on this deployment unless an operator explicitly opts into a third-party service that cannot run locally (maps, live traffic, fuel prices, or an optional LLM).",
+    "cta": {
+      "assistant": "Open Company Assistant",
+      "cvTour": "Open CV tour"
+    },
+    "columns": {
+      "device": {
+        "title": "Stays on the device",
+        "body": "Browser-local signals that never leave the operator workstation.",
+        "item1": "Webcam frames for Load / Hub CV (MediaStream)",
+        "item2": "Chat history in localStorage on this browser",
+        "item3": "Locale preference cookie (no tracking IDs)"
+      },
+      "local": {
+        "title": "Computed in-process",
+        "body": "Runs on the FLO Next.js server next to the SQLite database.",
+        "item1": "Sovereign ops assistant (src/lib/ai-chat.ts)",
+        "item2": "Route optimizer, DTI / CFI, VQI, fuel cost model",
+        "item3": "Jakarta traffic multipliers + OSRM geometry fallback"
+      },
+      "external": {
+        "title": "Goes out only when opted in",
+        "body": "Third-party APIs that need live external data — never the default path for prompts.",
+        "item1": "Google Maps / Routes (GOOGLE_MAPS_API_KEY)",
+        "item2": "Pertamina public fuel price page",
+        "item3": "Optional OpenAI-compatible LLM (AI_ALLOW_EXTERNAL=true)"
+      }
+    },
+    "flow": {
+      "title": "Data flow at a glance",
+      "description": "Sovereign path is the solid line; dashed externals are optional."
+    },
+    "residency": {
+      "title": "Data residency",
+      "body": "Operational data lives in SQLite on this host (dev.db next to the app). Redeploys re-seed demo data unless you skip seed.",
+      "cookies": "The only cookie FLO sets by default is the locale preference (flo_locale) via src/proxy.ts — SameSite=Lax, no third-party analytics."
+    },
+    "commitments": {
+      "title": "Commitments for the final",
+      "item1": "No product analytics, ad pixels, or outbound telemetry SDKs.",
+      "item2": "Assistant defaults to the local intent router; external LLMs require AI_ALLOW_EXTERNAL + AI_API_KEY + AI_BASE_URL.",
+      "item3": "API keys never ship to the browser; Maps JS key is served only after mount from a server route.",
+      "item4": "CV demos process video on-device; the guided tour uses static sample frames for judges without cameras."
+    },
+    "docsHint": "Technical metric definitions live in",
+    "methodologyLink": "Metrics & Guide",
+    "securityFile": "SECURITY.md in the repository root."
   }
 }

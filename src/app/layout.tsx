@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { AppShell } from "@/components/app-shell";
+import { AuthenticatedShell } from "@/components/authenticated-shell";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/i18n/get-locale";
+import { getSession } from "@/lib/auth/session";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -33,6 +34,7 @@ export default async function RootLayout({
 }>) {
   const locale = await getLocale();
   const dict = await getDictionary(locale);
+  const session = await getSession();
 
   return (
     <html
@@ -41,7 +43,7 @@ export default async function RootLayout({
     >
       <body className="min-h-full font-sans">
         <LocaleProvider locale={locale} dict={dict}>
-          <AppShell>{children}</AppShell>
+          <AuthenticatedShell user={session}>{children}</AuthenticatedShell>
         </LocaleProvider>
       </body>
     </html>

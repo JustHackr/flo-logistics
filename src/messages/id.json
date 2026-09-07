@@ -30,7 +30,8 @@
       "computerVision": "Visi Komputer",
       "routing": "Perutean",
       "fleet": "Armada",
-      "system": "Sistem"
+      "system": "Sistem",
+      "floBusinessProcess": "Proses Bisnis Flo"
     },
     "items": {
       "home": "Beranda",
@@ -49,12 +50,135 @@
       "vehicles": "Kendaraan",
       "gasPrice": "Harga BBM",
       "connectors": "Konektor",
-      "mockupData": "Data Mokap"
+      "processMap": "Peta Proses",
+      "mockupData": "Data Mokap",
+      "sovereignAi": "Sovereign AI",
+      "cvTour": "Tur CV",
+      "floVisualization": "Visualisasi Flo",
+      "floDesigner": "Flo Designer"
     },
     "badges": {
       "ai": "AI",
       "future": "Mendatang",
-      "admin": "Admin"
+      "admin": "Admin",
+      "sovereign": "Privat",
+      "demo": "Demo"
+    }
+  },
+  "auth": {
+    "demoBadge": "Akses demo juri",
+    "eyebrow": "Fab Logistics Operations",
+    "title": "Masuk ke FLO",
+    "subtitle": "Masuk dengan peran untuk mengeksplorasi FLO — pemeliharaan prediktif, perutean berbasis lalu lintas, dan visi komputer gudang Fab Logistics.",
+    "valueProp": "Kokpit operasional untuk pengiriman Jakarta: jaga kesehatan armada, rencanakan rute dengan lalu lintas nyata, dan verifikasi setiap koli di dok.",
+    "capabilities": {
+      "maintenance": {
+        "title": "Pemeliharaan prediktif",
+        "body": "Skor VQI mengevaluasi setiap kendaraan berdasarkan usia, odometer, dan umur pakai, dengan prediktor berbasis aturan untuk unit berisiko tinggi."
+      },
+      "routing": {
+        "title": "Perutean berbasis lalu lintas",
+        "body": "Pengganda lalu lintas Jakarta, kalibrasi jarak jalan, dan optimasi nearest-neighbour menghasilkan rute pulang-pergi yang menghormati kemacetan nyata."
+      },
+      "cv": {
+        "title": "Visi komputer gudang",
+        "body": "Deteksi koli live di browser dan penghitung lintasan memverifikasi pemuatan di dok serta throughput hub."
+      }
+    },
+    "stats": {
+      "vehicles": "kendaraan dalam seed",
+      "orders": "pesanan demo Jakarta",
+      "drivers": "pengemudi bertugas",
+      "live": "Langsung dari basis data demo"
+    },
+    "quickTitle": "Pilih persona demo",
+    "quickHint": "Klik peran untuk masuk seketika. Semua akun demo berbagi kata sandi demo1234.",
+    "signedIn": {
+      "title": "Anda sudah masuk",
+      "hint": "Lanjutkan ke dasbor Anda, atau pilih persona lain di bawah untuk berganti akun.",
+      "continue": "Lanjut ke dasbor",
+      "switch": "Ganti akun"
+    },
+    "credentialsTitle": "Surel & kata sandi",
+    "credentialsHint": "Gunakan akun demo yang di-seed di bawah — kata sandi demo1234.",
+    "email": "Surel",
+    "password": "Kata sandi",
+    "signIn": "Masuk",
+    "signingIn": "Memproses…",
+    "orCredentials": "atau gunakan kredensial",
+    "loginAs": "Klik untuk masuk",
+    "signOut": "Keluar",
+    "footer": "Blibli × Garuda × FabLab — build demo kompetisi.",
+    "passwordNote": "Hanya demo — kredensial di-seed secara lokal dan bukan untuk produksi.",
+    "roles": {
+      "ADMIN": {
+        "name": "Admin",
+        "scope": "Akses penuh ke seluruh dasbor, alat admin, dan pengaturan AI."
+      },
+      "OPS_MANAGER": {
+        "name": "Manajer Operasional",
+        "scope": "Armada, perutean, laporan, asisten AI, dan tur visi komputer."
+      },
+      "DRIVER": {
+        "name": "Pengemudi",
+        "scope": "Rute yang ditugaskan dan tampilan rencana live saja."
+      },
+      "WAREHOUSE": {
+        "name": "Pemimpin Gudang",
+        "scope": "Pesanan dan pemeriksaan pemuatan visi komputer."
+      }
+    }
+  },
+  "processMap": {
+    "title": "Peta proses bisnis",
+    "subtitle": "Alur FLO secara live — dari input data hingga output operasional. Klik node mana pun untuk detail teknis. Hitungan live langsung berasal dari basis data demo.",
+    "legend": {
+      "input": "Input",
+      "process": "Proses",
+      "output": "Output"
+    },
+    "inspect": "Periksa",
+    "noNodeSelected": "Klik node mana pun untuk melihat input, proses, output, dan kode yang mengimplementasikannya.",
+    "fitView": "Sesuaikan tampilan",
+    "sections": {
+      "input": "Input",
+      "process": "Proses",
+      "output": "Output",
+      "code": "Referensi kode",
+      "live": "Langsung dari basis data demo"
+    }
+  },
+  "designer": {
+    "title": "Flo Designer",
+    "subtitle": "Jelaskan proses dalam bahasa alami dan FLO akan membuat kerangka grafik node di kanvas kosong. Sempurnakan secara berulang.",
+    "prompt": {
+      "placeholder": "mis. Buat skema layanan pelanggan e-commerce",
+      "send": "Hasilkan",
+      "refinePlaceholder": "mis. Integrasikan dengan data langsung FLO",
+      "refine": "Terapkan",
+      "thinking": "Merancang...",
+      "errorParse": "Model mengembalikan sesuatu yang tidak bisa diurai kanvas. Coba lagi atau perbaiki.",
+      "errorNoKey": "Hubungkan kunci API LLM di Pengaturan AI terlebih dahulu.",
+      "errorRate": "Model tidak dapat merespons tepat waktu. Coba prompt yang lebih pendek.",
+      "errorProvider": "Penyedia LLM mengembalikan galat. Periksa Pengaturan AI lalu coba lagi.",
+      "errorUnauthorized": "Peran Admin diperlukan untuk menggunakan Flo Designer.",
+      "errorNetwork": "Permintaan tidak sampai ke server. Periksa koneksi Anda lalu coba lagi.",
+      "empty": "Grafik yang dihasilkan kosong.",
+      "errorShape": "The model returned a graph but it did not match the expected shape. Try again or refine."
+    },
+    "canvas": {
+      "empty": "Kanvas kosong. Kirim prompt untuk memulai.",
+      "layoutHint": "Tarik node, zoom dengan roda, klik node untuk detail."
+    },
+    "node": {
+      "generated": "Dihasilkan",
+      "integrated": "Terintegrasi dengan FLO",
+      "inputs": "Input",
+      "outputs": "Output"
+    },
+    "history": {
+      "title": "Prompt terbaru",
+      "empty": "Belum ada prompt."
     }
   },
   "common": {
@@ -235,7 +359,8 @@
     },
     "charts": {
       "vqiDistribution": "Distribusi VQI",
-      "orderPipeline": "Pipeline pesanan"
+      "orderPipeline": "Pipeline pesanan",
+      "orderPipelineEmpty": "Belum ada aktivitas pipeline — coba tur CV atau rencanakan rute."
     },
     "fuelPrices": {
       "fetched": "Harga BBM diambil {time}",
@@ -271,7 +396,10 @@
       "lowRisk": "Kendaraan dengan VQI di atas {threshold} — dalam rentang kesehatan yang dapat diterima.",
       "upcomingMaintenance": "Jumlah perkiraan biaya servis berikutnya untuk kendaraan dengan prediksi pemeliharaan dalam 90 hari ke depan.",
       "fleetMaintenanceBudget": "Jumlah maintenanceCostUnit di semua kendaraan — total pengeluaran pemeliharaan tercatat per unit armada."
-    }
+    },
+    "sovereignBadge": "Sovereign secara default",
+    "sovereignLink": "Cara FLO menjaga data tetap privat →",
+    "cvTourLink": "Tur computer vision →"
   },
   "onboarding": {
     "welcome": {
@@ -504,15 +632,17 @@
       "sources": "Sumber",
       "askFlo": "Tanya FLO",
       "onlineModel": "Online · {model}",
-      "localAnswers": "Jawaban bawaan",
+      "localAnswers": "Sovereign · jawaban bawaan",
       "clearShort": "Hapus",
       "connected": "Terhubung",
-      "localAssistant": "Asisten lokal",
+      "localAssistant": "Asisten sovereign",
       "tryAsking": "Coba tanyakan",
       "typing": "FLO sedang mengetik…",
       "checkingLiveData": "Memeriksa data langsung…",
       "messagePlaceholder": "Tanya tentang rute, armada, atau laporan…",
-      "loading": "Memuat asisten…"
+      "loading": "Memuat asisten…",
+      "sovereignDefault": "Sovereign · asisten on-device (default)",
+      "whySovereign": "Mengapa ini penting?"
     },
     "settings": {
       "title": "Pengaturan AI",
@@ -523,18 +653,22 @@
       "systemInstructions": "Instruksi sistem",
       "testConnection": "Uji koneksi",
       "connectionSuccess": "Koneksi berhasil",
-      "description": "Asisten Perusahaan menggunakan penyedia kompatibel OpenAI yang dikonfigurasi di server untuk pertanyaan logistik dan armada.",
+      "description": "Secara default Company Assistant berjalan dalam mode sovereign: jawaban tetap di server ini dari data SQLite langsung. LLM eksternal OpenAI-compatible bersifat opsional dan hanya dengan opt-in.",
       "providerStatus": "Status penyedia",
       "loadingStatus": "Memuat status…",
       "assistantReady": "Asisten siap",
       "serverManaged": "Dikelola server",
       "testing": "Menguji…",
-      "notConfigured": "Belum dikonfigurasi",
+      "notConfigured": "LLM eksternal nonaktif. FLO memakai asisten sovereign on-device (tanpa panggilan model keluar).",
       "connected": "Terhubung.",
       "personaTitle": "Persona asisten",
-      "personaDescription": "AI dikonfigurasi sebagai pakar operasi rantai pasok dan logistik FLO. Jawaban menggunakan data armada, pesanan, dan rute langsung pada setiap permintaan.",
+      "personaDescription": "Dalam mode sovereign, FLO menjawab dengan helper operasi in-process atas data armada, pesanan, dan rute langsung. Prompt tidak keluar dari deployment ini kecuali operator mengaktifkan LLM eksternal.",
       "scopeDescription": "Pertanyaan di luar logistik ditolak dengan sopan disertai saran untuk bertanya tentang rute, pengemudi, pesanan, atau pemeliharaan.",
-      "openAssistant": "Buka Asisten Perusahaan"
+      "openAssistant": "Buka Asisten Perusahaan",
+      "sovereignActive": "Sovereign AI aktif",
+      "learnSovereign": "Baca postur Sovereign AI →",
+      "mode": "Mode",
+      "modeExternal": "Eksternal (opt-in)"
     },
     "prompts": {
       "fleetSummary": "Ringkas kinerja armada",
@@ -758,7 +892,7 @@
       "latestHubOverstay": "% overstay hub terbaru",
       "runSession": "Jalankan sesi CV untuk mengisi data",
       "recentReports": "Laporan sesi terbaru",
-      "empty": "Sesi berwaktu yang selesai dari Load Detection dan Hub Congestion akan muncul di sini secara otomatis.",
+      "empty": "Belum ada sesi berwaktu. Buka tur terpandu (tanpa webcam) atau jalankan Load Detection / Hub Congestion.",
       "when": "Waktu",
       "type": "Jenis",
       "duration": "Durasi",
@@ -769,7 +903,44 @@
       "peakCapacity": "Puncak {peak}/{max}",
       "visitsOverstay": "{visits} kunjungan · {percent}% overstay",
       "overCap": "Over-cap {duration} · conf {confidence}",
-      "peakOccupied": "Puncak {peak} · terisi {duration}"
+      "peakOccupied": "Puncak {peak} · terisi {duration}",
+      "tryTour": "Coba tur CV terpandu"
+    },
+    "tour": {
+      "title": "Tur computer vision",
+      "subtitle": "Jelajahi demo CV gudang FLO dengan frame sampel — tanpa webcam. Buka langkah apa pun secara live saat kamera tersedia.",
+      "autoAdvance": "Geser otomatis tiap 15 dtk",
+      "stepsLabel": "Langkah tur CV",
+      "openLive": "Buka demo live",
+      "viewPlaceholder": "Lihat halaman live",
+      "nextStep": "Langkah berikutnya",
+      "onDeviceNote": "Inferensi CV live berjalan di browser pada perangkat Anda. Frame tidak diunggah ke model cloud.",
+      "steps": {
+        "load": {
+          "title": "Load Detection",
+          "body": "Hitung karton di bag bay atau konveyor dan beri peringatan saat kapasitas terlampaui.",
+          "metric1Label": "Puncak kapasitas sampel",
+          "metric1Value": "12 / 15 kotak",
+          "metric2Label": "Rata-rata confidence",
+          "metric2Value": "0.91"
+        },
+        "odol": {
+          "title": "ODOL Detection",
+          "body": "Pemeriksaan gerbang untuk kendaraan over-dimension / over-load. Alur kamera live masih coming soon; frame ini menunjukkan sinyal yang dituju.",
+          "metric1Label": "Sinyal gerbang",
+          "metric1Value": "OVER HEIGHT",
+          "metric2Label": "Status",
+          "metric2Value": "Prototipe"
+        },
+        "hub": {
+          "title": "Hub Congestion",
+          "body": "Lacak okupansi dock dan risiko overstay agar controller hub bisa membersihkan bay sebelum antrean terbentuk.",
+          "metric1Label": "Puncak bersamaan",
+          "metric1Value": "5 kunjungan",
+          "metric2Label": "Porsi overstay",
+          "metric2Value": "22%"
+        }
+      }
     }
   },
   "routing": {
@@ -1607,5 +1778,56 @@
       "csvPreview": "Pratinjau CSV",
       "previewSummary": "{rows} baris data · {columns} kolom"
     }
+  },
+  "sovereign": {
+    "badge": "Sovereign AI",
+    "title": "Privat secara default. Eksternal hanya jika dipilih.",
+    "subtitle": "FLO dibangun agar data logistik, prompt, dan frame CV tetap di deployment ini kecuali operator secara eksplisit mengaktifkan layanan pihak ketiga yang tidak bisa dijalankan lokal (peta, lalu lintas live, harga BBM, atau LLM opsional).",
+    "cta": {
+      "assistant": "Buka Company Assistant",
+      "cvTour": "Buka tur CV"
+    },
+    "columns": {
+      "device": {
+        "title": "Tetap di perangkat",
+        "body": "Sinyal lokal browser yang tidak pernah keluar dari workstation operator.",
+        "item1": "Frame webcam untuk CV Load / Hub (MediaStream)",
+        "item2": "Riwayat chat di localStorage browser ini",
+        "item3": "Cookie preferensi bahasa (tanpa ID pelacakan)"
+      },
+      "local": {
+        "title": "Dihitung in-process",
+        "body": "Berjalan di server Next.js FLO berdampingan dengan database SQLite.",
+        "item1": "Asisten ops sovereign (src/lib/ai-chat.ts)",
+        "item2": "Optimizer rute, DTI / CFI, VQI, model biaya BBM",
+        "item3": "Pengali lalu lintas Jakarta + fallback geometri OSRM"
+      },
+      "external": {
+        "title": "Keluar hanya jika di-opt-in",
+        "body": "API pihak ketiga yang butuh data eksternal live — bukan jalur default untuk prompt.",
+        "item1": "Google Maps / Routes (GOOGLE_MAPS_API_KEY)",
+        "item2": "Halaman harga BBM publik Pertamina",
+        "item3": "LLM OpenAI-compatible opsional (AI_ALLOW_EXTERNAL=true)"
+      }
+    },
+    "flow": {
+      "title": "Alur data sekilas",
+      "description": "Jalur sovereign adalah garis utama; eksternal opsional."
+    },
+    "residency": {
+      "title": "Residensi data",
+      "body": "Data operasional ada di SQLite pada host ini (dev.db di samping aplikasi). Redeploy mengisi ulang data demo kecuali seed dilewati.",
+      "cookies": "Satu-satunya cookie default FLO adalah preferensi bahasa (flo_locale) via src/proxy.ts — SameSite=Lax, tanpa analitik pihak ketiga."
+    },
+    "commitments": {
+      "title": "Komitmen untuk final",
+      "item1": "Tanpa analitik produk, piksel iklan, atau SDK telemetri keluar.",
+      "item2": "Asisten default ke intent router lokal; LLM eksternal butuh AI_ALLOW_EXTERNAL + AI_API_KEY + AI_BASE_URL.",
+      "item3": "API key tidak dikirim ke browser; kunci Maps JS hanya dilayani setelah mount dari route server.",
+      "item4": "Demo CV memproses video on-device; tur terpandu memakai frame sampel statis untuk juri tanpa kamera."
+    },
+    "docsHint": "Definisi metrik teknis ada di",
+    "methodologyLink": "Metrik & Panduan",
+    "securityFile": "SECURITY.md di root repositori."
   }
 }
