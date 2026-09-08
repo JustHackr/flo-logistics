@@ -72,17 +72,9 @@ describe("exportSlug", () => {
 });
 
 describe("exportExtension", () => {
-  it.each([
-    ["Postgres DDL", "sql"],
-    ["as Mermaid", "md"],
-    ["OpenAPI 3.1 YAML", "yaml"],
-    ["JSON Schema", "json"],
-    ["edges as CSV", "csv"],
-    ["Markdown table", "md"],
-    ["Draw.io XML", "xml"],
-    ["plain text", "txt"],
-  ])("maps %s -> %s", (target, ext) => {
-    expect(exportExtension(target)).toBe(ext);
+  it("always returns json", () => {
+    expect(exportExtension("JSON")).toBe("json");
+    expect(exportExtension("anything else")).toBe("json");
   });
 });
 

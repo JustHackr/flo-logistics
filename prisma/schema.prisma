@@ -220,3 +220,15 @@ model AiProviderConfig {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+/// Saved Flo Designer canvas (ADMIN CRUD). Graph is stored as JSON text,
+/// including optional per-node `_floId` annotations and FLO integration edges.
+model DesignerDesign {
+  id        String   @id @default(cuid())
+  name      String
+  graphJson String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([updatedAt])
+}

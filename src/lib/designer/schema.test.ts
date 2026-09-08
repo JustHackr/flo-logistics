@@ -120,4 +120,35 @@ describe("extractJsonObject", () => {
   it("returns null for non-JSON", () => {
     expect(extractJsonObject("not json at all")).toBeNull();
   });
+
+  it("parses JSON with raw newlines inside strings", () => {
+    const text = `{"nodes":[{"id":"n1","label":"A","kind":"input","summary":"line1
+line2","bullets":[],"lane":"ops"}],"edges":[]}`;
+    expect(extractJsonObject(text)).toEqual({
+      nodes: [
+        {
+          id: "n1",
+          label: "A",
+          kind: "input",
+          summary: "line1\nline2",
+          bullets: [],
+          lane: "ops",
+        },
+      ],
+      edges: [],
+    });
+  });
+
+  it("parses JSON with trailing commas", () => {
+    expect(extractJsonObject('{"nodes":[{"id":"n1",}],"edges":[],}')).toEqual({
+      nodes: [{ id: "n1" }],
+      edges: [],
+    });
+  });
+
+  it("closes a truncated object enough to parse", () => {
+    const text = '{"nodes":[{"id":"n1","label":"A"},{"id":"n2"';
+    const parsed = extractJsonObject(text) as { nodes: Array<{ id: string }> };
+    expect(parsed.nodes[0].id).toBe("n1");
+  });
 });

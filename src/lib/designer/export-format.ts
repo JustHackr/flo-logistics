@@ -118,15 +118,7 @@ export function exportSlug(target: string): string {
   return cleaned.slice(0, 48) || "export";
 }
 
-/** Pick a sensible filename extension for the download button. */
-export function exportExtension(target: string): string {
-  const lower = target.toLowerCase();
-  if (/postgres|sql|ddl/.test(lower)) return "sql";
-  if (/openapi[ -]?yaml|yaml\b|\byml\b/.test(lower)) return "yaml";
-  if (/mermaid/.test(lower)) return "md";
-  if (/\bjson\b/.test(lower)) return "json";
-  if (/\bcsv\b/.test(lower)) return "csv";
-  if (/markdown|\bmd\b/.test(lower)) return "md";
-  if (/\bxml\b|drawio/.test(lower)) return "xml";
-  return "txt";
+/** Filename extension for designer exports. JSON is the only supported format. */
+export function exportExtension(_target: string): string {
+  return "json";
 }

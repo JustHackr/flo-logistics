@@ -19,6 +19,8 @@ export type DesignerNodeData = {
   /** FLO node id this generated node was matched to (if any). */
   floId?: string | null;
   selected?: boolean;
+  /** True when this node was added or newly integrated on the latest Apply. */
+  isNew?: boolean;
   [key: string]: unknown;
 };
 
@@ -62,10 +64,15 @@ export function DesignerNodeComponent(
   return (
     <div
       className={cn(
-        "group w-[260px] rounded-xl border border-border p-3 shadow-sm transition-all",
-        KIND_BG[data.kind],
-        "ring-2",
-        data.integrated ? KIND_RING[data.kind] : "ring-transparent",
+        "group w-[260px] rounded-xl border p-3 shadow-sm transition-all",
+        data.isNew
+          ? "border-amber-500/70 bg-amber-50/90 ring-2 ring-amber-400/50"
+          : cn(
+              "border-border",
+              KIND_BG[data.kind],
+              "ring-2",
+              data.integrated ? KIND_RING[data.kind] : "ring-transparent",
+            ),
         selected && "outline outline-2 outline-primary/70",
       )}
     >
@@ -94,9 +101,19 @@ export function DesignerNodeComponent(
           <Icon className="h-3.5 w-3.5" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-primary/80">
-            {KIND_LABEL[data.kind]}
-          </p>
+          <div className="flex items-center justify-between gap-1.5">
+            <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-primary/80">
+              {KIND_LABEL[data.kind]}
+            </p>
+            {data.isNew && (
+              <Badge
+                variant="outline"
+                className="border-amber-500/50 bg-amber-100/80 text-[9px] text-amber-800"
+              >
+                {t("designer.node.new")}
+              </Badge>
+            )}
+          </div>
           <h4 className="truncate text-sm font-semibold leading-tight">
             {data.label}
           </h4>

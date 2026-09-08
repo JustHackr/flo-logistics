@@ -175,55 +175,153 @@ export function parseDesignerGraph(raw: unknown): DesignerValidationResult {
 }
 
 /**
- * Best-effort JSON extraction for chat models that occasionally wrap JSON in
- * ```json fences or add prose around the object. Falls back to null.
+ * Best-effort JSON extraction for chat models that wrap JSON in fences, emit
+ * raw newlines inside strings, trailing commas, or truncate mid-object.
  */
 export function extractJsonObject(text: string): unknown | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
 
-  // Strip ```json fences if present.
   const fence = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fence ? fence[1].trim() : trimmed;
+  const unfenced = fence ? fence[1].trim() : trimmed;
+  const start = unfenced.indexOf("{");
+  if (start < 0) return null;
+  const fromBrace = unfenced.slice(start);
 
-  // First, try parsing the whole thing.
+  const repaired = stripTrailingCommas(escapeControlsInJsonStrings(fromBrace));
+  const attempts = [
+    unfenced,
+    fromBrace,
+    repaired,
+    firstBalancedObject(repaired),
+    closeTruncatedJson(repaired),
+  ];
+
+  for (const attempt of attempts) {
+    if (!attempt) continue;
+    const parsed = tryParseJson(attempt);
+    if (parsed !== undefined) return parsed;
+  }
+  return null;
+}
+
+function tryParseJson(text: string): unknown | undefined {
   try {
-    return JSON.parse(candidate);
+    return JSON.parse(text);
   } catch {
-    // Fall back to scanning for the first balanced { ... } block.
-    const start = candidate.indexOf("{");
-    if (start < 0) return null;
-    let depth = 0;
-    let inString = false;
-    let escape = false;
-    for (let i = start; i < candidate.length; i += 1) {
-      const ch = candidate[i];
+    return undefined;
+  }
+}
+
+/** Replace raw control characters inside JSON strings so JSON.parse can succeed. */
+function escapeControlsInJsonStrings(text: string): string {
+  let out = "";
+  let inString = false;
+  let escape = false;
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (!inString) {
+      out += ch;
+      if (ch === '"') inString = true;
+      continue;
+    }
+    if (escape) {
+      out += ch;
+      escape = false;
+      continue;
+    }
+    if (ch === "\\") {
+      out += ch;
+      escape = true;
+      continue;
+    }
+    if (ch === '"') {
+      out += ch;
+      inString = false;
+      continue;
+    }
+    if (ch === "\n") {
+      out += "\\n";
+      continue;
+    }
+    if (ch === "\r") {
+      out += "\\r";
+      continue;
+    }
+    if (ch === "\t") {
+      out += "\\t";
+      continue;
+    }
+    if (ch.charCodeAt(0) < 32) continue;
+    out += ch;
+  }
+  return out;
+}
+
+function stripTrailingCommas(text: string): string {
+  return text.replace(/,(\s*[}\]])/g, "$1");
+}
+
+function firstBalancedObject(text: string): string | null {
+  const start = text.indexOf("{");
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = start; i < text.length; i += 1) {
+    const ch = text[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (inString) {
+      if (ch === "\\") escape = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === "{") depth += 1;
+    else if (ch === "}") {
+      depth -= 1;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+function closeTruncatedJson(text: string): string {
+  let inString = false;
+  let escape = false;
+  const stack: Array<"{" | "["> = [];
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (inString) {
       if (escape) {
         escape = false;
         continue;
       }
-      if (inString) {
-        if (ch === "\\") escape = true;
-        else if (ch === '"') inString = false;
+      if (ch === "\\") {
+        escape = true;
         continue;
       }
-      if (ch === '"') {
-        inString = true;
-        continue;
-      }
-      if (ch === "{") depth += 1;
-      else if (ch === "}") {
-        depth -= 1;
-        if (depth === 0) {
-          const slice = candidate.slice(start, i + 1);
-          try {
-            return JSON.parse(slice);
-          } catch {
-            return null;
-          }
-        }
-      }
+      if (ch === '"') inString = false;
+      continue;
     }
-    return null;
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+    if (ch === "{") stack.push("{");
+    else if (ch === "[") stack.push("[");
+    else if (ch === "}" || ch === "]") stack.pop();
   }
+  let suffix = "";
+  if (inString) suffix += '"';
+  while (stack.length > 0) {
+    suffix += stack.pop() === "{" ? "}" : "]";
+  }
+  return text + suffix;
 }

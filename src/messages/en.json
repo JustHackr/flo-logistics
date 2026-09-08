@@ -83,7 +83,19 @@
       "cv": {
         "title": "Warehouse computer vision",
         "body": "Live browser-only box detection and passage counting verify dock loading and hub throughput."
+      },
+      "designer": {
+        "title": "Flo Designer",
+        "body": "A no-code system integration planner."
+      },
+      "sovereign": {
+        "title": "Sovereign AI",
+        "body": "FLO uses open-source, open-weight models — ready to deploy locally in compliance with company regulations."
       }
+    },
+    "whatsNew": {
+      "label": "What's new for the final",
+      "body": "Flo Designer now lets admins sketch a process on a canvas and export it as JSON. Sovereign AI stays on-deployment by default, with an optional open-weight LLM when operators opt in."
     },
     "stats": {
       "vehicles": "vehicles in seed",
@@ -173,6 +185,7 @@
     "node": {
       "generated": "Generated",
       "integrated": "Integrated with FLO",
+      "new": "New",
       "inputs": "Inputs",
       "outputs": "Outputs"
     },
@@ -182,10 +195,28 @@
       "clear": "Clear history",
       "confirm": "Clear all recent prompts?"
     },
+    "designs": {
+      "title": "Saved designs",
+      "name": "Design name",
+      "namePlaceholder": "e.g. Customer support flow",
+      "untitled": "Untitled design",
+      "new": "New",
+      "save": "Save",
+      "saveAs": "Save as",
+      "delete": "Delete",
+      "empty": "No saved designs yet.",
+      "confirmDelete": "Delete this saved design?",
+      "errorUnauthorized": "Admin role required to manage designs.",
+      "errorEmpty": "Name and a non-empty canvas are required.",
+      "errorShape": "The design graph could not be saved or loaded.",
+      "errorNotFound": "That design was not found.",
+      "errorNetwork": "Could not reach the server. Try again."
+    },
     "export": {
       "label": "Export",
-      "placeholder": "Postgres DDL, Mermaid, OpenAPI 3.1 YAML, CSV...",
-      "send": "Generate",
+      "placeholder": "JSON",
+      "hint": "Download the current schema as JSON.",
+      "send": "Export JSON",
       "thinking": "Exporting...",
       "errorParse": "The export came back empty. Try a more specific target.",
       "errorNoKey": "Connect an LLM API key in AI Settings first.",
@@ -196,8 +227,8 @@
       "noGraph": "Generate a schema first, then export.",
       "canvas": {
         "title": "Export canvas",
-        "empty": "Send an Export prompt to see the artifact here.",
-        "hint": "Click a card for the AI summary."
+        "empty": "Export JSON to see the artifact here.",
+        "hint": "Click a card to preview the JSON."
       },
       "sheet": {
         "title": "Export preview",
@@ -208,7 +239,7 @@
         "close": "Close"
       },
       "detail": {
-        "summary": "AI summary",
+        "summary": "Summary",
         "noSummary": "No summary available."
       }
     },

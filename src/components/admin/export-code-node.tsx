@@ -6,7 +6,7 @@ import { Code2, Copy, Check, Download, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type ExportCodeNodeData = {
-  /** What the user asked for ("Postgres DDL", "Mermaid", ...). */
+  /** Always JSON. */
   target: string;
   /** AI-generated summary, capped at ~3 lines on the card. */
   summary: string;

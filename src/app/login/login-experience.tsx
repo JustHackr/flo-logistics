@@ -15,6 +15,8 @@ import {
   Loader2,
   ArrowRight,
   LogOut,
+  Workflow,
+  Shield,
 } from "lucide-react";
 import {
   loginAction,
@@ -154,6 +156,8 @@ export function LoginExperience({
                   ["maintenance", Wrench],
                   ["routing", RouteIcon],
                   ["cv", ScanEye],
+                  ["designer", Workflow],
+                  ["sovereign", Shield],
                 ] as const
               ).map(([key, Icon], i) => (
                 <li
@@ -178,6 +182,13 @@ export function LoginExperience({
                 </li>
               ))}
             </ul>
+
+            <p className="mt-5 max-w-md text-[11px] leading-relaxed text-muted-foreground">
+              <span className="font-semibold uppercase tracking-[0.14em] text-primary/80">
+                {t("auth.whatsNew.label")}
+              </span>
+              <span className="mt-1.5 block">{t("auth.whatsNew.body")}</span>
+            </p>
           </div>
 
           <footer className="relative z-10 flex flex-wrap items-center gap-2 px-8 pb-8">

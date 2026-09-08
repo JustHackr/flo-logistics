@@ -83,7 +83,19 @@
       "cv": {
         "title": "Visi komputer gudang",
         "body": "Deteksi koli live di browser dan penghitung lintasan memverifikasi pemuatan di dok serta throughput hub."
+      },
+      "designer": {
+        "title": "Flo Designer",
+        "body": "Perencana integrasi sistem tanpa kode."
+      },
+      "sovereign": {
+        "title": "Sovereign AI",
+        "body": "FLO memakai model open-source dan open-weight — siap di-deploy lokal sesuai kebijakan perusahaan."
       }
+    },
+    "whatsNew": {
+      "label": "Yang baru untuk final",
+      "body": "Flo Designer kini memungkinkan admin merancang proses di kanvas dan mengekspornya sebagai JSON. Sovereign AI tetap di dalam deployment secara default, dengan LLM open-weight opsional jika operator mengaktifkannya."
     },
     "stats": {
       "vehicles": "kendaraan dalam seed",
@@ -173,6 +185,7 @@
     "node": {
       "generated": "Dihasilkan",
       "integrated": "Terintegrasi dengan FLO",
+      "new": "Baru",
       "inputs": "Input",
       "outputs": "Output"
     },
@@ -182,10 +195,28 @@
       "clear": "Hapus riwayat",
       "confirm": "Hapus semua prompt terbaru?"
     },
+    "designs": {
+      "title": "Desain tersimpan",
+      "name": "Nama desain",
+      "namePlaceholder": "mis. Alur layanan pelanggan",
+      "untitled": "Desain tanpa judul",
+      "new": "Baru",
+      "save": "Simpan",
+      "saveAs": "Simpan sebagai",
+      "delete": "Hapus",
+      "empty": "Belum ada desain tersimpan.",
+      "confirmDelete": "Hapus desain tersimpan ini?",
+      "errorUnauthorized": "Peran Admin diperlukan untuk mengelola desain.",
+      "errorEmpty": "Nama dan kanvas yang tidak kosong diperlukan.",
+      "errorShape": "Grafik desain tidak dapat disimpan atau dimuat.",
+      "errorNotFound": "Desain tidak ditemukan.",
+      "errorNetwork": "Tidak dapat menghubungi server. Coba lagi."
+    },
     "export": {
       "label": "Ekspor",
-      "placeholder": "Postgres DDL, Mermaid, OpenAPI 3.1 YAML, CSV...",
-      "send": "Hasilkan",
+      "placeholder": "JSON",
+      "hint": "Unduh skema saat ini sebagai JSON.",
+      "send": "Ekspor JSON",
       "thinking": "Mengekspor...",
       "errorParse": "Ekspor kosong. Coba target yang lebih spesifik.",
       "errorNoKey": "Hubungkan kunci API LLM di Pengaturan AI terlebih dahulu.",
@@ -196,8 +227,8 @@
       "noGraph": "Hasilkan skema terlebih dahulu, lalu ekspor.",
       "canvas": {
         "title": "Kanvas ekspor",
-        "empty": "Kirim prompt Ekspor untuk melihat artefak di sini.",
-        "hint": "Klik kartu untuk melihat ringkasan AI."
+        "empty": "Ekspor JSON untuk melihat artefak di sini.",
+        "hint": "Klik kartu untuk pratinjau JSON."
       },
       "sheet": {
         "title": "Pratinjau ekspor",
@@ -208,7 +239,7 @@
         "close": "Tutup"
       },
       "detail": {
-        "summary": "Ringkasan AI",
+        "summary": "Ringkasan",
         "noSummary": "Tidak ada ringkasan."
       }
     },

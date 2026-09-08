@@ -10,6 +10,7 @@ import {
   Position,
   ReactFlow,
   ReactFlowProvider,
+  useNodesState,
   useReactFlow,
   type Node,
   type Edge,
@@ -36,13 +37,6 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from "@/components/ui/sheet";
 import { useI18n } from "@/components/i18n/use-i18n";
 import { cn } from "@/lib/utils";
 import {
@@ -202,14 +196,26 @@ function ProcessMapInner({
     live,
     titles,
   ]);
-  // Selection is derived at render time rather than synced via an effect.
-  const nodes = React.useMemo<Node<FlowNodeData>[]>(
+  const [nodes, setNodes, onNodesChange] = useNodesState(initial.nodes);
+
+  // When live stats / titles refresh, update node data but keep drag positions.
+  React.useEffect(() => {
+    setNodes((prev) => {
+      const posById = new Map(prev.map((n) => [n.id, n.position]));
+      return initial.nodes.map((n) => ({
+        ...n,
+        position: posById.get(n.id) ?? n.position,
+      }));
+    });
+  }, [initial.nodes, setNodes]);
+
+  const displayedNodes = React.useMemo(
     () =>
-      initial.nodes.map((n) => ({
+      nodes.map((n) => ({
         ...n,
         data: { ...n.data, selected: n.id === selectedId },
       })),
-    [initial.nodes, selectedId],
+    [nodes, selectedId],
   );
 
   const onNodeClick = React.useCallback(
@@ -253,14 +259,16 @@ function ProcessMapInner({
           </div>
         </div>
         <ReactFlow
-          nodes={nodes}
+          nodes={displayedNodes}
           edges={initial.edges}
           nodeTypes={NODE_TYPES}
+          onNodesChange={onNodesChange}
           onNodeClick={onNodeClick}
+          onPaneClick={() => setSelectedId(null)}
           fitView
           fitViewOptions={{ padding: 0.18 }}
           proOptions={{ hideAttribution: true }}
-          nodesDraggable={false}
+          nodesDraggable
           nodesConnectable={false}
           elementsSelectable
           minZoom={0.4}
@@ -292,7 +300,7 @@ function ProcessMapInner({
         </ReactFlow>
       </div>
 
-      <SheetDetail selected={selected} live={live} onClose={() => setSelectedId(null)} />
+      <DetailPane selected={selected} live={live} titles={titles} />
     </div>
   );
 }
@@ -325,51 +333,54 @@ function LegendChip({ variant }: { variant: NodeKind }) {
   );
 }
 
-function SheetDetail({
+function DetailPane({
   selected,
   live,
-  onClose,
+  titles,
 }: {
   selected: ProcessNodeDef | null;
   live: LiveStats;
-  onClose: () => void;
+  titles: Record<string, { title: string; summary: string }>;
 }) {
   const { t } = useI18n();
-  const open = selected !== null;
   return (
-    <Sheet open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <SheetContent
-        side="right"
-        className="flex w-full max-w-md flex-col gap-0 p-0 sm:max-w-md"
-      >
-        {selected && <NodeDetail def={selected} live={live} />}
-        {!selected && (
-          <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
+    <aside className="flex min-h-0 flex-col overflow-hidden rounded-xl border border-border bg-card ring-1 ring-foreground/5">
+      {selected ? (
+        <NodeDetail
+          def={selected}
+          live={live}
+          title={titles[selected.id]?.title ?? labelForKey(selected.titleKey)}
+          summary={
+            titles[selected.id]?.summary ?? labelForKey(selected.summaryKey)
+          }
+        />
+      ) : (
+        <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
+          <Workflow className="h-7 w-7 text-muted-foreground/40" aria-hidden />
+          <p className="text-sm text-muted-foreground">
             {t("processMap.noNodeSelected")}
-          </div>
-        )}
-        <span className="sr-only">
-          <SheetHeader>
-            <SheetTitle>{t("processMap.title")}</SheetTitle>
-            <SheetDescription>{t("processMap.subtitle")}</SheetDescription>
-          </SheetHeader>
-        </span>
-      </SheetContent>
-    </Sheet>
+          </p>
+        </div>
+      )}
+    </aside>
   );
 }
 
 function NodeDetail({
   def,
   live,
+  title,
+  summary,
 }: {
   def: ProcessNodeDef;
   live: LiveStats;
+  title: string;
+  summary: string;
 }) {
   const Icon = NODE_ICONS[def.icon];
   return (
-    <div className="flex h-full flex-col">
-      <div className="border-b border-border px-6 py-5">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="border-b border-border px-5 py-4">
         <div className="flex items-start gap-3">
           <span
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
@@ -381,9 +392,10 @@ function NodeDetail({
             <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-primary/80">
               {labelForKind(def.kind)}
             </p>
-            <h3 className="text-lg font-semibold tracking-tight">
-              {labelForKey(def.titleKey)}
-            </h3>
+            <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              {summary}
+            </p>
           </div>
         </div>
         {def.detail.liveStatKey && (
@@ -398,7 +410,7 @@ function NodeDetail({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-5">
+      <div className="flex-1 overflow-y-auto px-5 py-4">
         <DetailSection
           title="Inputs"
           items={def.detail.inputs}

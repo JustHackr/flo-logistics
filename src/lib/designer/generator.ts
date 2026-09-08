@@ -110,9 +110,9 @@ export async function generateDesignerGraph(input: {
       history,
       companyContext: "",
       locale: input.locale ?? "en",
-      // Reasoning models spend tokens thinking before the JSON; a 10-node
-      // graph with descriptions is ~2k tokens on its own.
-      maxTokens: 6000,
+      // Reasoning models spend tokens thinking before the JSON; MiniMax-M3
+      // often truncates a 6k completion mid-object (canvas parse error).
+      maxTokens: 8000,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -122,7 +122,23 @@ export async function generateDesignerGraph(input: {
     return { ok: false, code: "provider", message };
   }
 
-  const parsedJson = extractJsonObject(reply);
+  let parsedJson = extractJsonObject(reply);
+  if (parsedJson === null) {
+    try {
+      reply = await callOpenAiCompatibleChat({
+        settings,
+        systemPrompt: DESIGNER_SYSTEM_PROMPT,
+        userMessage: trimmed,
+        history,
+        companyContext: "",
+        locale: input.locale ?? "en",
+        maxTokens: 12_000,
+      });
+      parsedJson = extractJsonObject(reply);
+    } catch {
+      parsedJson = null;
+    }
+  }
   if (parsedJson === null) {
     // Server-side diagnostic only — never echoed back to chat or the browser.
     console.warn(

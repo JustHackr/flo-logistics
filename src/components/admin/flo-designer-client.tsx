@@ -7,6 +7,7 @@ import {
   Controls,
   ReactFlow,
   ReactFlowProvider,
+  useNodesState,
   useReactFlow,
   type Edge,
 } from "@xyflow/react";
@@ -28,9 +29,13 @@ import {
   ArrowLeft,
   Trash2,
   Code2,
+  Save,
+  FolderOpen,
+  FilePlus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
@@ -49,9 +54,15 @@ import {
   type ExportCodeNode,
 } from "@/components/admin/export-code-node";
 import {
+  createDesignerDesignAction,
+  deleteDesignerDesignAction,
   exportDesignerAction,
   generateSchemaAction,
+  getDesignerDesignAction,
+  listDesignerDesignsAction,
+  updateDesignerDesignAction,
   type DesignerActionResult,
+  type DesignerDesignSummary,
 } from "@/app/actions/designer";
 import type {
   DesignerGraph,
@@ -80,7 +91,7 @@ type HistoryEntry = {
 type ExportEntry = {
   /** Stable id so React Flow can key the canvas node. */
   id: string;
-  /** Free-form target ("Postgres DDL", "Mermaid", ...). */
+  /** JSON graph dump ("JSON"). */
   target: string;
   /** AI-generated summary shown on the card and at the top of the sheet. */
   summary: string;
@@ -165,10 +176,12 @@ function layoutGraph(graph: DesignerGraph): {
 function CanvasInner({
   graph,
   selectedId,
+  highlightedIds,
   onSelect,
 }: {
   graph: DesignerGraph | null;
   selectedId: string | null;
+  highlightedIds: ReadonlySet<string>;
   onSelect: (id: string | null) => void;
 }) {
   const { fitView } = useReactFlow();
@@ -177,13 +190,24 @@ function CanvasInner({
     () => (graph ? layoutGraph(graph) : { nodes: [], edges: [] }),
     [graph],
   );
+  const [nodes, setNodes, onNodesChange] = useNodesState(layout.nodes);
 
-  const nodes = React.useMemo<DesignerFlowNode[]>(() => {
-    return layout.nodes.map((n) => ({
-      ...n,
-      data: { ...n.data, selected: n.id === selectedId },
-    }));
-  }, [layout.nodes, selectedId]);
+  React.useEffect(() => {
+    setNodes(layout.nodes);
+  }, [layout.nodes, setNodes]);
+
+  const displayedNodes = React.useMemo(
+    () =>
+      nodes.map((n) => ({
+        ...n,
+        data: {
+          ...n.data,
+          selected: n.id === selectedId,
+          isNew: highlightedIds.has(n.id),
+        },
+      })),
+    [nodes, selectedId, highlightedIds],
+  );
 
   return (
     <div className="relative h-full">
@@ -199,9 +223,10 @@ function CanvasInner({
         </div>
       )}
       <ReactFlow
-        nodes={nodes}
+        nodes={displayedNodes}
         edges={layout.edges}
         nodeTypes={NODE_TYPES}
+        onNodesChange={onNodesChange}
         onNodeClick={(_e, n) => onSelect(n.id)}
         onPaneClick={() => onSelect(null)}
         fitView
@@ -234,11 +259,14 @@ export function FloDesignerClient(): React.JSX.Element {
   const [graph, setGraph] = React.useState<DesignerGraph | null>(null);
   const [prompt, setPrompt] = React.useState("");
   const [refine, setRefine] = React.useState("");
-  const [exportTarget, setExportTarget] = React.useState("");
   const [history, setHistory] = React.useState<HistoryEntry[]>([]);
   const [pending, setPending] = React.useState(false);
   const [errorKey, setErrorKey] = React.useState<string | null>(null);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
+  /** Node ids added or newly FLO-integrated on the latest successful Apply. */
+  const [highlightedIds, setHighlightedIds] = React.useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const [exportHistory, setExportHistory] = React.useState<ExportEntry[]>([]);
   const [exportCallState, setExportCallState] = React.useState<ExportCallState>({
     kind: "idle",
@@ -249,6 +277,30 @@ export function FloDesignerClient(): React.JSX.Element {
   );
   /** Per-export "copied" flag, keyed by export id. */
   const [copiedMap, setCopiedMap] = React.useState<Record<string, boolean>>({});
+  const [designs, setDesigns] = React.useState<DesignerDesignSummary[]>([]);
+  const [activeDesignId, setActiveDesignId] = React.useState<string | null>(
+    null,
+  );
+  const [designName, setDesignName] = React.useState("");
+  const [designPending, setDesignPending] = React.useState(false);
+  const [designErrorKey, setDesignErrorKey] = React.useState<string | null>(
+    null,
+  );
+
+  const refreshDesigns = React.useCallback(async () => {
+    try {
+      const result = await listDesignerDesignsAction();
+      if (result.ok) {
+        setDesigns(result.designs);
+      }
+    } catch (error) {
+      console.error("[designer] list designs failed", error);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void refreshDesigns();
+  }, [refreshDesigns]);
 
   const callDesigner = React.useCallback(
     async (text: string) => {
@@ -256,6 +308,7 @@ export function FloDesignerClient(): React.JSX.Element {
       if (!trimmed || pending) return;
       setPending(true);
       setErrorKey(null);
+      setHighlightedIds(new Set());
       try {
         const historyPayload = [
           ...history.map((h) => ({ role: "user" as const, content: h.prompt })),
@@ -269,12 +322,34 @@ export function FloDesignerClient(): React.JSX.Element {
           setErrorKey(`designer.prompt.error${cap(result.code)}`);
           return;
         }
-        setGraph(result.graph);
+        const previous = graph;
+        const next = result.graph;
+        if (previous === null) {
+          setHighlightedIds(new Set());
+        } else {
+          const prevFloById = new Map(
+            previous.nodes.map((n) => {
+              const annotated = n as DesignerNode & { _floId?: string | null };
+              return [n.id, Boolean(annotated._floId)] as const;
+            }),
+          );
+          const nextHighlight = new Set<string>();
+          for (const n of next.nodes) {
+            const annotated = n as DesignerNode & { _floId?: string | null };
+            const priorHadFlo = prevFloById.get(n.id);
+            if (priorHadFlo === undefined) {
+              nextHighlight.add(n.id);
+            } else if (!priorHadFlo && annotated._floId) {
+              nextHighlight.add(n.id);
+            }
+          }
+          setHighlightedIds(nextHighlight);
+        }
+        setGraph(next);
         // New graph = stale export history; reset it inline so the canvas
         // never shows artifacts that were generated against a previous schema.
         setExportHistory([]);
         setViewingExportId(null);
-        setExportTarget("");
         setHistory((prev) => [
           { prompt: trimmed, at: Date.now(), integrated: result.integrated },
           ...prev,
@@ -289,7 +364,7 @@ export function FloDesignerClient(): React.JSX.Element {
         setPending(false);
       }
     },
-    [history, locale, pending],
+    [graph, history, locale, pending],
   );
 
   const onGenerate = (e: React.FormEvent) => {
@@ -301,52 +376,47 @@ export function FloDesignerClient(): React.JSX.Element {
     callDesigner(refine);
   };
 
-  const callExport = React.useCallback(
-    async (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed || !graph || exportCallState.kind === "pending") return;
-      setExportCallState({ kind: "pending" });
-      try {
-        const result = await exportDesignerAction({
-          graph,
-          target: trimmed,
-          locale: locale === "id" ? "id" : "en",
-        });
-        if (!result.ok) {
-          setExportCallState({ kind: "error", code: result.code });
-          return;
-        }
-        const id = `export-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        setExportHistory((prev) =>
-          [
-            {
-              id,
-              target: result.target,
-              summary: result.summary,
-              content: result.content,
-              at: Date.now(),
-            },
-            ...prev,
-          ].slice(0, 12),
-        );
-        setViewingExportId(id);
-        setExportCallState({ kind: "idle" });
-        setExportTarget("");
-      } catch (error) {
-        console.error("[designer] export failed", error);
-        setExportCallState({ kind: "error", code: "network" });
+  const callExport = React.useCallback(async () => {
+    if (!graph || exportCallState.kind === "pending") return;
+    setExportCallState({ kind: "pending" });
+    try {
+      const result = await exportDesignerAction({
+        graph,
+        target: "JSON",
+        locale: locale === "id" ? "id" : "en",
+      });
+      if (!result.ok) {
+        setExportCallState({ kind: "error", code: result.code });
+        return;
       }
-    },
-    [exportCallState.kind, graph, locale],
-  );
+      const id = `export-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      setExportHistory((prev) =>
+        [
+          {
+            id,
+            target: result.target,
+            summary: result.summary,
+            content: result.content,
+            at: Date.now(),
+          },
+          ...prev,
+        ].slice(0, 12),
+      );
+      setViewingExportId(id);
+      setExportCallState({ kind: "idle" });
+    } catch (error) {
+      console.error("[designer] export failed", error);
+      setExportCallState({ kind: "error", code: "network" });
+    }
+  }, [exportCallState.kind, graph, locale]);
 
   const onExport = (e: React.FormEvent) => {
     e.preventDefault();
-    callExport(exportTarget);
+    callExport();
   };
 
   const triggerDownload = React.useCallback((entry: ExportEntry) => {
-    const blob = new Blob([entry.content], { type: "text/plain;charset=utf-8" });
+    const blob = new Blob([entry.content], { type: "application/json;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     const today = new Date().toISOString().slice(0, 10);
@@ -385,6 +455,115 @@ export function FloDesignerClient(): React.JSX.Element {
     }
     setHistory([]);
   }, [t]);
+
+  const onNewDesign = React.useCallback(() => {
+    setGraph(null);
+    setActiveDesignId(null);
+    setDesignName("");
+    setSelectedId(null);
+    setHighlightedIds(new Set());
+    setExportHistory([]);
+    setViewingExportId(null);
+    setDesignErrorKey(null);
+  }, []);
+
+  const onSaveDesign = React.useCallback(
+    async (asNew: boolean) => {
+      if (!graph || designPending) return;
+      const name = designName.trim() || t("designer.designs.untitled");
+      setDesignPending(true);
+      setDesignErrorKey(null);
+      try {
+        if (!asNew && activeDesignId) {
+          const result = await updateDesignerDesignAction({
+            id: activeDesignId,
+            name,
+            graph,
+          });
+          if (!result.ok) {
+            setDesignErrorKey(`designer.designs.error${designErrorCap(result.code)}`);
+            return;
+          }
+          setDesignName(result.design.name);
+          await refreshDesigns();
+          return;
+        }
+        const result = await createDesignerDesignAction({ name, graph });
+        if (!result.ok) {
+          setDesignErrorKey(`designer.designs.error${designErrorCap(result.code)}`);
+          return;
+        }
+        setActiveDesignId(result.design.id);
+        setDesignName(result.design.name);
+        await refreshDesigns();
+      } catch (error) {
+        console.error("[designer] save design failed", error);
+        setDesignErrorKey("designer.designs.errorNetwork");
+      } finally {
+        setDesignPending(false);
+      }
+    },
+    [activeDesignId, designName, designPending, graph, refreshDesigns, t],
+  );
+
+  const onOpenDesign = React.useCallback(
+    async (id: string) => {
+      if (designPending) return;
+      setDesignPending(true);
+      setDesignErrorKey(null);
+      try {
+        const result = await getDesignerDesignAction({ id });
+        if (!result.ok) {
+          setDesignErrorKey(`designer.designs.error${designErrorCap(result.code)}`);
+          return;
+        }
+        setGraph(result.design.graph as DesignerGraph);
+        setActiveDesignId(result.design.id);
+        setDesignName(result.design.name);
+        setSelectedId(null);
+        setHighlightedIds(new Set());
+        setExportHistory([]);
+        setViewingExportId(null);
+      } catch (error) {
+        console.error("[designer] open design failed", error);
+        setDesignErrorKey("designer.designs.errorNetwork");
+      } finally {
+        setDesignPending(false);
+      }
+    },
+    [designPending],
+  );
+
+  const onDeleteDesign = React.useCallback(
+    async (id: string) => {
+      if (designPending) return;
+      if (
+        typeof window !== "undefined" &&
+        !window.confirm(t("designer.designs.confirmDelete"))
+      ) {
+        return;
+      }
+      setDesignPending(true);
+      setDesignErrorKey(null);
+      try {
+        const result = await deleteDesignerDesignAction({ id });
+        if (!result.ok) {
+          setDesignErrorKey(`designer.designs.error${designErrorCap(result.code)}`);
+          return;
+        }
+        if (activeDesignId === id) {
+          setActiveDesignId(null);
+        }
+        await refreshDesigns();
+      } catch (error) {
+        console.error("[designer] delete design failed", error);
+        setDesignErrorKey("designer.designs.errorNetwork");
+      } finally {
+        setDesignPending(false);
+      }
+    },
+    [activeDesignId, designPending, refreshDesigns, t],
+  );
 
   const viewingExport = React.useMemo(
     () => exportHistory.find((e) => e.id === viewingExportId) ?? null,
@@ -440,6 +619,7 @@ export function FloDesignerClient(): React.JSX.Element {
               <CanvasInner
                 graph={graph}
                 selectedId={selectedId}
+                highlightedIds={highlightedIds}
                 onSelect={setSelectedId}
               />
             </ReactFlowProvider>
@@ -453,11 +633,146 @@ export function FloDesignerClient(): React.JSX.Element {
           />
         </div>
 
-        {/* Prompt panel */}
-        <aside className="flex min-h-0 flex-col gap-4">
+        {/* Detail + prompt panel — sticky + internal scroll so history
+            cannot be flex-collapsed below the fold after Generate. */}
+        <aside className="flex min-h-0 flex-col gap-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto lg:pr-0.5">
+          <section className="flex min-h-[140px] max-h-[32vh] shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-card ring-1 ring-foreground/5">
+            <header className="shrink-0 border-b border-border px-4 py-3">
+              <h3 className="text-sm font-semibold">
+                {t("designer.detail.sheetTitle")}
+              </h3>
+            </header>
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
+              {selectedNode && detailSummary ? (
+                <NodeDetailBody
+                  selected={selectedNode}
+                  summary={detailSummary}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {t("designer.detail.noSelection")}
+                </p>
+              )}
+            </div>
+          </section>
+
+          <section className="shrink-0 rounded-xl border border-border bg-card p-4 ring-1 ring-foreground/5">
+            <header className="flex items-center justify-between gap-2">
+              <h3 className="flex items-center gap-2 text-sm font-semibold">
+                <FolderOpen className="h-3.5 w-3.5 text-primary" />
+                {t("designer.designs.title")}
+              </h3>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                disabled={designPending}
+                onClick={onNewDesign}
+                title={t("designer.designs.new")}
+              >
+                <FilePlus className="mr-1.5 h-3.5 w-3.5" />
+                {t("designer.designs.new")}
+              </Button>
+            </header>
+            <label
+              htmlFor="designer-design-name"
+              className="mt-3 block text-[11px] font-medium text-muted-foreground"
+            >
+              {t("designer.designs.name")}
+            </label>
+            <Input
+              id="designer-design-name"
+              value={designName}
+              onChange={(e) => setDesignName(e.target.value)}
+              placeholder={t("designer.designs.namePlaceholder")}
+              disabled={designPending}
+              className="mt-1 h-8 text-sm"
+            />
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                disabled={designPending || !graph}
+                onClick={() => void onSaveDesign(false)}
+              >
+                {designPending ? (
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Save className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                {activeDesignId
+                  ? t("designer.designs.save")
+                  : t("designer.designs.saveAs")}
+              </Button>
+              {activeDesignId && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={designPending || !graph}
+                  onClick={() => void onSaveDesign(true)}
+                >
+                  {t("designer.designs.saveAs")}
+                </Button>
+              )}
+            </div>
+            {designErrorKey && (
+              <p className="mt-2 text-[11px] text-destructive">
+                {t(designErrorKey)}
+              </p>
+            )}
+            <ul className="mt-3 max-h-40 space-y-1.5 overflow-y-auto pr-1">
+              {designs.length === 0 && (
+                <li className="text-xs text-muted-foreground">
+                  {t("designer.designs.empty")}
+                </li>
+              )}
+              {designs.map((d) => (
+                <li key={d.id}>
+                  <div
+                    className={cn(
+                      "flex items-center gap-1 rounded-lg border border-border bg-background p-1.5",
+                      activeDesignId === d.id && "border-primary/40 bg-primary/[0.03]",
+                    )}
+                  >
+                    <button
+                      type="button"
+                      disabled={designPending}
+                      onClick={() => void onOpenDesign(d.id)}
+                      className={cn(
+                        "min-w-0 flex-1 rounded-md px-1.5 py-1 text-left text-[11px] leading-snug",
+                        "hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        "disabled:opacity-60",
+                      )}
+                    >
+                      <span className="block truncate font-medium">{d.name}</span>
+                      <span className="block text-[9px] text-muted-foreground">
+                        {new Date(d.updatedAt).toLocaleString()}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={designPending}
+                      onClick={() => void onDeleteDesign(d.id)}
+                      aria-label={t("designer.designs.delete")}
+                      title={t("designer.designs.delete")}
+                      className={cn(
+                        "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted-foreground",
+                        "hover:bg-destructive/[0.08] hover:text-destructive",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      )}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+
           <form
             onSubmit={onGenerate}
-            className="rounded-xl border border-border bg-card p-4 ring-1 ring-foreground/5"
+            className="shrink-0 rounded-xl border border-border bg-card p-4 ring-1 ring-foreground/5"
           >
             <label
               htmlFor="designer-prompt"
@@ -505,7 +820,7 @@ export function FloDesignerClient(): React.JSX.Element {
           {graph && (
             <form
               onSubmit={onRefine}
-              className="rounded-xl border border-border bg-card p-4 ring-1 ring-foreground/5"
+              className="shrink-0 rounded-xl border border-border bg-card p-4 ring-1 ring-foreground/5"
             >
               <label
                 htmlFor="designer-refine"
@@ -543,37 +858,23 @@ export function FloDesignerClient(): React.JSX.Element {
           {graph && (
             <form
               onSubmit={onExport}
-              className="rounded-xl border border-border bg-card p-4 ring-1 ring-foreground/5"
+              className="shrink-0 rounded-xl border border-border bg-card p-4 ring-1 ring-foreground/5"
             >
               <label
-                htmlFor="designer-export"
                 className="flex items-center gap-2 text-sm font-medium"
               >
                 <Download className="h-3.5 w-3.5 text-primary" />
                 {t("designer.export.label")}
               </label>
-              <textarea
-                id="designer-export"
-                value={exportTarget}
-                onChange={(e) => setExportTarget(e.target.value)}
-                rows={2}
-                placeholder={t("designer.export.placeholder")}
-                disabled={exportCallState.kind === "pending"}
-                className={cn(
-                  "mt-2 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm",
-                  "placeholder:text-muted-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  "disabled:opacity-60",
-                )}
-              />
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                {t("designer.export.hint")}
+              </p>
               <div className="mt-3 flex items-center justify-end gap-2">
                 <Button
                   type="submit"
                   size="sm"
                   variant="outline"
-                  disabled={
-                    exportCallState.kind === "pending" ||
-                    exportTarget.trim().length === 0
-                  }
+                  disabled={exportCallState.kind === "pending"}
                 >
                   {exportCallState.kind === "pending" ? (
                     <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -596,8 +897,8 @@ export function FloDesignerClient(): React.JSX.Element {
             </div>
           )}
 
-          <section className="flex min-h-0 flex-1 flex-col rounded-xl border border-border bg-card p-4 ring-1 ring-foreground/5">
-            <header className="flex items-center justify-between gap-2">
+          <section className="flex min-h-[200px] flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card p-4 ring-1 ring-foreground/5">
+            <header className="flex shrink-0 items-center justify-between gap-2">
               <h3 className="flex items-center gap-2 text-sm font-semibold">
                 <HistoryIcon className="h-3.5 w-3.5 text-muted-foreground" />
                 {t("designer.history.title")}
@@ -620,7 +921,7 @@ export function FloDesignerClient(): React.JSX.Element {
                 </button>
               )}
             </header>
-            <ul className="mt-3 flex-1 space-y-1.5 overflow-y-auto pr-1">
+            <ul className="mt-3 min-h-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
               {history.length === 0 && (
                 <li className="text-xs text-muted-foreground">
                   {t("designer.history.empty")}
@@ -651,29 +952,6 @@ export function FloDesignerClient(): React.JSX.Element {
           </section>
         </aside>
       </div>
-
-      {/* Node detail sheet */}
-      <Sheet
-        open={selectedNode !== null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedId(null);
-        }}
-      >
-        <SheetContent
-          side="right"
-          className="w-full overflow-y-auto sm:max-w-md"
-        >
-          <SheetHeader>
-            <SheetTitle>{t("designer.detail.sheetTitle")}</SheetTitle>
-            <SheetDescription>{t("designer.detail.noSelection")}</SheetDescription>
-          </SheetHeader>
-          <div className="mt-4">
-            {selectedNode && detailSummary && (
-              <NodeDetailBody selected={selectedNode} summary={detailSummary} />
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
 
       {/* Export preview sheet */}
       <Sheet
@@ -1111,6 +1389,15 @@ function cap(code: string): string {
   if (code === "provider") return "Provider";
   if (code === "unauthorized") return "Unauthorized";
   return "Parse";
+}
+
+function designErrorCap(code: string): string {
+  if (code === "unauthorized") return "Unauthorized";
+  if (code === "empty") return "Empty";
+  if (code === "shape") return "Shape";
+  if (code === "not-found") return "NotFound";
+  if (code === "network") return "Network";
+  return "Network";
 }
 
 function exportErrorCap(code: DesignerExportErrorCode): string {
