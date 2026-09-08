@@ -6,6 +6,8 @@ import {
   generateDesignerGraph,
   type DesignerMessage,
 } from "@/lib/designer/generator";
+import { exportDesignerGraph } from "@/lib/designer/exporter";
+import type { DesignerGraph } from "@/lib/designer/schema";
 
 export type DesignerActionOk = {
   ok: true;
@@ -51,6 +53,53 @@ export async function generateSchemaAction(input: {
     ok: true,
     graph: result.graph,
     integrated: result.integrated,
+  };
+}
+
+export type DesignerExportOk = {
+  ok: true;
+  target: string;
+  content: string;
+  summary: string;
+};
+
+export type DesignerExportError = {
+  ok: false;
+  code: "unauthorized" | "no-key" | "empty" | "parse" | "timeout" | "provider";
+  message: string;
+};
+
+export type DesignerExportResult = DesignerExportOk | DesignerExportError;
+
+export async function exportDesignerAction(input: {
+  graph: DesignerGraph;
+  target: string;
+  locale?: "en" | "id";
+}): Promise<DesignerExportResult> {
+  const session = await getSession();
+  if (!session || session.role !== "ADMIN") {
+    return {
+      ok: false,
+      code: "unauthorized",
+      message: "Admin role required.",
+    };
+  }
+
+  const result = await exportDesignerGraph({
+    graph: input.graph,
+    target: input.target,
+    locale: input.locale ?? "en",
+  });
+
+  if (!result.ok) {
+    return { ok: false, code: result.code, message: result.message };
+  }
+
+  return {
+    ok: true,
+    target: result.target,
+    content: result.content,
+    summary: result.summary,
   };
 }
 

@@ -94,3 +94,109 @@ export function integrateWithFlo(graph: DesignerGraph): IntegrateResult {
     mapped,
   };
 }
+
+/**
+ * The subset of a FLO process-map node shown in the Designer Detail sheet.
+ * Kept narrow so the detail sheet never needs the heavy `ProcessNodeDef` (no
+ * positions, no icon, no live stats — those are visualisation concerns).
+ */
+export type FloNodeContext = {
+  id: string;
+  titleKey: string;
+  summaryKey: string;
+  kind: "input" | "process" | "output" | "system" | undefined;
+  inputs: string[];
+  process: string[];
+  outputs: string[];
+  sourceFiles: string[];
+  models: string[] | undefined;
+  apiRoutes: string[] | undefined;
+  uiRoutes: string[] | undefined;
+};
+
+/** Look up a FLO node by id, returning only the fields the detail sheet uses. */
+export function getFloNodeContext(floId: string): FloNodeContext | null {
+  const def = PROCESS_NODES.find((n) => n.id === floId);
+  if (!def) return null;
+  return {
+    id: def.id,
+    titleKey: def.titleKey,
+    summaryKey: def.summaryKey,
+    kind: def.kind,
+    inputs: def.detail.inputs,
+    process: def.detail.process,
+    outputs: def.detail.outputs,
+    sourceFiles: def.detail.sourceFiles,
+    models: def.detail.models,
+    apiRoutes: def.detail.apiRoutes,
+    uiRoutes: def.detail.uiRoutes,
+  };
+}
+
+export type DesignerNodeEdgeRef = {
+  /** id of the node on the *other* end of the edge. */
+  otherId: string;
+  /** Label of the node on the *other* end. */
+  otherLabel: string;
+  /** "incoming" or "outgoing" relative to the selected node. */
+  direction: "incoming" | "outgoing";
+  /** Optional edge label from the graph. */
+  label?: string;
+};
+
+export type DesignerNodeSummary = {
+  /** Connected nodes: who calls this node and who this node calls. */
+  incoming: DesignerNodeEdgeRef[];
+  outgoing: DesignerNodeEdgeRef[];
+  /** FLO integration target (if any) for the selected node. */
+  floTarget: FloNodeContext | null;
+};
+
+/**
+ * Resolve the connector + integration context for a single generated node,
+ * given the full graph (post-`integrateWithFlo`). The summary is pure —
+ * safe to call from server or client, and easy to unit test.
+ *
+ * Note: `integrateWithFlo` strips the per-node `_floId` from its public type
+ * (only the canvas reads it), so callers must pass the `_floId` they want to
+ * use directly. Here we accept it as a separate arg for the same reason.
+ */
+export function summarizeIntegration(input: {
+  selectedId: string;
+  nodes: ReadonlyArray<{
+    id: string;
+    label: string;
+    // Optional `_floId` set by `integrateWithFlo`. We accept it loosely
+    // because the public `DesignerNode` type does not expose it.
+    _floId?: string | null;
+  }>;
+  edges: ReadonlyArray<{ source: string; target: string; label?: string }>;
+  floId?: string | null;
+}): DesignerNodeSummary {
+  const labelById = new Map(input.nodes.map((n) => [n.id, n.label]));
+
+  const incoming: DesignerNodeEdgeRef[] = [];
+  const outgoing: DesignerNodeEdgeRef[] = [];
+  for (const e of input.edges) {
+    if (e.target === input.selectedId) {
+      incoming.push({
+        otherId: e.source,
+        otherLabel: labelById.get(e.source) ?? e.source,
+        direction: "incoming",
+        label: e.label,
+      });
+    } else if (e.source === input.selectedId) {
+      outgoing.push({
+        otherId: e.target,
+        otherLabel: labelById.get(e.target) ?? e.target,
+        direction: "outgoing",
+        label: e.label,
+      });
+    }
+  }
+
+  const floId = input.floId ?? null;
+  const floTarget = floId ? getFloNodeContext(floId) : null;
+
+  return { incoming, outgoing, floTarget };
+}

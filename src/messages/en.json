@@ -92,7 +92,7 @@
       "live": "Live from demo DB"
     },
     "quickTitle": "Pick a demo persona",
-    "quickHint": "Click a role to sign in instantly. All demo accounts share the password demo1234.",
+    "quickHint": "Hover a role for its scope, then click to sign in. All demo accounts share the password demo1234.",
     "signedIn": {
       "title": "You're signed in",
       "hint": "Continue where you left off, or pick another persona below to switch accounts.",
@@ -178,7 +178,61 @@
     },
     "history": {
       "title": "Recent prompts",
-      "empty": "No prompts yet."
+      "empty": "No prompts yet.",
+      "clear": "Clear history",
+      "confirm": "Clear all recent prompts?"
+    },
+    "export": {
+      "label": "Export",
+      "placeholder": "Postgres DDL, Mermaid, OpenAPI 3.1 YAML, CSV...",
+      "send": "Generate",
+      "thinking": "Exporting...",
+      "errorParse": "The export came back empty. Try a more specific target.",
+      "errorNoKey": "Connect an LLM API key in AI Settings first.",
+      "errorRate": "The model could not respond in time. Try a shorter export target.",
+      "errorProvider": "The LLM provider returned an error. Check AI Settings and try again.",
+      "errorUnauthorized": "Admin role required to use Flo Designer.",
+      "errorNetwork": "The export request did not reach the server. Check your connection and try again.",
+      "noGraph": "Generate a schema first, then export.",
+      "canvas": {
+        "title": "Export canvas",
+        "empty": "Send an Export prompt to see the artifact here.",
+        "hint": "Click a card for the AI summary."
+      },
+      "sheet": {
+        "title": "Export preview",
+        "target": "Target",
+        "copy": "Copy",
+        "copied": "Copied",
+        "download": "Download",
+        "close": "Close"
+      },
+      "detail": {
+        "summary": "AI summary",
+        "noSummary": "No summary available."
+      }
+    },
+    "detail": {
+      "sheetTitle": "Node detail",
+      "noSelection": "Click a node to see its details.",
+      "about": "About this step",
+      "noSummary": "No description provided.",
+      "responsibilities": "Responsibilities",
+      "connectors": "Connectors",
+      "noConnectors": "This node has no connections.",
+      "incoming": "Triggers this step",
+      "outgoing": "Continues to",
+      "floId": "FLO id",
+      "edge": "Edge",
+      "integration": "Integration with FLO",
+      "noIntegration": "This generated step is not mapped to a FLO node.",
+      "inputs": "FLO inputs",
+      "process": "FLO process",
+      "outputs": "FLO outputs",
+      "sourceFiles": "Source files",
+      "models": "Models",
+      "apiRoutes": "API",
+      "uiRoutes": "UI"
     }
   },
   "common": {

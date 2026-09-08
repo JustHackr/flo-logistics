@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { integrateWithFlo } from "@/lib/designer/integrate";
+import {
+  getFloNodeContext,
+  integrateWithFlo,
+  summarizeIntegration,
+} from "@/lib/designer/integrate";
 import type { DesignerGraph } from "@/lib/designer/schema";
 
 function buildGraph(nodes: DesignerGraph["nodes"], edges: DesignerGraph["edges"]): DesignerGraph {
@@ -81,5 +85,75 @@ describe("integrateWithFlo", () => {
     expect(result.integrated).toBe(false);
     expect(result.mapped).toEqual([]);
     expect(result.graph.edges).toHaveLength(0);
+  });
+});
+
+describe("getFloNodeContext", () => {
+  it("returns context for a known FLO id", () => {
+    const ctx = getFloNodeContext("input-vehicles");
+    expect(ctx?.id).toBe("input-vehicles");
+    expect(ctx?.kind).toBe("input");
+    expect(ctx?.inputs.length).toBeGreaterThan(0);
+    expect(ctx?.sourceFiles.length).toBeGreaterThan(0);
+  });
+
+  it("returns null for an unknown FLO id", () => {
+    expect(getFloNodeContext("does-not-exist")).toBeNull();
+  });
+});
+
+describe("summarizeIntegration", () => {
+  const nodes = [
+    { id: "a", label: "Customer", _floId: null },
+    { id: "b", label: "Agent", _floId: "proc-ai" },
+    { id: "c", label: "Vehicle", _floId: "input-vehicles" },
+  ];
+  const edges = [
+    { source: "a", target: "b", label: "asks" },
+    { source: "b", target: "c", label: "dispatches" },
+    { source: "b", target: "proc-ai", label: "integrated with" },
+  ];
+
+  it("splits edges into incoming and outgoing for the selected node", () => {
+    const summary = summarizeIntegration({
+      selectedId: "b",
+      nodes,
+      edges,
+      floId: "proc-ai",
+    });
+    expect(summary.incoming).toEqual([
+      { otherId: "a", otherLabel: "Customer", direction: "incoming", label: "asks" },
+    ]);
+    expect(summary.outgoing).toHaveLength(2);
+    expect(summary.outgoing.map((e) => e.otherId).sort()).toEqual([
+      "c",
+      "proc-ai",
+    ]);
+  });
+
+  it("resolves the integration target via getFloNodeContext", () => {
+    const summary = summarizeIntegration({
+      selectedId: "b",
+      nodes,
+      edges,
+      floId: "proc-ai",
+    });
+    expect(summary.floTarget?.id).toBe("proc-ai");
+    expect(summary.floTarget?.kind).toBe("process");
+  });
+
+  it("returns empty arrays when the node has no connectors", () => {
+    const summary = summarizeIntegration({
+      selectedId: "c",
+      nodes: [
+        { id: "x", label: "Lone" },
+        { id: "y", label: "Other" },
+      ],
+      edges: [{ source: "x", target: "y", label: "calls" }],
+      floId: null,
+    });
+    expect(summary.incoming).toEqual([]);
+    expect(summary.outgoing).toEqual([]);
+    expect(summary.floTarget).toBeNull();
   });
 });

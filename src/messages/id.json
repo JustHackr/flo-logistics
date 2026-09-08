@@ -92,7 +92,7 @@
       "live": "Langsung dari basis data demo"
     },
     "quickTitle": "Pilih persona demo",
-    "quickHint": "Klik peran untuk masuk seketika. Semua akun demo berbagi kata sandi demo1234.",
+    "quickHint": "Arahkan kursor ke peran untuk melihat cakupannya, lalu klik untuk masuk. Semua akun demo berbagi kata sandi demo1234.",
     "signedIn": {
       "title": "Anda sudah masuk",
       "hint": "Lanjutkan ke dasbor Anda, atau pilih persona lain di bawah untuk berganti akun.",
@@ -178,7 +178,61 @@
     },
     "history": {
       "title": "Prompt terbaru",
-      "empty": "Belum ada prompt."
+      "empty": "Belum ada prompt.",
+      "clear": "Hapus riwayat",
+      "confirm": "Hapus semua prompt terbaru?"
+    },
+    "export": {
+      "label": "Ekspor",
+      "placeholder": "Postgres DDL, Mermaid, OpenAPI 3.1 YAML, CSV...",
+      "send": "Hasilkan",
+      "thinking": "Mengekspor...",
+      "errorParse": "Ekspor kosong. Coba target yang lebih spesifik.",
+      "errorNoKey": "Hubungkan kunci API LLM di Pengaturan AI terlebih dahulu.",
+      "errorRate": "Model tidak dapat merespons tepat waktu. Coba target ekspor yang lebih pendek.",
+      "errorProvider": "Penyedia LLM mengembalikan galat. Periksa Pengaturan AI lalu coba lagi.",
+      "errorUnauthorized": "Peran Admin diperlukan untuk menggunakan Flo Designer.",
+      "errorNetwork": "Permintaan ekspor tidak sampai ke server. Periksa koneksi Anda lalu coba lagi.",
+      "noGraph": "Hasilkan skema terlebih dahulu, lalu ekspor.",
+      "canvas": {
+        "title": "Kanvas ekspor",
+        "empty": "Kirim prompt Ekspor untuk melihat artefak di sini.",
+        "hint": "Klik kartu untuk melihat ringkasan AI."
+      },
+      "sheet": {
+        "title": "Pratinjau ekspor",
+        "target": "Target",
+        "copy": "Salin",
+        "copied": "Tersalin",
+        "download": "Unduh",
+        "close": "Tutup"
+      },
+      "detail": {
+        "summary": "Ringkasan AI",
+        "noSummary": "Tidak ada ringkasan."
+      }
+    },
+    "detail": {
+      "sheetTitle": "Detail node",
+      "noSelection": "Klik sebuah node untuk melihat detailnya.",
+      "about": "Tentang langkah ini",
+      "noSummary": "Tidak ada deskripsi.",
+      "responsibilities": "Tanggung jawab",
+      "connectors": "Konektor",
+      "noConnectors": "Node ini tidak memiliki koneksi.",
+      "incoming": "Memicu langkah ini",
+      "outgoing": "Lanjut ke",
+      "floId": "ID FLO",
+      "edge": "Edge",
+      "integration": "Integrasi dengan FLO",
+      "noIntegration": "Langkah yang dihasilkan ini belum dipetakan ke node FLO.",
+      "inputs": "Input FLO",
+      "process": "Proses FLO",
+      "outputs": "Output FLO",
+      "sourceFiles": "Berkas sumber",
+      "models": "Model",
+      "apiRoutes": "API",
+      "uiRoutes": "UI"
     }
   },
   "common": {
