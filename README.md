@@ -99,39 +99,41 @@ This section is structured for fast LLM parsing. Each subsection is a self-conta
 2. **Low-carbon routing** — Jakarta traffic-aware optimization with explicit CFI (Carbon Footprint Index) and fuel-cost reporting.
 3. **Visual fleet compliance** — on-device computer vision (load, hub congestion, ODOL) with zero upload.
 4. **Sovereign AI** — local-first default, opt-in external LLM, regulatory alignment documented in this README.
-5. **Pluggable expansion** — FLO Designer (prompt → graph → integrate → export) so non-engineers can propose new integrations; data connectors registry (`/connectors`); admin process map at `/admin/process-map`.
+5. **Pluggable expansion** — FLO Designer (prompt → graph → integrate → save → export JSON) so non-engineers can propose and keep new integrations; data connectors registry (`/connectors`); admin process map at `/admin/process-map`.
 
 ### Engineering rigor evidence
 
 - **Hand-rolled VQI math with engine modifiers.** Four weighted factors (age 30, odometer 30, maintenance cost 20, planning 20) with explicit `ev / gasoline / diesel` modifiers — [src/lib/vqi.ts](src/lib/vqi.ts).
 - **Pluggable predictor strategy.** `PredictorStrategy` interface lets a future ML-based predictor replace `RuleBasedPredictor` without touching callers — [src/lib/predictor.ts](src/lib/predictor.ts).
 - **Hand-rolled validator for untrusted LLM output.** `parseDesignerGraph` rejects shape / empty / duplicate-id / unknown-kind / edge-target-missing / self-loop — [src/lib/designer/schema.ts](src/lib/designer/schema.ts).
-- **Unit tests on the load-bearing paths.** See [src/lib/designer/exporter.test.ts](src/lib/designer/exporter.test.ts), [src/lib/designer/integrate.test.ts](src/lib/designer/integrate.test.ts), [src/lib/ai-reasoning.test.ts](src/lib/ai-reasoning.test.ts), [src/lib/workflow-onboarding.test.ts](src/lib/workflow-onboarding.test.ts), [src/lib/base-path.test.ts](src/lib/base-path.test.ts), [src/lib/rate-limit.test.ts](src/lib/rate-limit.test.ts).
+- **Unit tests on the load-bearing paths.** See [src/lib/designer/exporter.test.ts](src/lib/designer/exporter.test.ts), [src/lib/designer/designs.test.ts](src/lib/designer/designs.test.ts), [src/lib/designer/integrate.test.ts](src/lib/designer/integrate.test.ts), [src/lib/ai-reasoning.test.ts](src/lib/ai-reasoning.test.ts), [src/lib/workflow-onboarding.test.ts](src/lib/workflow-onboarding.test.ts), [src/lib/base-path.test.ts](src/lib/base-path.test.ts), [src/lib/rate-limit.test.ts](src/lib/rate-limit.test.ts).
 - **Per-client rate limiting** on the AI chat endpoint — [src/lib/rate-limit.ts](src/lib/rate-limit.ts).
 - **Role-based access control** at the proxy layer (`src/proxy.ts`) and per-page (`defaultHomeForRole` in [src/lib/auth/roles.ts](src/lib/auth/roles.ts)), with admin defence-in-depth at `/admin/process-map` and `/admin/designer`.
 - **Process map self-description.** A hand-curated, 5-lane × 3-column swimlane (Fleet / Routing / Warehouse / Assistant / Platform) with live stat pills — [src/lib/process-map/graph.ts](src/lib/process-map/graph.ts), live stats from [src/lib/process-map/live-stats.ts](src/lib/process-map/live-stats.ts), rendered at `/admin/process-map`.
+- **Saved Designer designs in SQLite.** Named graphs persist via the `DesignerDesign` Prisma model and ADMIN-only server actions — [prisma/schema.prisma](prisma/schema.prisma), [src/lib/designer/designs.ts](src/lib/designer/designs.ts), [src/app/actions/designer.ts](src/app/actions/designer.ts).
 
 ### Process map (system self-description)
 
-The **Admin Process Map** (`/admin/process-map`) is the most AI-readable artifact in the demo. It renders the entire FLO pipeline as a swimlane diagram — every node carries the real source files, Prisma models, API routes, and UI routes it touches, plus a live numeric stat pulled from the running demo database. Judges can read FLO's architecture off the canvas without leaving the app.
+The **Admin Process Map** (`/admin/process-map`) is the most AI-readable artifact in the demo. It renders the entire FLO pipeline as a swimlane diagram — every node carries the real source files, Prisma models, API routes, and UI routes it touches, plus a live numeric stat pulled from the running demo database. Judges can drag nodes (session-only), click for a permanent right-hand detail pane, and read FLO's architecture off the canvas without leaving the app — [src/components/admin/process-map-client.tsx](src/components/admin/process-map-client.tsx).
 
 ### Featured capability: FLO Designer
 
 **Why we built FLO Designer.** During the AI Open Innovation Challenge 2026 mentoring cycle — both online and onsite — we met different people: mentors from Blibli and partner organizations, logistics operators, fellow student teams, judges. Each conversation surfaced a different technical question about how FLO would integrate with systems that don't exist yet: warehouses with no WMS, hubs that want a nightly CSV, telematics providers with no public API, OMS systems with custom schemas, third-party IoT devices. The team kept hearing the same gap: **integration planning was the bottleneck**. It was easy to imagine a feature, but hard to sketch the wiring, the data contract, or the future schema without a diagram and without writing code.
 
-**FLO Designer is the answer the team built for themselves and for the people they met**: an admin-only workspace where you describe a new flow in plain language (a *prompt*), and the system turns it into a typed, validated process graph, overlays it on the live FLO process map, and exports it as Postgres DDL / Mermaid / OpenAPI / Markdown / CSV / JSON — so non-engineers and engineers can plan together.
+**FLO Designer is the answer the team built for themselves and for the people they met**: an admin-only workspace where you describe a new flow in plain language (a *prompt*), and the system turns it into a typed, validated process graph, overlays it on the live FLO process map, **saves the design in SQLite**, and exports the graph as **JSON** — so non-engineers and engineers can plan together and come back to the same canvas later.
 
 > *Technical planning accessible for everyone — the same prompt method our mentors, operators, and teammates used in conversation.*
 
 **How it works** (visit `/admin/designer` after signing in as `admin@flo.demo`):
 
 1. **Generate** — type a natural-language process; the prompt is sent to the configured LLM with a solutions-architect persona and a 4–18 node graph contract — [src/lib/designer/generator.ts](src/lib/designer/generator.ts).
-2. **Validate** — the response is parsed and gated by the hand-rolled validator — [src/lib/designer/schema.ts](src/lib/designer/schema.ts).
-3. **Render** — the validated graph is laid out on a React Flow canvas and rendered with custom nodes — [src/components/admin/flo-designer-client.tsx](src/components/admin/flo-designer-client.tsx), [src/components/admin/designer-node.tsx](src/components/admin/designer-node.tsx).
+2. **Validate** — the response is parsed and gated by the hand-rolled validator (including resilient JSON extraction) — [src/lib/designer/schema.ts](src/lib/designer/schema.ts).
+3. **Render** — the validated graph is laid out on a React Flow canvas; nodes are draggable (positions stick for the session) — [src/components/admin/flo-designer-client.tsx](src/components/admin/flo-designer-client.tsx), [src/components/admin/designer-node.tsx](src/components/admin/designer-node.tsx).
 4. **Integrate** — each generated node is keyword-mapped to its closest canonical FLO process-map node; a dashed *integrated with* edge is drawn — [src/lib/designer/integrate.ts](src/lib/designer/integrate.ts) (overlays on [src/lib/process-map/graph.ts](src/lib/process-map/graph.ts)).
-5. **Inspect** — clicking a node opens a Detail Sheet showing connectors, FLO target's `inputs / process / outputs / sourceFiles / models / apiRoutes / uiRoutes`.
-6. **Export** — request a target (Postgres DDL, Mermaid `flowchart LR`, OpenAPI 3.1 YAML, CSV of edges, Markdown table, JSON, XML, ...); the LLM emits the artifact and a deterministic fallback applies — [src/lib/designer/exporter.ts](src/lib/designer/exporter.ts) + [src/lib/designer/export-format.ts](src/lib/designer/export-format.ts).
-7. **History** — each export becomes an `exportCodeNode` on the canvas with copy + download actions — [src/components/admin/export-code-node.tsx](src/components/admin/export-code-node.tsx); the recent-prompt list and past-export canvas both have a "clear" affordance.
+5. **Inspect** — clicking a node fills a permanent right-pane detail card (connectors, FLO target's `inputs / process / outputs / sourceFiles / models / apiRoutes / uiRoutes`). After **Apply / Refine**, newly added or newly FLO-integrated nodes get an amber “New” accent.
+6. **Save / load** — name the canvas and **Save**, **Save as**, **Open**, or **Delete** designs stored in SQLite (`DesignerDesign`); **New** clears the working canvas — [src/lib/designer/designs.ts](src/lib/designer/designs.ts) + CRUD actions in [src/app/actions/designer.ts](src/app/actions/designer.ts).
+7. **Export** — download the current schema as pretty-printed **JSON** (deterministic; no LLM) — [src/lib/designer/exporter.ts](src/lib/designer/exporter.ts) + [src/lib/designer/export-format.ts](src/lib/designer/export-format.ts). Each export also appears on the export canvas with copy + download — [src/components/admin/export-code-node.tsx](src/components/admin/export-code-node.tsx).
+8. **Prompt history** — recent prompts stay in the right column for one-click refine; clear with confirm.
 
 The pipeline is **admin-gated** at the server-action boundary ([src/app/actions/designer.ts](src/app/actions/designer.ts)) and the page entry ([src/app/admin/designer/page.tsx](src/app/admin/designer/page.tsx)).
 
@@ -179,8 +181,8 @@ Canonical source: the *Sovereignty* slide in [team-site/src/components/Presentat
 | AI | `/sovereign-ai` | Sovereign AI manifesto page. |
 | System | `/system/gas-price` | Fuel price snapshot from Pertamina. |
 | Integrations | `/connectors` | Data connectors registry (IoT, REST, Webhook, OMS, WMS, ...). |
-| Admin | `/admin/process-map` | FLO process map (n8n-style swimlane with live stats). |
-| Admin | `/admin/designer` | FLO Designer (prompt → graph → integrate → export). |
+| Admin | `/admin/process-map` | FLO process map (swimlane with live stats, drag, permanent detail pane). |
+| Admin | `/admin/designer` | FLO Designer (prompt → graph → integrate → save/load → export JSON). |
 | Admin | `/admin/mockup-data` | Mockup data generator for demo seeding. |
 | Meta | `/methodology` | VQI methodology deep-dive (benefits, references, factor table). |
 | Meta | `/login` | Persona login (RBAC). |
@@ -207,7 +209,7 @@ After signing in, the demo lands on the role's default workspace (`/routing/plan
 
 The `build` script runs `prisma migrate deploy` and `db:seed` automatically, so production builds also include demo warehouse, drivers, and orders. Seed skips if a route plan was updated in the last hour (set `FORCE_SEED=true` to override, or `SKIP_SEED=true` to never reseed).
 
-Demo warehouse: **Blok M Square**. Order coordinates are validated against Greater Jakarta (Jabodetabek) bounds. Generate sample CSVs at `/admin/mockup-data`. Guided computer-vision walkthrough (no webcam): `/computer-vision/tour`. Admin-only business-process visualization (n8n-style node map): `/admin/process-map`.
+Demo warehouse: **Blok M Square**. Order coordinates are validated against Greater Jakarta (Jabodetabek) bounds. Generate sample CSVs at `/admin/mockup-data`. Guided computer-vision walkthrough (no webcam): `/computer-vision/tour`. Admin-only business-process visualization (swimlane with live stats): `/admin/process-map`. Admin-only FLO Designer (generate, save designs, export JSON): `/admin/designer`.
 
 ---
 
