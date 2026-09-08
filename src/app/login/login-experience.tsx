@@ -137,7 +137,7 @@ export function LoginExperience({
             <LanguageToggle />
           </header>
 
-          <div className="relative z-10 flex flex-1 flex-col justify-center px-8 pt-10">
+          <div className="relative z-10 flex flex-1 flex-col justify-start px-8 pt-10 lg:pt-12">
             <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary/80">
               {t("auth.eyebrow")}
             </p>
@@ -207,7 +207,7 @@ export function LoginExperience({
             <LanguageToggle />
           </div>
 
-          <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center gap-6 px-6 py-10 lg:px-10 lg:py-12">
+          <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-start gap-6 px-6 py-10 lg:px-10 lg:py-12">
             <div>
               <Badge variant="outline" className="border-primary/30 text-primary">
                 <ShieldCheck className="mr-1.5 h-3 w-3" />
@@ -243,52 +243,79 @@ export function LoginExperience({
                   const Icon = ROLE_ICONS[account.role];
                   const busy = quickPending === account.role;
                   const disabled = quickPending !== null;
+                  const roleLabel = t(`auth.roles.${account.role}.name`);
                   return (
-                    <button
+                    <div
                       key={account.email}
-                      type="button"
-                      disabled={disabled}
-                      onClick={() =>
-                        handleQuickLogin(account.email, account.role)
-                      }
-                      aria-label={`${t("auth.signIn")} ${account.name} (${t(`auth.roles.${account.role}.name`)})`}
+                      className="relative"
                       style={{ animationDelay: `${i * 60}ms` }}
-                      className={cn(
-                        "group flex items-start gap-3 rounded-xl border border-border bg-background p-4 text-left transition-colors",
-                        "hover:border-primary/40 hover:bg-primary/[0.03]",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        "disabled:opacity-60",
-                      )}
                     >
-                      <span
+                      {/* Floating tooltip — appears above the button on
+                          hover/focus so the card itself stays compact. */}
+                      <div
+                        role="tooltip"
                         className={cn(
-                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
-                          ROLE_ACCENT[account.role],
+                          "pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-max max-w-[240px] -translate-x-1/2",
+                          "rounded-lg border border-border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-md ring-1 ring-foreground/5",
+                          "opacity-0 translate-y-1 transition-all duration-150",
+                          "group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:opacity-100 group-focus-within:translate-y-0",
                         )}
-                        aria-hidden
                       >
-                        {busy ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Icon className="h-4 w-4" />
-                        )}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-semibold leading-snug">
-                          {account.name}
-                        </span>
-                        <span className="mt-0.5 block text-[10px] font-medium uppercase tracking-[0.12em] text-primary/80">
-                          {t(`auth.roles.${account.role}.name`)}
-                        </span>
-                        <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                        <p className="font-semibold text-foreground">
+                          {account.name} · {roleLabel}
+                        </p>
+                        <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
                           {t(`auth.roles.${account.role}.scope`)}
-                        </span>
-                        <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-primary/80 transition-opacity group-hover:opacity-100">
+                        </p>
+                        <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-primary/90">
                           {busy ? t("auth.signingIn") : t("auth.loginAs")}
-                          <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+                          <ArrowRight className="h-3 w-3" />
+                        </p>
+                        {/* Tooltip arrow */}
+                        <span
+                          aria-hidden
+                          className="absolute -top-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-l border-t border-border bg-popover"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={disabled}
+                        onClick={() =>
+                          handleQuickLogin(account.email, account.role)
+                        }
+                        aria-label={`${t("auth.signIn")} ${account.name} (${roleLabel})`}
+                        aria-describedby={`persona-tip-${account.role}`}
+                        className={cn(
+                          "group flex w-full items-center gap-3 rounded-xl border border-border bg-background px-3 py-2.5 text-left transition-all duration-150",
+                          "hover:border-primary/40 hover:bg-primary/[0.03] hover:shadow-sm hover:-translate-y-px",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-primary/40",
+                          "disabled:opacity-60",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl",
+                            ROLE_ACCENT[account.role],
+                          )}
+                          aria-hidden
+                        >
+                          {busy ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Icon className="h-4 w-4" />
+                          )}
                         </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-sm font-semibold leading-tight">
+                            {roleLabel}
+                          </span>
+                        </span>
+                      </button>
+                      <span id={`persona-tip-${account.role}`} className="sr-only">
+                        {t(`auth.roles.${account.role}.scope`)}
                       </span>
-                    </button>
+                    </div>
                   );
                 })}
               </div>

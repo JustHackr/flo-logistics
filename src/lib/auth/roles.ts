@@ -92,19 +92,19 @@ export const DEMO_ACCOUNTS: Array<{
   {
     email: "ops@flo.demo",
     password: "demo1234",
-    name: "Ops Manager",
+    name: "Matthew",
     role: "OPS_MANAGER",
   },
   {
     email: "driver@flo.demo",
     password: "demo1234",
-    name: "Bima Nugraha",
+    name: "Justin",
     role: "DRIVER",
   },
   {
     email: "warehouse@flo.demo",
     password: "demo1234",
-    name: "Warehouse Lead",
+    name: "Nabiil",
     role: "WAREHOUSE",
   },
 ];
