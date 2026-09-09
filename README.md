@@ -1,54 +1,112 @@
 # FLO — Fab Logistics Operations
 
-**One intelligence layer for every delivery.** FLO is a predictive SLA scoring, low-carbon routing, and visual fleet compliance system for Blibli's last-mile supply chain. Built by **Quasarian Radr-Lyon Dynasty** for the **AI Open Innovation Challenge 2026 (Blibli)**.
+**One intelligence layer for every delivery.**
 
-> Module motto: **01 Predict · 02 Route · 03 Verify**
+FLO is a **last-mile logistics operations cockpit** for Jakarta: predictive fleet health, traffic-aware low-carbon routing, and on-device warehouse computer vision — plus **Sovereign AI** and **Flo Designer** so operators can plan integrations without leaking data off the deployment.
 
-Live demo: `https://radr.nxtdev.xyz/flo-logistics/demo` · Team site: `https://radr.nxtdev.xyz/flo-logistics/`
+Built by **Quasarian Radr-Lyon Dynasty** for the **AI Open Innovation Challenge 2026 (Blibli case)**.
+
+> Motto: **01 Predict · 02 Route · 03 Verify**
+
+| Try it | Link |
+|--------|------|
+| Live demo (login first) | [radr.nxtdev.xyz/flo-logistics/demo/login](https://radr.nxtdev.xyz/flo-logistics/demo/login) |
+| Team site / final hub | [radr.nxtdev.xyz/flo-logistics/](https://radr.nxtdev.xyz/flo-logistics/) · [/final](https://radr.nxtdev.xyz/flo-logistics/final) |
+| Source | [github.com/JustHackr/flo-logistics](https://github.com/JustHackr/flo-logistics) |
+
+![FLO login — role-based demo personas](docs/screenshots/01-login.png)
 
 ---
 
-## About the team
+## Why Quasarian built FLO
 
 **Quasarian Radr-Lyon Dynasty** is a three-person student team from **SMAS Pilar Indonesia**, building at **FabLab Jababeka**, with academic partners **Universitas Presiden** and case provider **Blibli**.
 
-- **Justin Raditya Rizki** — Project Lead. Founder of [stetoradr.com](https://stetoradr.com).
-- **Arsene Matthew E. Naftali** — AI Engineer. Founder of [optivox.site](https://optivox.site).
-- **Nabiil Zhafran Alrilo Tarigan** — Designer & Interface. Co-founder of Foodloop AI.
+- **Justin Raditya Rizki** — Project Lead ([stetoradr.com](https://stetoradr.com))
+- **Arsene Matthew E. Naftali** — AI Engineer ([optivox.site](https://optivox.site))
+- **Nabiil Zhafran Alrilo Tarigan** — Designer & Interface (Foodloop AI)
 
-Competition journey (also documented on the team site):
+We did not start from a generic “AI for logistics” pitch. Blibli’s Jakarta last-mile reality hits three walls at once:
 
-| Phase | Output | Where to find it |
-|-------|--------|------------------|
-| Pre-selection | Written proposal | `/flo-logistics/pre-selection` |
-| Semifinal | Live prototype + YouTube pitch | `/flo-logistics/semifinal` |
-| Final | Live demo + presentation + GitHub source (local install package coming soon) | `/flo-logistics/final` |
+1. **SLA risk is opaque** — which vehicles will fail maintenance windows before a peak day?
+2. **Routing cost & carbon climb** — congestion-aware plans that still respect fuel and CO₂.
+3. **Compliance is still manual** — dock load checks and hub dwell still depend on humans watching cameras.
 
----
+Existing tools either push operational prompts to foreign clouds, or they solve only one slice (maps *or* fleet *or* CV). Quasarian built **FLO** as a single SQLite-backed product that stays **sovereign by default**, runs on a laptop or VPS, and still shows judges a complete Predict → Route → Verify loop.
 
-## Why we built this
+During the **2026 mentoring cycle** (online + onsite), mentors, operators, and fellow teams kept asking a different question: *how would FLO wire into a warehouse with no WMS, a CSV hub feed, or a telematics vendor with no public API?* That integration-planning gap became **Flo Designer** — prompt a process graph, overlay it on FLO’s live process map, save it, export JSON.
 
-Blibli's last-mile operation in Jakarta is squeezed on three fronts at once: unpredictable SLA risk, rising cost and carbon pressure per route, and visual compliance work that still depends on manual inspection. We wanted a single system that addresses all three without forcing the operator to send sensitive operational data outside Indonesia.
-
-The architecture that fell out of that goal has three modules:
-
-- **Predict** — score the fleet's risk and the next maintenance window before anything breaks.
-- **Route** — optimize the next set of stops for time, fuel cost, and carbon, with Jakarta rush-hour awareness.
-- **Verify** — run computer vision on the operator's own device so the camera never becomes a leak.
-
-During the **AI Open Innovation Challenge 2026 mentoring cycle** — both online and onsite — we met different people: mentors from Blibli and partner organizations, logistics operators, fellow student teams, judges. Every conversation surfaced a different integration question: warehouses with no WMS, hubs that want a nightly CSV, telematics providers with no public API, OMS systems with custom schemas, third-party IoT devices. The recurring gap was **integration planning** — easy to imagine a feature, hard to sketch the wiring, the data contract, or the future schema without writing code. That gap is what **FLO Designer** was built to close (see *Featured capability* below).
+Competition journey: [pre-selection](https://radr.nxtdev.xyz/flo-logistics/pre-selection) → [semifinal](https://radr.nxtdev.xyz/flo-logistics/semifinal) → [final](https://radr.nxtdev.xyz/flo-logistics/final).
 
 ---
 
-## What FLO does
+## Features
 
-| Module | What it answers | Where it lives |
-|--------|-----------------|----------------|
-| **Predict** | Which vehicle is at risk, and when does it next need service? | VQI scoring ([src/lib/vqi.ts](src/lib/vqi.ts)) and a pluggable maintenance predictor ([src/lib/predictor.ts](src/lib/predictor.ts)), 90-day forward window from [src/lib/master-overview.ts](src/lib/master-overview.ts) |
-| **Route** | What's the lowest-time / lowest-carbon / lowest-cost assignment of orders to drivers? | Jakarta traffic-aware optimizer in [src/lib/routing/](src/lib/routing/) — DTI, CFI, traffic, driver matching, fuel cost, plus a Google Maps polylines fallback. Driver-facing methodology at `/routing/methodology`. |
-| **Verify** | Did the truck leave with the right load? Is the hub congested? Are assets compliant? | On-device computer vision in [src/lib/computer-vision/](src/lib/computer-vision/) — load detection, hub congestion dwell-time, ODOL placeholder. Frames never leave the browser; the tour at `/computer-vision/tour` runs on static samples for judges. |
+### Operations home
 
-The three modules share one SQLite-backed data layer and one operations dashboard built by [src/lib/master-overview.ts](src/lib/master-overview.ts) and [src/lib/routing-overview.ts](src/lib/routing-overview.ts).
+Role-aware dashboard: route progress, fleet VQI, and “needs attention” maintenance signals in one place. Personas (Admin, Ops Manager, Driver, Warehouse) share password `demo1234` in the demo.
+
+![Home dashboard — Today at FLO](docs/screenshots/02-home.png)
+
+### Predict — fleet health & maintenance
+
+**Vehicle Quality Index (VQI)** scores age, odometer, maintenance cost, and planning factors. The fleet list and maintenance views surface high-risk units and a 90-day cost window before surprises hit the hub.
+
+![Fleet vehicles with VQI risk badges](docs/screenshots/04-fleet-vehicles.png)
+
+Code: [src/lib/vqi.ts](src/lib/vqi.ts), [src/lib/predictor.ts](src/lib/predictor.ts), routes `/vehicles`, `/dashboard`, `/reports`.
+
+### Route — traffic-aware, low-carbon planning
+
+Jakarta-aware optimization with **DTI** (delivery time), **CFI** (carbon), fuel cost, and driver–vehicle matching. Logistics monitors in-progress routes (progress, ETA, emissions).
+
+![Logistics live route monitor](docs/screenshots/03-routing-plan.png)
+
+Code: [src/lib/routing/](src/lib/routing/), routes `/routing/orders`, `/routing/plan`, `/routing/dashboard`.
+
+### Verify — on-device computer vision
+
+Load detection, hub congestion / dwell, and ODOL placeholder run **in the browser** — frames never upload. Judges can walk the story without a webcam via the CV tour.
+
+![Computer vision guided tour](docs/screenshots/05-cv-tour.png)
+
+Code: [src/lib/computer-vision/](src/lib/computer-vision/), routes `/computer-vision/tour`, `/computer-vision/load-detection`, `/computer-vision/hub-congestion-detection`.
+
+### Flo Designer — prompt → graph → save → JSON
+
+Admin workspace: describe a process in natural language, get a validated node graph, integrate with FLO’s process map, **save designs in SQLite**, export deterministic JSON. Drag nodes, inspect in a permanent detail pane, highlight what’s new after Refine.
+
+![Flo Designer blank canvas and saved designs](docs/screenshots/06-designer.png)
+
+Code: [src/lib/designer/](src/lib/designer/), route `/admin/designer` (ADMIN).
+
+### Process map — system self-description
+
+Swimlane of the whole FLO pipeline with live stats, drag, and a permanent detail pane — architecture readable without leaving the app.
+
+![Admin process map swimlane](docs/screenshots/07-process-map.png)
+
+Code: [src/lib/process-map/](src/lib/process-map/), route `/admin/process-map` (ADMIN).
+
+### Sovereign AI
+
+Prompts stay on the deployment by default (rule-based ops assistant over live SQLite). Operators may opt into any OpenAI-compatible / open-weight endpoint (Ollama, vLLM, …). Aligned with Stranas KA, UU PDP, UU ITE — see [SECURITY.md](SECURITY.md).
+
+![Sovereign AI posture page](docs/screenshots/08-sovereign-ai.png)
+
+Route: `/sovereign-ai` · assistant: `/ai/chat`.
+
+---
+
+## What FLO does (summary)
+
+| Module | Question it answers | Where |
+|--------|---------------------|--------|
+| **Predict** | Which vehicle is at risk, and when is the next service window? | VQI + predictor · `/vehicles`, `/dashboard` |
+| **Route** | Lowest-time / carbon / cost assignment of orders to drivers? | [src/lib/routing/](src/lib/routing/) · `/routing/*` |
+| **Verify** | Right load? Hub congested? Compliance without uploading video? | [src/lib/computer-vision/](src/lib/computer-vision/) · `/computer-vision/*` |
+
+Shared data layer: SQLite + [src/lib/master-overview.ts](src/lib/master-overview.ts) + [src/lib/routing-overview.ts](src/lib/routing-overview.ts).
 
 ---
 
