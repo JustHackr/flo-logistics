@@ -21,7 +21,7 @@ export function Footer() {
               <Link href="/presentation" className="hover:text-yellow">
                 {t("footer.presentation")}
               </Link>
-              <a href="/flo-logistics/demo" className="hover:text-yellow">
+              <a href="/flo-logistics/demo/login" className="hover:text-yellow">
                 {t("footer.liveDemo")}
               </a>
               <a

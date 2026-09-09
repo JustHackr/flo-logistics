@@ -158,8 +158,14 @@ export const id = {
       {
         title: "Paket Unduhan",
         description:
-          "Sumber FLO siap dijalankan lokal (Node + SQLite). Ekstrak, lalu npm run setup && npm run dev.",
-        cta: "Download Package",
+          "Instal FLO Logistics di mesin Anda — paket lokal Node + SQLite yang dapat dijalankan offline saat tersedia.",
+        cta: "Segera hadir",
+      },
+      {
+        title: "Kode Sumber",
+        description:
+          "Jelajahi repositori FLO Logistics di GitHub — kode sumber demo live di bawah JustHackr.",
+        cta: "Lihat di GitHub",
       },
     ],
     homeLink: "beranda",

@@ -81,7 +81,7 @@ export function Header() {
         <div className="flex items-center gap-2">
           <LocaleSwitcher className="hidden sm:inline-flex" />
           <a
-            href="/flo-logistics/demo"
+            href="/flo-logistics/demo/login"
             className="shrink-0 rounded-sm bg-blue px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-blue-deep"
           >
             {t("common.liveDemo")}

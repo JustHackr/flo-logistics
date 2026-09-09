@@ -489,7 +489,7 @@
   "onboarding": {
     "welcome": {
       "title": "Selamat datang di FLO",
-      "description": "Fab Logistics Operations membantu Anda merencanakan pengiriman, menjaga kesehatan armada, dan memantau hub — semuanya di satu tempat yang tenang. Tur singkat sekitar 30 detik.",
+      "description": "Fab Logistics Operations membantu Anda merencanakan pengiriman, menjaga kesehatan armada, memantau hub, dan merancang integrasi baru — semuanya di satu tempat yang tenang. Tur singkat sekitar 30 detik.",
       "skip": "Lewati",
       "replay": "Ulangi tur",
       "getStarted": "Mulai",
@@ -498,7 +498,7 @@
       "tourSteps": "Langkah tur",
       "step1": {
         "title": "Selamat datang di FLO",
-        "description": "Fab Logistics Operations membantu Anda merencanakan pengiriman, menjaga kesehatan armada, dan memantau hub — semuanya di satu tempat yang tenang. Tur singkat sekitar 30 detik."
+        "description": "Predict, Route, dan Verify menjaga operasional last-mile — dan Flo Designer memungkinkan admin merancang integrasi dalam bahasa alami sebelum ada yang menulis kode."
       },
       "step2": {
         "title": "Rencanakan rute lebih cerdas",
@@ -511,6 +511,10 @@
       "step4": {
         "title": "Lihat operasional Anda",
         "description": "Visi Komputer mengubah kamera menjadi sensor: hitung karton saat dimuat, dan pantau waktu tinggal di platform hub. Laporan sesi muncul di dasbor beranda ini."
+      },
+      "step5": {
+        "title": "Rancang integrasi dengan Flo Designer",
+        "description": "Admin dapat memunculkan grafik proses dari prompt, menumpangkannya pada peta FLO, menyimpan desain, dan mengekspor JSON — satu kanvas untuk perencana dan engineer."
       }
     },
     "workflows": {
@@ -633,6 +637,37 @@
           "report": {
             "title": "Akhiri dan tinjau kunjungan",
             "body": "Selesaikan sesi dan tinjau laporan per kunjungan di sini atau di Beranda."
+          }
+        }
+      },
+      "designer": {
+        "title": "Alur kerja Flo Designer",
+        "description": "Buat grafik proses dari prompt, tumpangkan pada FLO, simpan desain, dan ekspor JSON.",
+        "steps": {
+          "prompt": {
+            "title": "Hasilkan dari prompt",
+            "body": "Jelaskan proses dalam bahasa alami lalu Hasilkan grafik node di kanvas kosong.",
+            "hrefLabel": "Buka Flo Designer"
+          },
+          "inspect": {
+            "title": "Periksa sebuah node",
+            "body": "Klik node untuk mengisi panel detail permanen dengan konektor dan konteks integrasi FLO.",
+            "hrefLabel": "Buka Flo Designer"
+          },
+          "refine": {
+            "title": "Sempurnakan dan lihat yang baru",
+            "body": "Gunakan Terapkan untuk menyempurnakan grafik. Node yang baru ditambah atau baru terintegrasi mendapat aksen Baru berwarna amber.",
+            "hrefLabel": "Buka Flo Designer"
+          },
+          "save": {
+            "title": "Simpan desain",
+            "body": "Beri nama kanvas lalu Simpan atau Simpan sebagai. Desain tersimpan di SQLite pada deployment ini.",
+            "hrefLabel": "Buka Flo Designer"
+          },
+          "export": {
+            "title": "Ekspor JSON",
+            "body": "Ekspor skema sebagai JSON terformat dan gunakan salin atau unduh dari kanvas ekspor.",
+            "hrefLabel": "Buka Flo Designer"
           }
         }
       }

@@ -22,7 +22,7 @@ Competition journey (also documented on the team site):
 |-------|--------|------------------|
 | Pre-selection | Written proposal | `/flo-logistics/pre-selection` |
 | Semifinal | Live prototype + YouTube pitch | `/flo-logistics/semifinal` |
-| Final | Live demo + presentation deck + downloadable source zip | `/flo-logistics/final` |
+| Final | Live demo + presentation + GitHub source (local install package coming soon) | `/flo-logistics/final` |
 
 ---
 
@@ -111,6 +111,7 @@ This section is structured for fast LLM parsing. Each subsection is a self-conta
 - **Role-based access control** at the proxy layer (`src/proxy.ts`) and per-page (`defaultHomeForRole` in [src/lib/auth/roles.ts](src/lib/auth/roles.ts)), with admin defence-in-depth at `/admin/process-map` and `/admin/designer`.
 - **Process map self-description.** A hand-curated, 5-lane × 3-column swimlane (Fleet / Routing / Warehouse / Assistant / Platform) with live stat pills — [src/lib/process-map/graph.ts](src/lib/process-map/graph.ts), live stats from [src/lib/process-map/live-stats.ts](src/lib/process-map/live-stats.ts), rendered at `/admin/process-map`.
 - **Saved Designer designs in SQLite.** Named graphs persist via the `DesignerDesign` Prisma model and ADMIN-only server actions — [prisma/schema.prisma](prisma/schema.prisma), [src/lib/designer/designs.ts](src/lib/designer/designs.ts), [src/app/actions/designer.ts](src/app/actions/designer.ts).
+- **Workflow onboarding.** Path-scoped checklist dialogs (routing, fleet, CV load/hub, Flo Designer) plus a Home welcome tour — [src/lib/workflow-onboarding.ts](src/lib/workflow-onboarding.ts).
 
 ### Process map (system self-description)
 
@@ -134,6 +135,7 @@ The **Admin Process Map** (`/admin/process-map`) is the most AI-readable artifac
 6. **Save / load** — name the canvas and **Save**, **Save as**, **Open**, or **Delete** designs stored in SQLite (`DesignerDesign`); **New** clears the working canvas — [src/lib/designer/designs.ts](src/lib/designer/designs.ts) + CRUD actions in [src/app/actions/designer.ts](src/app/actions/designer.ts).
 7. **Export** — download the current schema as pretty-printed **JSON** (deterministic; no LLM) — [src/lib/designer/exporter.ts](src/lib/designer/exporter.ts) + [src/lib/designer/export-format.ts](src/lib/designer/export-format.ts). Each export also appears on the export canvas with copy + download — [src/components/admin/export-code-node.tsx](src/components/admin/export-code-node.tsx).
 8. **Prompt history** — recent prompts stay in the right column for one-click refine; clear with confirm.
+9. **Onboarding** — Home welcome tour includes a Flo Designer step; on `/admin/designer` a Workflow guide checklist auto-opens once (prompt → inspect → refine → save → export) — [src/lib/workflow-onboarding.ts](src/lib/workflow-onboarding.ts), [src/components/welcome-tutorial.tsx](src/components/welcome-tutorial.tsx).
 
 The pipeline is **admin-gated** at the server-action boundary ([src/app/actions/designer.ts](src/app/actions/designer.ts)) and the page entry ([src/app/admin/designer/page.tsx](src/app/admin/designer/page.tsx)).
 
@@ -185,7 +187,8 @@ Canonical source: the *Sovereignty* slide in [team-site/src/components/Presentat
 | Admin | `/admin/designer` | FLO Designer (prompt → graph → integrate → save/load → export JSON). |
 | Admin | `/admin/mockup-data` | Mockup data generator for demo seeding. |
 | Meta | `/methodology` | VQI methodology deep-dive (benefits, references, factor table). |
-| Meta | `/login` | Persona login (RBAC). |
+| Meta | `/login` | Persona login (RBAC). Live demo CTAs on the team site land here first. |
+| Meta | Team site `/final` | Final-round hub: live demo (via login), presentation, GitHub source, local install package (Coming soon). |
 
 ---
 
@@ -196,7 +199,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000/login](http://localhost:3000/login) and pick a demo persona (all accounts share the password `demo1234`):
+Open [http://localhost:3000/login](http://localhost:3000/login) (or the public demo login at [radr.nxtdev.xyz/flo-logistics/demo/login](https://radr.nxtdev.xyz/flo-logistics/demo/login)) and pick a demo persona (all accounts share the password `demo1234`):
 
 | Persona | Email | Role |
 |---------|-------|------|
@@ -274,7 +277,10 @@ npm run db:reset   # Migrate reset + reseed
 ## Learn more
 
 - Team site: [/flo-logistics/](https://radr.nxtdev.xyz/flo-logistics/)
+- Final hub: [/flo-logistics/final](https://radr.nxtdev.xyz/flo-logistics/final) — demo login, presentation, [GitHub source](https://github.com/JustHackr/flo-logistics)
+- Live demo (login gate): [/flo-logistics/demo/login](https://radr.nxtdev.xyz/flo-logistics/demo/login)
 - Presentation deck: [/flo-logistics/presentation](https://radr.nxtdev.xyz/flo-logistics/presentation)
+- Source code: [github.com/JustHackr/flo-logistics](https://github.com/JustHackr/flo-logistics)
 - Semifinal demo: [flo-logistics.vercel.app](https://flo-logistics.vercel.app/)
 - YouTube pitch: `S3ME4D5sduM`
 - Pre-selection proposal: [Google Drive](https://drive.google.com/file/d/1c8f-1THAi4TozxX7LcI1pnTgPu5breM9/view)

@@ -156,8 +156,14 @@ export const en = {
       {
         title: "Download Package",
         description:
-          "FLO source ready to run locally (Node + SQLite). Extract, then npm run setup && npm run dev.",
-        cta: "Download Package",
+          "Install FLO Logistics on your machine — a local Node + SQLite package you can run offline when it ships.",
+        cta: "Coming soon",
+      },
+      {
+        title: "Source Code",
+        description:
+          "Browse the FLO Logistics repository on GitHub — the live demo source under JustHackr.",
+        cta: "View on GitHub",
       },
     ],
     homeLink: "homepage",

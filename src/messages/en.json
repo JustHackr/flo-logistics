@@ -489,7 +489,7 @@
   "onboarding": {
     "welcome": {
       "title": "Welcome to FLO",
-      "description": "Fab Logistics Operations helps you plan deliveries, keep the fleet healthy, and watch the hub — all in one calm place. A short tour takes about 30 seconds.",
+      "description": "Fab Logistics Operations helps you plan deliveries, keep the fleet healthy, watch the hub, and sketch new integrations — all in one calm place. A short tour takes about 30 seconds.",
       "skip": "Skip",
       "replay": "Replay tour",
       "getStarted": "Get started",
@@ -498,7 +498,7 @@
       "tourSteps": "Tour steps",
       "step1": {
         "title": "Welcome to FLO",
-        "description": "Fab Logistics Operations helps you plan deliveries, keep the fleet healthy, and watch the hub — all in one calm place. A short tour takes about 30 seconds."
+        "description": "Predict, Route, and Verify keep last-mile ops healthy — and Flo Designer lets admins sketch integrations in plain language before anyone writes code."
       },
       "step2": {
         "title": "Plan smarter routes",
@@ -511,6 +511,10 @@
       "step4": {
         "title": "See your operations",
         "description": "Computer Vision turns a camera into a sensor: count cartons as they load, and watch platform dwell times at the hub. Session reports land on this home dashboard."
+      },
+      "step5": {
+        "title": "Sketch integrations with Flo Designer",
+        "description": "Admins can prompt a process graph, overlay it on FLO’s live map, save the design, and export JSON — so planners and engineers share one canvas."
       }
     },
     "workflows": {
@@ -633,6 +637,37 @@
           "report": {
             "title": "End and review visits",
             "body": "Finish the session and review visit-level reporting here or on Home."
+          }
+        }
+      },
+      "designer": {
+        "title": "Flo Designer workflow",
+        "description": "Prompt a process graph, overlay it on FLO, save the design, and export JSON.",
+        "steps": {
+          "prompt": {
+            "title": "Generate from a prompt",
+            "body": "Describe a process in plain language and Generate a node graph on the blank canvas.",
+            "hrefLabel": "Open Flo Designer"
+          },
+          "inspect": {
+            "title": "Inspect a node",
+            "body": "Click a node to fill the permanent detail pane with connectors and FLO integration context.",
+            "hrefLabel": "Open Flo Designer"
+          },
+          "refine": {
+            "title": "Refine and spot what’s new",
+            "body": "Use Apply to refine the graph. Newly added or newly integrated nodes get an amber New accent.",
+            "hrefLabel": "Open Flo Designer"
+          },
+          "save": {
+            "title": "Save the design",
+            "body": "Name the canvas and Save or Save as. Designs persist in SQLite for this deployment.",
+            "hrefLabel": "Open Flo Designer"
+          },
+          "export": {
+            "title": "Export JSON",
+            "body": "Export the schema as pretty-printed JSON and use copy or download from the export canvas.",
+            "hrefLabel": "Open Flo Designer"
           }
         }
       }

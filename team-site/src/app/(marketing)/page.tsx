@@ -42,7 +42,7 @@ export default function HomePage() {
           </p>
 
           <div className="mt-10 flex flex-wrap gap-3">
-            <ButtonLink href="/flo-logistics/demo" variant="yellow">
+            <ButtonLink href="/flo-logistics/demo/login" variant="yellow">
               {t("home.primaryCta")}
             </ButtonLink>
             <ButtonLink

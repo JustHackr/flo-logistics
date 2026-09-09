@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Camera, Route, Sparkles, Truck } from "lucide-react";
+import { Camera, Route, Sparkles, Truck, Workflow } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ const STEPS = [
   { icon: Route, titleKey: "onboarding.welcome.step2.title", bodyKey: "onboarding.welcome.step2.description" },
   { icon: Truck, titleKey: "onboarding.welcome.step3.title", bodyKey: "onboarding.welcome.step3.description" },
   { icon: Camera, titleKey: "onboarding.welcome.step4.title", bodyKey: "onboarding.welcome.step4.description" },
+  { icon: Workflow, titleKey: "onboarding.welcome.step5.title", bodyKey: "onboarding.welcome.step5.description" },
 ] as const;
 
 function TourDialog({

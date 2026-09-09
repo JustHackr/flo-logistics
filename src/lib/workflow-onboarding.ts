@@ -10,7 +10,8 @@ export type WorkflowId =
   | "routing"
   | "fleet"
   | "cv-load"
-  | "cv-hub";
+  | "cv-hub"
+  | "designer";
 
 export type WorkflowStep = {
   id: string;
@@ -187,6 +188,49 @@ export const WORKFLOWS: Record<WorkflowId, WorkflowDefinition> = {
       },
     ],
   },
+  designer: {
+    id: "designer",
+    title: "Flo Designer workflow",
+    description:
+      "Prompt a process graph, overlay it on FLO, save the design, and export JSON.",
+    steps: [
+      {
+        id: "prompt",
+        title: "Generate from a prompt",
+        body: "Describe a process in plain language and Generate a node graph on the blank canvas.",
+        href: "/admin/designer",
+        hrefLabel: "Open Flo Designer",
+      },
+      {
+        id: "inspect",
+        title: "Inspect a node",
+        body: "Click a node to fill the permanent detail pane with connectors and FLO integration context.",
+        href: "/admin/designer",
+        hrefLabel: "Open Flo Designer",
+      },
+      {
+        id: "refine",
+        title: "Refine and spot what’s new",
+        body: "Use Apply to refine the graph. Newly added or newly integrated nodes get an amber New accent.",
+        href: "/admin/designer",
+        hrefLabel: "Open Flo Designer",
+      },
+      {
+        id: "save",
+        title: "Save the design",
+        body: "Name the canvas and Save or Save as. Designs persist in SQLite for this deployment.",
+        href: "/admin/designer",
+        hrefLabel: "Open Flo Designer",
+      },
+      {
+        id: "export",
+        title: "Export JSON",
+        body: "Export the schema as pretty-printed JSON and use copy or download from the export canvas.",
+        href: "/admin/designer",
+        hrefLabel: "Open Flo Designer",
+      },
+    ],
+  },
 };
 
 const EMPTY_PROGRESS: WorkflowProgress = {
@@ -273,6 +317,12 @@ export function workflowIdForPath(pathname: string): WorkflowId | null {
     pathname.startsWith("/computer-vision/hub-congestion-detection/")
   ) {
     return "cv-hub";
+  }
+  if (
+    pathname === "/admin/designer" ||
+    pathname.startsWith("/admin/designer/")
+  ) {
+    return "designer";
   }
   if (pathname === "/routing" || pathname.startsWith("/routing/")) {
     return "routing";

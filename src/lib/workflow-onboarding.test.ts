@@ -64,6 +64,12 @@ describe("workflowIdForPath", () => {
     expect(workflowIdForPath("/ai/chat")).toBeNull();
     expect(workflowIdForPath("/system/gas-price")).toBeNull();
   });
+
+  it("maps Flo Designer and leaves process-map unmapped", () => {
+    expect(workflowIdForPath("/admin/designer")).toBe("designer");
+    expect(workflowIdForPath("/admin/designer/")).toBe("designer");
+    expect(workflowIdForPath("/admin/process-map")).toBeNull();
+  });
 });
 
 describe("workflow progress persistence", () => {
