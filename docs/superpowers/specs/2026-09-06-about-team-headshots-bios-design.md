@@ -45,7 +45,7 @@ Builds FLO’s computer-vision and model pipelines for the Blibli logistics case
 
 ### Nabiil Zhafran Alrilo Tarigan — Designer & Interface
 
-Shapes FLO’s interface so operators can act on AI signals quickly. Co-founder of Foodloop AI. Student at SMAS Pilar Indonesia; public individual competition records were not found online — bio stays venture + current challenge focused unless the team supplies more.
+Shapes FLO’s interface so operators can act on AI signals quickly. Co-founder of Foodloop AI ([foodloopai.vercel.app](https://foodloopai.vercel.app/)). Student at SMAS Pilar Indonesia; public individual competition records were not found online — bio stays venture + current challenge focused unless the team supplies more.
 
 ## Copy — Indonesian (proposed)
 
@@ -59,7 +59,7 @@ Membangun pipeline computer vision dan model FLO untuk kasus logistik Blibli. Pe
 
 ### Nabiil Zhafran Alrilo Tarigan — Designer & Interface
 
-Merancang antarmuka FLO agar operator cepat menindaklanjuti sinyal AI. Co-founder Foodloop AI. Siswa SMAS Pilar Indonesia; catatan kompetisi individu publik belum ditemukan secara daring — bio tetap fokus venture + kompetisi saat ini kecuali tim menambahkan data.
+Merancang antarmuka FLO agar operator cepat menindaklanjuti sinyal AI. Co-founder Foodloop AI ([foodloopai.vercel.app](https://foodloopai.vercel.app/)). Siswa SMAS Pilar Indonesia; catatan kompetisi individu publik belum ditemukan secara daring — bio tetap fokus venture + kompetisi saat ini kecuali tim menambahkan data.
 
 ## Sources used (Justin)
 

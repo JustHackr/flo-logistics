@@ -102,7 +102,7 @@ export const en = {
         name: "Nabiil Zhafran Alrilo Tarigan",
         role: "Designer & Interface",
         detail: "Co-founder of Foodloop AI",
-        detailHref: null,
+        detailHref: "https://foodloopai.vercel.app/",
       },
     ],
     partnersLabel: "Affiliates & partners",
