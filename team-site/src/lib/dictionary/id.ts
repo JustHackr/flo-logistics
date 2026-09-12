@@ -107,7 +107,7 @@ export const id = {
         role: "Designer & Interface",
         detail: "Co-founder of Foodloop AI",
         detailHref: "https://foodloopai.vercel.app/",
-        githubHref: "https://github.com/abckids1202",
+        githubHref: "https://github.com/Belyonepic",
       },
     ],
     partnersLabel: "Afiliasi & mitra",

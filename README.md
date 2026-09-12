@@ -24,7 +24,7 @@ Built by **Quasarian Radr-Lyon Dynasty** for the **AI Open Innovation Challenge 
 
 - **Justin Raditya Rizki** — Project Lead ([stetoradr.com](https://stetoradr.com) · [@JustHackr](https://github.com/JustHackr))
 - **Arsene Matthew E. Naftali** — AI Engineer ([optivox.site](https://optivox.site) · [@abckids1202](https://github.com/abckids1202))
-- **Nabiil Zhafran Alrilo Tarigan** — Designer & Interface ([foodloopai.vercel.app](https://foodloopai.vercel.app/) · [@abckids1202](https://github.com/abckids1202))
+- **Nabiil Zhafran Alrilo Tarigan** — Designer & Interface ([foodloopai.vercel.app](https://foodloopai.vercel.app/) · [@Belyonepic](https://github.com/Belyonepic))
 
 We did not start from a generic “AI for logistics” pitch. Blibli’s Jakarta last-mile reality hits three walls at once:
 
