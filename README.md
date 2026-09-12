@@ -22,9 +22,9 @@ Built by **Quasarian Radr-Lyon Dynasty** for the **AI Open Innovation Challenge 
 
 **Quasarian Radr-Lyon Dynasty** is a three-person student team from **SMAS Pilar Indonesia**, building at **FabLab Jababeka**, with academic partners **Universitas Presiden** and case provider **Blibli**.
 
-- **Justin Raditya Rizki** — Project Lead ([stetoradr.com](https://stetoradr.com) · [GitHub](https://github.com/JustHackr))
-- **Arsene Matthew E. Naftali** — AI Engineer ([optivox.site](https://optivox.site) · [GitHub](https://github.com/abckids1202))
-- **Nabiil Zhafran Alrilo Tarigan** — Designer & Interface ([foodloopai.vercel.app](https://foodloopai.vercel.app/) · [GitHub](https://github.com/abckids1202))
+- **Justin Raditya Rizki** — Project Lead ([stetoradr.com](https://stetoradr.com) · [@JustHackr](https://github.com/JustHackr))
+- **Arsene Matthew E. Naftali** — AI Engineer ([optivox.site](https://optivox.site) · [@abckids1202](https://github.com/abckids1202))
+- **Nabiil Zhafran Alrilo Tarigan** — Designer & Interface ([foodloopai.vercel.app](https://foodloopai.vercel.app/) · [@abckids1202](https://github.com/abckids1202))
 
 We did not start from a generic “AI for logistics” pitch. Blibli’s Jakarta last-mile reality hits three walls at once:
 
