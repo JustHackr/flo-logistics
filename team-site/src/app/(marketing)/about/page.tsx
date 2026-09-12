@@ -65,6 +65,16 @@ export default function AboutPage() {
                 ) : (
                   <p className="mt-3 text-sm text-muted">{member.detail}</p>
                 )}
+                {"githubHref" in member && member.githubHref ? (
+                  <a
+                    href={member.githubHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 text-sm text-muted underline-offset-4 transition hover:text-ink hover:underline"
+                  >
+                    GitHub
+                  </a>
+                ) : null}
               </article>
             );
           })}
