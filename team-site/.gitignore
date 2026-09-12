@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Internal AI mentor — do not commit
+/src/app/train/
+/src/app/api/train/
+/src/lib/train/
+/src/components/TrainMentor.tsx

@@ -11,59 +11,156 @@ type Slide = {
   body: ReactNode;
 };
 
-function PartnerLogoGrid() {
+function PartnerLogoStrip() {
   return (
-    <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-4">
+    <ul
+      className="flex w-full max-w-5xl flex-wrap items-center justify-center gap-x-4 gap-y-2"
+      aria-label="Partners and affiliates"
+    >
       {PARTNERS.map((partner) => (
-        <div
-          key={partner.name}
-          className="flex h-20 items-center justify-center border border-border bg-surface px-3"
-        >
-          <span className={`relative block ${partner.boxClass}`}>
-            <SiteImage
-              src={partner.src}
-              alt={partner.alt}
-              fill
-              sizes="140px"
-              className="object-contain"
-            />
-          </span>
-        </div>
+        <li key={partner.name}>
+          <a
+            href={partner.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            title={partner.name}
+            className="inline-flex items-center"
+          >
+            <span className={`relative block ${partner.boxClass}`}>
+              <SiteImage
+                src={partner.src}
+                alt={partner.alt}
+                fill
+                sizes="140px"
+                className="object-contain"
+              />
+            </span>
+          </a>
+        </li>
       ))}
+    </ul>
+  );
+}
+
+function FeatureShot({
+  src,
+  alt,
+}: {
+  src: string;
+  alt: string;
+}) {
+  return (
+    <div className="relative aspect-[16/10] w-full overflow-hidden border border-border bg-surface shadow-sm">
+      <SiteImage
+        src={src}
+        alt={alt}
+        fill
+        sizes="(max-width: 768px) 100vw, 560px"
+        className="object-cover object-top"
+      />
+    </div>
+  );
+}
+
+function FeatureSplit({
+  shot,
+  children,
+}: {
+  shot: { src: string; alt: string };
+  children: ReactNode;
+}) {
+  return (
+    <div className="grid w-full max-w-5xl items-center gap-5 text-left lg:grid-cols-2 lg:gap-8">
+      <div className="space-y-3 text-sm leading-relaxed text-muted sm:text-base">
+        {children}
+      </div>
+      <FeatureShot src={shot.src} alt={shot.alt} />
     </div>
   );
 }
 
 const slides: Slide[] = [
   {
-    id: "opening",
+    id: "team",
     eyebrow: "AI Open Innovation Challenge 2026",
-    title: "Quasarian Radr-Lyon Dynasty",
+    title: "Team introduction",
     body: (
-      <div className="flex w-full max-w-4xl flex-col gap-8">
-        <p className="text-lg text-muted sm:text-xl">
-          Memperkenalkan <span className="font-semibold text-blue">FLO</span> —
-          Fab Logistics Operations: kecerdasan buatan untuk logistik hijau
-          &amp; tangguh.
-        </p>
-        <PartnerLogoGrid />
-        <p className="text-sm text-muted">
-          SMAS Pilar Indonesia · Universitas Presiden · FabLab Jababeka · Blibli
-        </p>
+      <div className="flex w-full max-w-5xl flex-col gap-5">
+        <figure className="overflow-hidden border border-border bg-surface">
+          <div className="relative aspect-[16/9] w-full max-h-[38vh]">
+            <SiteImage
+              src="/images/team-fablab.png"
+              alt="Quasarian Radr-Lyon Dynasty at FabLab — Justin Raditya Rizki, Arsene Matthew E. Naftali, and Nabiil Zhafran Alrilo Tarigan"
+              fill
+              sizes="(max-width: 768px) 100vw, 1024px"
+              className="object-cover object-center"
+              priority
+            />
+          </div>
+        </figure>
+        <div className="grid gap-3 text-left sm:grid-cols-3">
+          {[
+            {
+              name: "Justin Raditya Rizki",
+              role: "Project Lead",
+              detail: "stetoradr.com",
+              href: "https://stetoradr.com",
+              githubHref: "https://github.com/JustHackr",
+            },
+            {
+              name: "Arsene Matthew E. Naftali",
+              role: "AI Engineer",
+              detail: "optivox.site",
+              href: "https://optivox.site",
+              githubHref: "https://github.com/abckids1202",
+            },
+            {
+              name: "Nabiil Zhafran Alrilo Tarigan",
+              role: "Designer & Interface",
+              detail: "foodloopai.vercel.app",
+              href: "https://foodloopai.vercel.app/",
+              githubHref: "https://github.com/Belyonepic",
+            },
+          ].map((m) => (
+            <div key={m.name} className="border border-border bg-surface p-3 sm:p-4">
+              <h3 className="font-display text-sm font-bold text-ink sm:text-base">
+                {m.name}
+              </h3>
+              <p className="mt-1 text-xs text-blue sm:text-sm">{m.role}</p>
+              <a
+                href={m.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1.5 inline-block text-xs text-muted underline decoration-border underline-offset-4 hover:text-blue sm:text-sm"
+              >
+                {m.detail}
+              </a>
+              {m.githubHref ? (
+                <a
+                  href={m.githubHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 block text-xs text-muted underline decoration-border underline-offset-4 hover:text-blue sm:text-sm"
+                >
+                  GitHub
+                </a>
+              ) : null}
+            </div>
+          ))}
+        </div>
       </div>
     ),
   },
   {
-    id: "problem",
-    eyebrow: "Masalah",
-    title: "Logistik hijau & tangguh untuk Blibli",
+    id: "usecase",
+    eyebrow: "Case · Blibli",
+    title: "Jakarta last-mile, three walls at once",
     body: (
       <ul className="max-w-3xl space-y-4 text-left text-base leading-relaxed text-muted sm:text-lg">
         {[
-          "Keterlambatan pengiriman dan risiko SLA yang sulit diprediksi secara dini.",
-          "Rute yang belum optimal — biaya operasional & jejak karbon tinggi.",
-          "Kepatuhan armada & infrastruktur yang masih bergantung pada inspeksi manual.",
-          "Kebutuhan solusi AI yang berdaulat, aman, dan selaras regulasi Indonesia.",
+          "SLA risk is opaque — which vehicles will miss a maintenance window before peak day?",
+          "Routing cost and carbon climb with Jakarta congestion; plans still need fuel and CO₂ in the same decision.",
+          "Compliance is still manual — dock load checks and hub dwell still depend on humans watching cameras.",
         ].map((item) => (
           <li key={item} className="border-l-4 border-blue pl-4">
             {item}
@@ -73,219 +170,385 @@ const slides: Slide[] = [
     ),
   },
   {
-    id: "solution",
-    eyebrow: "Solusi",
-    title: "FLO — tiga modul terintegrasi",
+    id: "exec",
+    eyebrow: "Executive summary",
+    title: "The problem FLO is solving",
     body: (
-      <div className="grid w-full max-w-5xl gap-4 sm:grid-cols-3">
-        {[
-          {
-            t: "Computer Vision",
-            d: "Deteksi kepatuhan & kondisi aset secara visual di lapangan.",
-          },
-          {
-            t: "Routing Cerdas",
-            d: "Optimasi rute multi-objektif: waktu, biaya, dan karbon.",
-          },
-          {
-            t: "Predictive Maintenance",
-            d: "Prediksi risiko kerusakan sebelum mengganggu operasi.",
-          },
-        ].map((m) => (
-          <div key={m.t} className="border border-border bg-surface p-5 text-left">
-            <h3 className="font-display text-lg font-bold text-blue">{m.t}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-muted">{m.d}</p>
-          </div>
-        ))}
-      </div>
-    ),
-  },
-  {
-    id: "sla",
-    eyebrow: "Modul 1",
-    title: "Prediksi risiko SLA & keterlambatan",
-    body: (
-      <div className="max-w-3xl space-y-4 text-left text-base text-muted sm:text-lg">
-        <p>
-          Model prediktif memperkirakan kemungkinan keterlambatan berdasarkan
-          histori pengiriman, kondisi lalu lintas, cuaca, dan beban hub.
+      <div className="flex w-full max-w-5xl flex-col gap-6">
+        <p className="text-lg text-muted sm:text-xl">
+          One intelligence layer for every delivery — a last-mile ops cockpit
+          that stays on the operator&apos;s machine, not a foreign cloud.
         </p>
-        <ul className="space-y-3">
-          <li>• Skor risiko SLA real-time per pengiriman</li>
-          <li>• Peringatan dini untuk dispatcher &amp; mitra logistik</li>
-          <li>• Rekomendasi aksi mitigasi sebelum janji antar terlanggar</li>
-        </ul>
-      </div>
-    ),
-  },
-  {
-    id: "routing",
-    eyebrow: "Modul 2",
-    title: "Routing optimal + jejak karbon",
-    body: (
-      <div className="max-w-3xl space-y-4 text-left text-base text-muted sm:text-lg">
-        <p>
-          Optimasi rute menyeimbangkan kecepatan layanan dengan efisiensi energi
-          dan emisi — mendukung agenda logistik hijau Blibli.
-        </p>
-        <ul className="space-y-3">
-          <li>• Multi-stop routing dengan constraint kapasitas</li>
-          <li>• Estimasi emisi CO₂e per rute</li>
-          <li>• Trade-off transparan antara ETA dan dampak lingkungan</li>
-        </ul>
-      </div>
-    ),
-  },
-  {
-    id: "cv",
-    eyebrow: "Modul 3",
-    title: "Computer Vision untuk kepatuhan",
-    body: (
-      <div className="max-w-3xl space-y-4 text-left text-base text-muted sm:text-lg">
-        <p>
-          CV membantu memverifikasi kondisi armada, packing, dan infrastruktur
-          secara otomatis — mengurangi ketergantungan inspeksi manual.
-        </p>
-        <ul className="space-y-3">
-          <li>• Deteksi anomali visual pada aset &amp; kendaraan</li>
-          <li>• Checklist kepatuhan berbasis gambar</li>
-          <li>• Integrasi dengan alur predictive maintenance</li>
-        </ul>
-      </div>
-    ),
-  },
-  {
-    id: "sovereign",
-    eyebrow: "Penekanan utama",
-    title: "Sovereign AI & kerangka regulasi",
-    body: (
-      <div className="max-w-4xl space-y-5 text-left">
-        <p className="text-base text-muted sm:text-lg">
-          Lebih dari 90% data enterprise/pemerintah masih di infrastruktur asing.
-          FLO dibangun self-hostable di infrastruktur lokal — data logistik,
-          pengemudi, dan pelanggan tetap di bawah hukum Indonesia.
-        </p>
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-3">
           {[
             {
-              t: "Stranas KA 2020–2045",
-              d: "Selaras empat pilar: etika & kebijakan, talenta, infrastruktur & data, riset & inovasi — plus Visi Indonesia Emas 2045.",
+              t: "01 Predict",
+              d: "Score fleet health (VQI) and the next service window before a truck fails the SLA.",
             },
             {
-              t: "UU PDP No. 27/2022",
-              d: "Data pribadi tetap di dalam negeri: SQLite lokal, tanpa keharusan cloud asing, kontrol akses berbasis peran (RBAC).",
+              t: "02 Route",
+              d: "Assign orders for time, fuel, and carbon — Jakarta traffic-aware, not a generic map.",
             },
             {
-              t: "UU ITE (UU 1/2024)",
-              d: "Kewajiban penyelenggara sistem elektronik, jejak audit, dan keamanan transaksi digital operasional.",
+              t: "03 Verify",
+              d: "Computer vision on the warehouse device so camera frames never become a leak.",
             },
-          ].map((item) => (
-            <div key={item.t} className="border border-blue/30 bg-blue-soft/50 p-4">
-              <h3 className="font-display text-base font-bold text-blue">
-                {item.t}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{item.d}</p>
+          ].map((m) => (
+            <div key={m.t} className="border border-border bg-surface p-5 text-left">
+              <h3 className="font-display text-lg font-bold text-blue">{m.t}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{m.d}</p>
             </div>
           ))}
         </div>
-        <p className="text-sm text-muted">
-          Bukti teknis: LLM yang bisa diganti (tanpa vendor lock-in), computer
-          vision on-device di browser (video tidak keluar gudang), arsitektur
-          modular open — sejalan prinsip Sovereign AI Initiative.
-        </p>
       </div>
     ),
   },
   {
     id: "architecture",
-    eyebrow: "Arsitektur",
-    title: "Pipeline FLO end-to-end",
+    eyebrow: "Architecture",
+    title: "AI ontology, connectors, process",
     body: (
-      <div className="flex w-full max-w-4xl flex-col gap-4">
-        <div className="grid gap-3 sm:grid-cols-4">
+      <FeatureSplit
+        shot={{
+          src: "/screenshots/07-process-map.png",
+          alt: "FLO admin process map swimlane with live stats",
+        }}
+      >
+        <p>
+          FLO models operations as a typed process graph — lanes for Fleet,
+          Routing, Warehouse, Assistant, and Platform — then wires live data
+          through connectors instead of one-off glue code.
+        </p>
+        <div className="grid grid-cols-5 gap-1.5">
+          {["Fleet", "Routing", "Warehouse", "Assistant", "Platform"].map(
+            (lane) => (
+              <div
+                key={lane}
+                className="border border-border bg-surface px-1 py-2 text-center"
+              >
+                <p className="text-[10px] font-semibold text-ink sm:text-xs">
+                  {lane}
+                </p>
+              </div>
+            ),
+          )}
+        </div>
+        <p>
+          Planned connectors: IoT · Telematics · Nightly CSV · OMS · WMS. Flo
+          Designer overlays a new process onto this ontology.
+        </p>
+      </FeatureSplit>
+    ),
+  },
+  {
+    id: "routing",
+    eyebrow: "02 Route",
+    title: "Routing optimization",
+    body: (
+      <FeatureSplit
+        shot={{
+          src: "/screenshots/03-routing-plan.png",
+          alt: "FLO logistics live route monitor dashboard",
+        }}
+      >
+        <p>
+          Plans balance ETA, fuel, and carbon for Greater Jakarta — not a
+          generic TSP. OSRM plus a Jakarta rush-hour model; Google Maps is
+          optional, never required.
+        </p>
+        <ul className="space-y-2">
+          <li>• Multi-stop capacity and driver–vehicle matching</li>
+          <li>• Delivery Time Index (DTI) per stop</li>
+          <li>• Fuel cost + Carbon Footprint Index (CFI) on every plan</li>
+        </ul>
+      </FeatureSplit>
+    ),
+  },
+  {
+    id: "predict",
+    eyebrow: "01 Predict",
+    title: "Predictive maintenance",
+    body: (
+      <FeatureSplit
+        shot={{
+          src: "/screenshots/04-fleet-vehicles.png",
+          alt: "FLO fleet vehicles list with VQI risk badges",
+        }}
+      >
+        <p>
+          Vehicle Quality Index (VQI) is a hand-rolled health score — not a
+          black-box cloud model — so ops can see why a unit is high-risk.
+        </p>
+        <ul className="space-y-2">
+          <li>• Weights: age 30 · odometer 30 · cost 20 · planning 20</li>
+          <li>• Engine modifiers for EV, gasoline, and diesel</li>
+          <li>• 90-day cost window; pluggable predictor for a later ML swap</li>
+        </ul>
+      </FeatureSplit>
+    ),
+  },
+  {
+    id: "cv",
+    eyebrow: "03 Verify",
+    title: "Computer vision in the warehouse",
+    body: (
+      <FeatureSplit
+        shot={{
+          src: "/screenshots/05-cv-tour.png",
+          alt: "FLO computer vision guided tour for load and hub detection",
+        }}
+      >
+        <p>
+          Inference runs in the browser MediaStream. Frames stay on the dock
+          tablet — they are never uploaded to train someone else&apos;s model.
+        </p>
+        <ul className="space-y-2">
+          <li>• Load detection — kraft cartons through a bag opening</li>
+          <li>• Hub congestion / dwell on a yellow platform</li>
+          <li>• ODOL placeholder + a no-webcam tour for judges</li>
+        </ul>
+      </FeatureSplit>
+    ),
+  },
+  {
+    id: "command",
+    eyebrow: "Command center",
+    title: "See the whole operation",
+    body: (
+      <FeatureSplit
+        shot={{
+          src: "/screenshots/02-home.png",
+          alt: "FLO home command center dashboard with routes and fleet signals",
+        }}
+      >
+        <p>
+          Home and logistics dashboards pull one SQLite store: route progress,
+          fleet VQI, and units that need attention.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-3">
           {[
-            "Ingest data operasional",
-            "Feature & model layer",
-            "Orkestrasi keputusan",
-            "Dashboard & aksi",
-          ].map((step, i) => (
-            <div
-              key={step}
-              className="border border-border bg-surface p-4 text-center"
-            >
-              <span className="font-mono text-xs tracking-widest text-blue">
-                0{i + 1}
-              </span>
-              <p className="mt-2 text-sm font-semibold text-ink">{step}</p>
+            { t: "Live routes", d: "ETA, fuel, emissions" },
+            { t: "Fleet VQI", d: "High-risk before peak" },
+            { t: "Carbon (CFI)", d: "vs diesel & EV" },
+          ].map((c) => (
+            <div key={c.t} className="border border-border bg-surface p-3">
+              <h3 className="font-display text-sm font-bold text-blue">{c.t}</h3>
+              <p className="mt-1 text-xs text-muted">{c.d}</p>
             </div>
           ))}
         </div>
-        <p className="text-sm text-muted sm:text-base">
-          Modul CV, routing, dan prediksi berbagi lapisan data yang sama —
-          menghasilkan rekomendasi yang koheren untuk operasi harian.
+        <div className="border border-blue/30 bg-blue-soft/50 p-3 font-mono text-[11px] sm:text-xs">
+          <p className="font-semibold text-ink">Carbon Footprint Index</p>
+          <p className="mt-1 text-muted">
+            CFI = 100 × (dieselKg − actualKg) / (dieselKg − evKg)
+          </p>
+          <p className="mt-1 text-muted">
+            kg CO₂/km — EV 0.05 · gasoline 0.15 · diesel 0.22
+          </p>
+        </div>
+      </FeatureSplit>
+    ),
+  },
+  {
+    id: "whats-new",
+    eyebrow: "Final round",
+    title: "What’s new in final",
+    body: (
+      <FeatureSplit
+        shot={{
+          src: "/screenshots/01-login.png",
+          alt: "FLO role-based demo login with persona cards",
+        }}
+      >
+        <ul className="space-y-2">
+          {[
+            "Flo Designer — prompt a graph, save in SQLite, export JSON",
+            "Admin process map — drag nodes, permanent detail pane",
+            "Role-based login and workflow tours",
+            "On-device CV tour; Sovereign AI posture page",
+            "Command-center home with CFI / DTI on one loop",
+          ].map((item) => (
+            <li key={item} className="border-l-4 border-blue pl-3">
+              {item}
+            </li>
+          ))}
+        </ul>
+      </FeatureSplit>
+    ),
+  },
+  {
+    id: "designer",
+    eyebrow: "Flo Designer",
+    title: "Plan integrations without writing code first",
+    body: (
+      <FeatureSplit
+        shot={{
+          src: "/screenshots/06-designer.png",
+          alt: "FLO Designer canvas for prompt-driven process graphs",
+        }}
+      >
+        <p>
+          Mentors and operators kept asking: how does FLO wire into a warehouse
+          with no WMS, a nightly CSV hub, or a telematics vendor with no public
+          API? Integration planning was the bottleneck.
+        </p>
+        <p>
+          Flo Designer: plain language → validated graph → overlay on FLO&apos;s
+          process map → save → export JSON.
+        </p>
+      </FeatureSplit>
+    ),
+  },
+  {
+    id: "sovereign",
+    eyebrow: "Sovereign AI",
+    title: "Local-first, aligned with Indonesian law",
+    body: (
+      <FeatureSplit
+        shot={{
+          src: "/screenshots/08-sovereign-ai.png",
+          alt: "FLO Sovereign AI posture page",
+        }}
+      >
+        <blockquote className="border-l-4 border-blue pl-3 text-base text-ink sm:text-lg">
+          “Prompts never leave the deployment by default.”
+        </blockquote>
+        <p>
+          FLO is self-hostable: SQLite on the operator&apos;s machine, RBAC, no
+          third-party telemetry. Opt-in open-weight LLM only when you choose.
+        </p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {[
+            {
+              t: "Stranas KA",
+              d: "Talent, infrastructure, ethics — Visi Emas 2045.",
+            },
+            {
+              t: "UU PDP 27/2022",
+              d: "Personal data residency and limited processing.",
+            },
+            {
+              t: "UU ITE 1/2024",
+              d: "Audit-friendly APIs; opt-in outbound LLM.",
+            },
+          ].map((item) => (
+            <div key={item.t} className="border border-blue/30 bg-blue-soft/50 p-3">
+              <h3 className="font-display text-sm font-bold text-blue">{item.t}</h3>
+              <p className="mt-1 text-xs leading-relaxed text-muted">{item.d}</p>
+            </div>
+          ))}
+        </div>
+      </FeatureSplit>
+    ),
+  },
+  {
+    id: "local-ai",
+    eyebrow: "Vision",
+    title: "FLO for local Indonesia AI",
+    body: (
+      <div className="max-w-3xl space-y-4 text-left text-base text-muted sm:text-lg">
+        <p>
+          A high-school team, a FabLab, a university partner, and an Indonesian
+          case. The product is meant to run on a laptop or a VPS in-country —
+          no model weights required to start, open-weight LLMs when you opt in.
+        </p>
+        <p>
+          Local talent should be able to inspect, fork, and extend the
+          ontology — not wait for a foreign vendor roadmap.
         </p>
       </div>
     ),
   },
   {
-    id: "impact",
-    eyebrow: "Dampak",
-    title: "Estimasi dampak operasional",
+    id: "deserve",
+    eyebrow: "Why not off-the-shelf",
+    title: "Indonesia deserves software that understands here",
     body: (
-      <div className="grid w-full max-w-4xl gap-4 sm:grid-cols-3">
-        {[
-          { v: "↓ 15–25%", l: "Pelanggaran SLA (target skenario)" },
-          { v: "↓ 8–12%", l: "Jejak karbon rute teroptimasi" },
-          { v: "↑ Visibilitas", l: "Risiko aset sebelum gangguan" },
-        ].map((s) => (
-          <div
-            key={s.l}
-            className="border border-border bg-surface p-6 text-center"
-          >
-            <p className="font-display text-3xl font-bold text-blue">{s.v}</p>
-            <p className="mt-2 text-sm text-muted">{s.l}</p>
-          </div>
-        ))}
+      <div className="max-w-3xl space-y-4 text-left text-base text-muted sm:text-lg">
+        <p>
+          You can grab many off-the-shelf routing, fleet, and CV products.
+          They were not designed for Jabodetabek traffic, Pertamina fuel,
+          ODOL, or UU PDP.
+        </p>
+        <p className="font-semibold text-ink">
+          Indonesia deserves something that understands local needs, built by
+          locals.
+        </p>
       </div>
     ),
   },
   {
-    id: "roadmap",
-    eyebrow: "Bisnis & roadmap",
-    title: "Jalur implementasi",
+    id: "marathon",
+    eyebrow: "Roadmap",
+    title: "A marathon, not a sprint",
     body: (
       <ol className="max-w-3xl space-y-4 text-left text-base text-muted sm:text-lg">
         <li>
-          <span className="font-semibold text-ink">Fase 1 — Pilot:</span>{" "}
-          prediksi SLA + dashboard di satu koridor/hub.
+          <span className="font-semibold text-ink">Pilot.</span> One hub:
+          VQI + command center + a handful of routes.
         </li>
         <li>
-          <span className="font-semibold text-ink">Fase 2 — Scale:</span>{" "}
-          routing karbon &amp; CV kepatuhan di multi-hub.
+          <span className="font-semibold text-ink">Scale.</span> Multi-hub
+          carbon routing and on-device CV at the dock.
         </li>
         <li>
-          <span className="font-semibold text-ink">Fase 3 — Platform:</span>{" "}
-          API internal, governance AI, dan perluasan mitra logistik.
+          <span className="font-semibold text-ink">Platform.</span> Connectors
+          and Flo Designer as the way new systems join without a rewrite.
         </li>
+        <li>It might take time. That is the honest path — not a demo-night miracle.</li>
       </ol>
     ),
   },
   {
-    id: "closing",
-    eyebrow: "Terima kasih",
-    title: "Mari wujudkan logistik yang lebih cerdas",
+    id: "thanks",
+    eyebrow: "Thank you",
+    title: "Thank you",
     body: (
-      <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 text-center">
-        <p className="text-lg text-muted">Quasarian Radr-Lyon Dynasty · FLO</p>
-        <PartnerLogoGrid />
-        <p className="text-sm text-muted">
-          Demo: /flo-logistics/demo · Presentasi dapat diekspor PDF (Print)
+      <div className="mx-auto flex max-w-2xl flex-col items-center gap-5 text-center">
+        <p className="text-lg text-muted">
+          Quasarian Radr-Lyon Dynasty · FLO — Fab Logistics Operations
         </p>
-        <p className="font-semibold text-blue">Pertanyaan &amp; diskusi terbuka</p>
+        <p className="text-sm text-muted">
+          Live demo: radr.nxtdev.xyz/flo-logistics/demo/login
+          <br />
+          Source: github.com/JustHackr/flo-logistics
+        </p>
+        <p className="text-sm text-muted">Print this deck to PDF · Arrow keys to navigate</p>
       </div>
     ),
   },
+  {
+    id: "qa",
+    eyebrow: "Discussion",
+    title: "Q&A",
+    body: (
+      <p className="max-w-xl text-lg text-muted sm:text-xl">
+        Questions, challenges, and ideas — we are here for them.
+      </p>
+    ),
+  },
 ];
+
+function SlideFrame({ slide }: { slide: Slide }) {
+  return (
+    <div className="mx-auto flex h-full w-full max-w-5xl flex-col items-center text-center">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center">
+        {slide.eyebrow ? (
+          <p className="mb-3 text-[11px] font-semibold tracking-[0.18em] text-blue uppercase">
+            {slide.eyebrow}
+          </p>
+        ) : null}
+        <h1 className="font-display text-2xl font-bold tracking-tight text-ink sm:text-3xl md:text-4xl">
+          {slide.title}
+        </h1>
+        <div className="mt-5 flex w-full justify-center">{slide.body}</div>
+      </div>
+      <div className="mt-6 shrink-0 pb-2">
+        <PartnerLogoStrip />
+      </div>
+    </div>
+  );
+}
 
 export function PresentationDeck() {
   const [index, setIndex] = useState(0);
@@ -325,36 +588,26 @@ export function PresentationDeck() {
           href="/flo-logistics/"
           className="min-h-10 min-w-10 text-sm font-medium text-muted transition hover:text-blue"
         >
-          ← Kembali ke situs
+          ← Back to site
         </a>
         <p className="hidden text-xs text-muted sm:block">
-          ← → untuk navigasi · Print untuk PDF
+          ← → to navigate · Print for PDF
         </p>
         <p className="font-mono text-xs font-semibold text-blue">
           {index + 1} / {total}
         </p>
       </div>
 
-      <div className="print:hidden relative flex min-h-screen items-center justify-center px-6 pt-16 pb-24">
+      <div className="print:hidden relative flex min-h-screen items-center justify-center px-6 pt-16 pb-28">
         {slides.map((slide, i) => (
           <section
             key={slide.id}
-            className={`presentation-slide absolute inset-0 flex flex-col items-center justify-center px-6 pt-16 pb-24 transition-opacity duration-300 ${
+            className={`presentation-slide absolute inset-0 flex flex-col items-center px-6 pt-16 pb-28 transition-opacity duration-300 ${
               i === index ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
             aria-hidden={i !== index}
           >
-            <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
-              {slide.eyebrow ? (
-                <p className="mb-3 text-[11px] font-semibold tracking-[0.18em] text-blue uppercase">
-                  {slide.eyebrow}
-                </p>
-              ) : null}
-              <h1 className="font-display text-3xl font-bold tracking-tight text-ink sm:text-4xl md:text-5xl">
-                {slide.title}
-              </h1>
-              <div className="mt-8 flex w-full justify-center">{slide.body}</div>
-            </div>
+            <SlideFrame slide={slide} />
           </section>
         ))}
       </div>
@@ -363,19 +616,9 @@ export function PresentationDeck() {
         {slides.map((slide) => (
           <section
             key={`print-${slide.id}`}
-            className="presentation-slide flex flex-col items-center justify-center px-12"
+            className="presentation-slide flex flex-col items-center justify-center px-12 py-10"
           >
-            <div className="mx-auto flex w-full max-w-5xl flex-col items-center text-center">
-              {slide.eyebrow ? (
-                <p className="mb-3 text-[11px] font-semibold tracking-[0.18em] text-blue uppercase">
-                  {slide.eyebrow}
-                </p>
-              ) : null}
-              <h1 className="font-display text-4xl font-bold text-ink">
-                {slide.title}
-              </h1>
-              <div className="mt-8 flex w-full justify-center">{slide.body}</div>
-            </div>
+            <SlideFrame slide={slide} />
           </section>
         ))}
       </div>
@@ -386,9 +629,9 @@ export function PresentationDeck() {
           onClick={() => go(index - 1)}
           className="min-h-11 rounded-sm border border-border px-4 py-2.5 text-sm font-medium text-muted hover:border-ink hover:text-ink"
         >
-          Sebelumnya
+          Previous
         </button>
-        <div className="flex gap-2">
+        <div className="flex gap-1.5">
           {slides.map((s, i) => (
             <button
               key={s.id}
@@ -396,7 +639,7 @@ export function PresentationDeck() {
               aria-label={`Slide ${i + 1}`}
               aria-current={i === index ? "true" : undefined}
               onClick={() => go(i)}
-              className={`h-3 w-3 rounded-full transition ${
+              className={`h-2.5 w-2.5 rounded-full transition ${
                 i === index ? "bg-blue" : "bg-border hover:bg-muted"
               }`}
             />
@@ -407,7 +650,7 @@ export function PresentationDeck() {
           onClick={() => go(index + 1)}
           className="min-h-11 rounded-sm bg-blue px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-deep"
         >
-          Berikutnya
+          Next
         </button>
       </div>
     </div>

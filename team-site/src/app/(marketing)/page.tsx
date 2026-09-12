@@ -3,6 +3,7 @@
 import { JourneyCard } from "@/components/JourneyCard";
 import { HeroMapIllustration } from "@/components/HeroMapIllustration";
 import { PartnerRail } from "@/components/PartnerRail";
+import { SystemCarousel } from "@/components/SystemCarousel";
 import { ButtonLink, SectionHeading } from "@/components/ui";
 import { useLocale } from "@/components/LocaleProvider";
 
@@ -73,33 +74,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="px-4 py-16 sm:px-6 sm:py-20">
-        <div className="mx-auto max-w-6xl">
-          <SectionHeading
-            eyebrow={t("home.systemEyebrow")}
-            title={t("home.systemTitle")}
-            description={t("home.systemDescription")}
-          />
-          <div className="mt-10 grid gap-4 lg:grid-cols-3">
-            {dict.home.capabilities.map((item) => (
-              <article
-                key={item.code}
-                className="border border-border bg-surface p-6"
-              >
-                <p className="font-mono text-xs font-semibold tracking-[0.16em] text-blue">
-                  {item.code}
-                </p>
-                <h3 className="font-display mt-3 text-2xl font-bold text-ink">
-                  {item.title}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted">
-                  {item.body}
-                </p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+      <SystemCarousel
+        eyebrow={t("home.systemEyebrow")}
+        slides={dict.home.systemSlides}
+      />
 
       <section className="border-t border-border bg-surface-muted/50 px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-6xl">

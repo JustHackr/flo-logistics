@@ -24,14 +24,6 @@ export function Footer() {
               <a href="/flo-logistics/demo/login" className="hover:text-yellow">
                 {t("footer.liveDemo")}
               </a>
-              <a
-                href="https://flo-logistics.vercel.app/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-yellow"
-              >
-                {t("footer.floApp")}
-              </a>
             </div>
           </div>
           <PartnerRail label={t("footer.partnersLabel")} tone="dark" />

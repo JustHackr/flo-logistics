@@ -29,30 +29,51 @@ export const id = {
     moduleEyebrow: "01 Predict — 02 Route — 03 Verify",
     partnersLabel: "Sekolah · universitas · lab · case provider",
     systemEyebrow: "Sistem",
-    systemTitle: "Tiga modul, satu lapisan keputusan",
-    systemDescription:
-      "FLO mengorkestrasi prediksi, routing, dan verifikasi visual pada data operasional yang sama — agar rekomendasi tetap koheren di lapangan.",
+    systemSlides: [
+      {
+        title: "Tiga modul, satu lapisan keputusan",
+        description:
+          "FLO mengorkestrasi prediksi, routing, dan verifikasi visual pada data operasional yang sama — agar rekomendasi tetap koheren di lapangan.",
+        capabilities: [
+          {
+            code: "01",
+            title: "Predict",
+            body: "Skor risiko SLA real-time dari histori pengiriman, lalu lintas, dan beban hub.",
+          },
+          {
+            code: "02",
+            title: "Route",
+            body: "Optimasi multi-stop yang menyeimbangkan ETA, biaya operasional, dan jejak karbon.",
+          },
+          {
+            code: "03",
+            title: "Verify",
+            body: "Computer vision untuk kepatuhan armada dan aset tanpa inspeksi manual penuh.",
+          },
+        ],
+      },
+      {
+        title: "Dua pembaruan, siap untuk final",
+        description:
+          "Tambahan putaran final agar tim dapat merencanakan integrasi dan menjaga AI tetap di deployment.",
+        capabilities: [
+          {
+            code: "04",
+            title: "Flo Designer",
+            body: "Alat no-code untuk desain sistem yang membantu pengembangan dan integrasi di masa depan.",
+          },
+          {
+            code: "05",
+            title: "Sovereign AI",
+            body: "Siap di-deploy lokal untuk AI yang aman dan privat — selaras kebijakan perusahaan dan regulasi nasional.",
+          },
+        ],
+      },
+    ],
     competitionEyebrow: "Kompetisi",
     competitionTitle: "Perjalanan kompetisi",
     competitionDescription:
       "Dari proposal hingga final — jejak FLO bersama Quasarian Radr-Lyon Dynasty.",
-    capabilities: [
-      {
-        code: "01",
-        title: "Predict",
-        body: "Skor risiko SLA real-time dari histori pengiriman, lalu lintas, dan beban hub.",
-      },
-      {
-        code: "02",
-        title: "Route",
-        body: "Optimasi multi-stop yang menyeimbangkan ETA, biaya operasional, dan jejak karbon.",
-      },
-      {
-        code: "03",
-        title: "Verify",
-        body: "Computer vision untuk kepatuhan armada dan aset tanpa inspeksi manual penuh.",
-      },
-    ],
     journey: [
       {
         phase: "Fase 01",
@@ -181,9 +202,8 @@ export const id = {
       "Kecerdasan logistik untuk AI Open Innovation Challenge 2026 — prediksi SLA, routing rendah karbon, dan verifikasi visual armada.",
     presentation: "Presentasi",
     liveDemo: "Live Demo",
-    floApp: "FLO App",
     partnersLabel: "Mitra & afiliasi",
     partnersSentence:
-      "SMAS Pilar Indonesia · Universitas Presiden · FabLab Jababeka · Blibli",
+      "Kemenko Perekonomian · Blibli · FabLab Jababeka · Universitas Presiden · SMAS Pilar Indonesia",
   },
 } satisfies Dictionary;

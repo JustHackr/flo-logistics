@@ -27,30 +27,51 @@ export const en = {
     moduleEyebrow: "01 Predict — 02 Route — 03 Verify",
     partnersLabel: "School · university · lab · case provider",
     systemEyebrow: "System",
-    systemTitle: "Three modules, one decision layer",
-    systemDescription:
-      "FLO orchestrates prediction, routing, and visual verification on the same operational data layer — keeping recommendations coherent across the field.",
+    systemSlides: [
+      {
+        title: "Three modules, one decision layer",
+        description:
+          "FLO orchestrates prediction, routing, and visual verification on the same operational data layer — keeping recommendations coherent across the field.",
+        capabilities: [
+          {
+            code: "01",
+            title: "Predict",
+            body: "Real-time SLA risk scores drawn from shipping history, traffic, and hub load.",
+          },
+          {
+            code: "02",
+            title: "Route",
+            body: "Multi-stop optimization that balances ETA, operational cost, and carbon footprint.",
+          },
+          {
+            code: "03",
+            title: "Verify",
+            body: "Computer vision for fleet and asset compliance without a fully manual inspection.",
+          },
+        ],
+      },
+      {
+        title: "Two updates, ready for final",
+        description:
+          "Final-round additions so teams can plan integrations and keep AI on the deployment.",
+        capabilities: [
+          {
+            code: "04",
+            title: "Flo Designer",
+            body: "A no-code tool for system design to help future development and integration.",
+          },
+          {
+            code: "05",
+            title: "Sovereign AI",
+            body: "Ready to deploy locally for secure, private AI — aligned with company policy and national regulation.",
+          },
+        ],
+      },
+    ],
     competitionEyebrow: "Competition",
     competitionTitle: "Competition journey",
     competitionDescription:
       "From proposal to the final round — FLO's run with Quasarian Radr-Lyon Dynasty.",
-    capabilities: [
-      {
-        code: "01",
-        title: "Predict",
-        body: "Real-time SLA risk scores drawn from shipping history, traffic, and hub load.",
-      },
-      {
-        code: "02",
-        title: "Route",
-        body: "Multi-stop optimization that balances ETA, operational cost, and carbon footprint.",
-      },
-      {
-        code: "03",
-        title: "Verify",
-        body: "Computer vision for fleet and asset compliance without a fully manual inspection.",
-      },
-    ],
     journey: [
       {
         phase: "Phase 01",
@@ -179,9 +200,8 @@ export const en = {
       "Logistics intelligence for the AI Open Innovation Challenge 2026 — predictive SLA, low-carbon routing, and visual fleet compliance.",
     presentation: "Presentation",
     liveDemo: "Live Demo",
-    floApp: "FLO App",
     partnersLabel: "Partners & affiliates",
     partnersSentence:
-      "SMAS Pilar Indonesia · President University · FabLab Jababeka · Blibli",
+      "Kemenko Perekonomian · Blibli · FabLab Jababeka · President University · SMAS Pilar Indonesia",
   },
 };

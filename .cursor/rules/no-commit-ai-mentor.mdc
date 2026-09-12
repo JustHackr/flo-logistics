@@ -1,0 +1,14 @@
+# Internal AI mentor — never commit
+
+The AI roleplay mentor at `/flo-logistics/train` is **local + VPS only**.
+
+Never `git add` these paths:
+
+- `team-site/src/app/train/`
+- `team-site/src/app/api/train/`
+- `team-site/src/lib/train/`
+- `team-site/src/components/TrainMentor.tsx`
+
+Never commit `TRAIN_AI_*` env values, MiniMax keys, or train prompts in README, SECURITY.md, or systemd units.
+
+Deploy uses `deploy/deploy-vps.sh` rsync (ignored files still sync to the VPS).
