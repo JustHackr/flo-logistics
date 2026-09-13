@@ -88,15 +88,15 @@ Code: [src/lib/designer/](src/lib/designer/), route `/admin/designer` (ADMIN).
 
 ### Process map — system self-description
 
-Swimlane of the whole FLO pipeline with live stats, drag, and a permanent detail pane — architecture readable without leaving the app.
+Schema of the whole FLO pipeline with live stats, drag, and a permanent detail pane — architecture readable without leaving the app.
 
-![Admin process map swimlane](docs/screenshots/07-process-map.png)
+![Admin process map schema](docs/screenshots/07-process-map.png)
 
 Code: [src/lib/process-map/](src/lib/process-map/), route `/admin/process-map` (ADMIN).
 
 ### Sovereign AI
 
-Prompts stay on the deployment by default (rule-based ops assistant over live SQLite). Operators may opt into any OpenAI-compatible / open-weight endpoint (Ollama, vLLM, …). Aligned with Stranas KA, UU PDP, UU ITE — see [SECURITY.md](SECURITY.md).
+System is designed to be able to deployed on-premise, with system prompt available without connecting to external (rule-based ops assistant over live SQLite). Operators may opt into any OpenAI-compatible / open-weight endpoint (Ollama, vLLM, …). Aligned with Stranas KA, UU PDP, UU ITE — see [SECURITY.md](SECURITY.md).
 
 ![Sovereign AI posture page](docs/screenshots/08-sovereign-ai.png)
 
