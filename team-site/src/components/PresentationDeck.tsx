@@ -42,6 +42,12 @@ function PartnerLogoStrip() {
   );
 }
 
+type FeatureMedia = {
+  src: string;
+  alt: string;
+  label?: string;
+};
+
 function FeatureShot({
   src,
   alt,
@@ -57,24 +63,60 @@ function FeatureShot({
         fill
         sizes="(max-width: 768px) 100vw, 560px"
         className="object-cover object-top"
+        unoptimized
       />
+    </div>
+  );
+}
+
+function FeatureGallery({ shots }: { shots: FeatureMedia[] }) {
+  const [index, setIndex] = useState(0);
+  const current = shots[index] ?? shots[0];
+  if (!current) return null;
+
+  return (
+    <div className="w-full space-y-2">
+      {shots.length > 1 ? (
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Computer vision demos">
+          {shots.map((shot, i) => (
+            <button
+              key={shot.src}
+              type="button"
+              role="tab"
+              aria-selected={i === index}
+              onClick={() => setIndex(i)}
+              className={`rounded-sm border px-2.5 py-1 text-xs font-semibold transition sm:text-sm ${
+                i === index
+                  ? "border-blue bg-blue text-white"
+                  : "border-border bg-surface text-muted hover:text-ink"
+              }`}
+            >
+              {shot.label ?? `Clip ${i + 1}`}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      <FeatureShot src={current.src} alt={current.alt} />
     </div>
   );
 }
 
 function FeatureSplit({
   shot,
+  shots,
   children,
 }: {
-  shot: { src: string; alt: string };
+  shot?: FeatureMedia;
+  shots?: FeatureMedia[];
   children: ReactNode;
 }) {
+  const gallery = shots ?? (shot ? [shot] : []);
   return (
     <div className="grid w-full max-w-5xl items-center gap-5 text-left lg:grid-cols-2 lg:gap-8">
       <div className="space-y-3 text-sm leading-relaxed text-muted sm:text-base">
         {children}
       </div>
-      <FeatureShot src={shot.src} alt={shot.alt} />
+      <FeatureGallery shots={gallery} />
     </div>
   );
 }
@@ -293,10 +335,18 @@ const slides: Slide[] = [
     title: "Computer vision in the warehouse",
     body: (
       <FeatureSplit
-        shot={{
-          src: "/screenshots/05-cv-tour.png",
-          alt: "FLO computer vision guided tour for load and hub detection",
-        }}
+        shots={[
+          {
+            src: "/screenshots/load-detection.gif",
+            alt: "FLO load detection live session counting kraft cartons through a bag opening",
+            label: "Load Detection",
+          },
+          {
+            src: "/screenshots/hub-congestion.gif",
+            alt: "FLO hub congestion live session tracking dock occupancy",
+            label: "Hub Congestion",
+          },
+        ]}
       >
         <p>
           Inference runs in the browser MediaStream. Frames stay on the dock
@@ -383,8 +433,8 @@ const slides: Slide[] = [
     body: (
       <FeatureSplit
         shot={{
-          src: "/screenshots/06-designer.png",
-          alt: "FLO Designer canvas for prompt-driven process graphs",
+          src: "/screenshots/flo-designer.gif",
+          alt: "FLO Designer canvas generating a process graph from a prompt",
         }}
       >
         <p>

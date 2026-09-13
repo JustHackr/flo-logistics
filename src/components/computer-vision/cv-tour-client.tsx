@@ -34,8 +34,9 @@ type TourStep = {
   metric2LabelKey: string;
   metric2ValueKey: string;
   href: string;
-  imageSrc: string;
+  imageSrc?: string;
   liveReady: boolean;
+  comingSoon?: boolean;
 };
 
 const STEPS: TourStep[] = [
@@ -49,7 +50,7 @@ const STEPS: TourStep[] = [
     metric2LabelKey: "cv.tour.steps.load.metric2Label",
     metric2ValueKey: "cv.tour.steps.load.metric2Value",
     href: "/computer-vision/load-detection",
-    imageSrc: "/cv-tour/load-detection.svg",
+    imageSrc: "/cv-tour/load-detection.gif",
     liveReady: true,
   },
   {
@@ -62,8 +63,8 @@ const STEPS: TourStep[] = [
     metric2LabelKey: "cv.tour.steps.odol.metric2Label",
     metric2ValueKey: "cv.tour.steps.odol.metric2Value",
     href: "/computer-vision/odol-detection",
-    imageSrc: "/cv-tour/odol-detection.svg",
     liveReady: false,
+    comingSoon: true,
   },
   {
     id: "hub",
@@ -75,25 +76,14 @@ const STEPS: TourStep[] = [
     metric2LabelKey: "cv.tour.steps.hub.metric2Label",
     metric2ValueKey: "cv.tour.steps.hub.metric2Value",
     href: "/computer-vision/hub-congestion-detection",
-    imageSrc: "/cv-tour/hub-congestion.svg",
+    imageSrc: "/cv-tour/hub-congestion.gif",
     liveReady: true,
   },
 ];
 
-const AUTO_ADVANCE_MS = 15_000;
-
 export function CvTourClient() {
   const { t } = useI18n();
   const [index, setIndex] = React.useState(0);
-  const [autoAdvance, setAutoAdvance] = React.useState(true);
-
-  React.useEffect(() => {
-    if (!autoAdvance) return;
-    const id = window.setInterval(() => {
-      setIndex((prev) => (prev + 1) % STEPS.length);
-    }, AUTO_ADVANCE_MS);
-    return () => window.clearInterval(id);
-  }, [autoAdvance]);
 
   const step = STEPS[index];
   const Icon = step.icon;
@@ -113,15 +103,6 @@ export function CvTourClient() {
             {t("cv.tour.subtitle")}
           </p>
         </div>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            className="h-4 w-4 rounded border"
-            checked={autoAdvance}
-            onChange={(e) => setAutoAdvance(e.target.checked)}
-          />
-          {t("cv.tour.autoAdvance")}
-        </label>
       </div>
 
       <div
@@ -139,10 +120,7 @@ export function CvTourClient() {
               role="tab"
               aria-selected={active}
               aria-label={t(s.titleKey)}
-              onClick={() => {
-                setIndex(i);
-                setAutoAdvance(false);
-              }}
+              onClick={() => setIndex(i)}
               className={cn(
                 "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
                 active
@@ -152,6 +130,11 @@ export function CvTourClient() {
             >
               <StepIcon className="h-3.5 w-3.5" />
               {t(s.titleKey)}
+              {s.comingSoon ? (
+                <Badge variant="outline" className="text-[10px]">
+                  {t("common.comingSoon")}
+                </Badge>
+              ) : null}
             </button>
           );
         })}
@@ -167,43 +150,61 @@ export function CvTourClient() {
               <CardTitle className="text-lg">{t(step.titleKey)}</CardTitle>
               <CardDescription>{t(step.bodyKey)}</CardDescription>
             </div>
+            {step.comingSoon ? (
+              <Badge variant="secondary" className="ml-auto">
+                {t("common.comingSoon")}
+              </Badge>
+            ) : null}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="overflow-hidden rounded-xl border bg-muted/20">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={withBasePath(step.imageSrc)}
-              alt={t(step.titleKey)}
-              className="h-auto w-full object-cover"
-            />
-          </div>
+          {step.comingSoon ? (
+            <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 rounded-xl border bg-muted/20 px-6 py-12 text-center">
+              <p className="text-lg font-semibold">{t("common.comingSoon")}</p>
+              <p className="max-w-md text-sm text-muted-foreground">
+                {t(step.bodyKey)}
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-hidden rounded-xl border bg-muted/20">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={withBasePath(step.imageSrc ?? "")}
+                  alt={t(step.titleKey)}
+                  className="h-auto w-full object-cover"
+                />
+              </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border p-3">
-              <p className="text-xs text-muted-foreground">
-                {t(step.metric1LabelKey)}
-              </p>
-              <p className="mt-1 text-xl font-semibold tabular-nums">
-                {t(step.metric1ValueKey)}
-              </p>
-            </div>
-            <div className="rounded-lg border p-3">
-              <p className="text-xs text-muted-foreground">
-                {t(step.metric2LabelKey)}
-              </p>
-              <p className="mt-1 text-xl font-semibold tabular-nums">
-                {t(step.metric2ValueKey)}
-              </p>
-            </div>
-          </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">
+                    {t(step.metric1LabelKey)}
+                  </p>
+                  <p className="mt-1 text-xl font-semibold tabular-nums">
+                    {t(step.metric1ValueKey)}
+                  </p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-xs text-muted-foreground">
+                    {t(step.metric2LabelKey)}
+                  </p>
+                  <p className="mt-1 text-xl font-semibold tabular-nums">
+                    {t(step.metric2ValueKey)}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="flex flex-wrap gap-2">
-            <Button render={<Link href={step.href} />}>
-              {step.liveReady
-                ? t("cv.tour.openLive")
-                : t("cv.tour.viewPlaceholder")}
-            </Button>
+            {!step.comingSoon ? (
+              <Button render={<Link href={step.href} />}>
+                {step.liveReady
+                  ? t("cv.tour.openLive")
+                  : t("cv.tour.viewPlaceholder")}
+              </Button>
+            ) : null}
             <Button
               variant="outline"
               onClick={() => setIndex((prev) => (prev + 1) % STEPS.length)}
@@ -212,9 +213,11 @@ export function CvTourClient() {
             </Button>
           </div>
 
-          <p className="text-xs text-muted-foreground">
-            {t("cv.tour.onDeviceNote")}
-          </p>
+          {!step.comingSoon ? (
+            <p className="text-xs text-muted-foreground">
+              {t("cv.tour.onDeviceNote")}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
     </div>

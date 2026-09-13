@@ -115,6 +115,7 @@ const navGroups: NavGroup[] = [
         href: "/computer-vision/odol-detection",
         labelKey: "nav.items.odolDetection",
         icon: ScanEye,
+        badgeKey: "nav.badges.soon",
       },
       {
         href: "/computer-vision/hub-congestion-detection",

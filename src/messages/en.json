@@ -62,7 +62,8 @@
       "future": "Future",
       "admin": "Admin",
       "sovereign": "Private",
-      "demo": "Demo"
+      "demo": "Demo",
+      "soon": "Soon"
     }
   },
   "auth": {
@@ -973,7 +974,7 @@
     },
     "odol": {
       "title": "ODOL Detection",
-      "description": "Detect over-dimension and over-load vehicles with computer vision."
+      "description": "Over-dimension / over-load camera detection is coming soon."
     },
     "controls": {
       "sessionDurationSeconds": "Session duration (seconds)",
@@ -1029,7 +1030,6 @@
     "tour": {
       "title": "Computer vision tour",
       "subtitle": "Walk through FLO’s warehouse CV demos with sample frames — no webcam required. Open any step live when you have a camera.",
-      "autoAdvance": "Auto-advance every 15s",
       "stepsLabel": "CV tour steps",
       "openLive": "Open live demo",
       "viewPlaceholder": "View live page",
@@ -1046,11 +1046,11 @@
         },
         "odol": {
           "title": "ODOL Detection",
-          "body": "Gate check for over-dimension / over-load vehicles. Live camera flow is marked coming soon; this frame shows the intended signal.",
+          "body": "Gate check for over-dimension / over-load vehicles. Live camera detection is not available in this demo yet.",
           "metric1Label": "Gate signal",
-          "metric1Value": "OVER HEIGHT",
+          "metric1Value": "—",
           "metric2Label": "Status",
-          "metric2Value": "Prototype"
+          "metric2Value": "Coming soon"
         },
         "hub": {
           "title": "Hub Congestion",

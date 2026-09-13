@@ -62,7 +62,8 @@
       "future": "Mendatang",
       "admin": "Admin",
       "sovereign": "Privat",
-      "demo": "Demo"
+      "demo": "Demo",
+      "soon": "Segera"
     }
   },
   "auth": {
@@ -973,7 +974,7 @@
     },
     "odol": {
       "title": "ODOL Detection",
-      "description": "Deteksi kendaraan over-dimension dan over-load menggunakan visi komputer."
+      "description": "Deteksi kamera over-dimension / over-load segera hadir."
     },
     "controls": {
       "sessionDurationSeconds": "Durasi sesi (detik)",
@@ -1029,7 +1030,6 @@
     "tour": {
       "title": "Tur computer vision",
       "subtitle": "Jelajahi demo CV gudang FLO dengan frame sampel — tanpa webcam. Buka langkah apa pun secara live saat kamera tersedia.",
-      "autoAdvance": "Geser otomatis tiap 15 dtk",
       "stepsLabel": "Langkah tur CV",
       "openLive": "Buka demo live",
       "viewPlaceholder": "Lihat halaman live",
@@ -1046,11 +1046,11 @@
         },
         "odol": {
           "title": "ODOL Detection",
-          "body": "Pemeriksaan gerbang untuk kendaraan over-dimension / over-load. Alur kamera live masih coming soon; frame ini menunjukkan sinyal yang dituju.",
+          "body": "Pemeriksaan gerbang untuk kendaraan over-dimension / over-load. Deteksi kamera live belum tersedia di demo ini.",
           "metric1Label": "Sinyal gerbang",
-          "metric1Value": "OVER HEIGHT",
+          "metric1Value": "—",
           "metric2Label": "Status",
-          "metric2Value": "Prototipe"
+          "metric2Value": "Segera hadir"
         },
         "hub": {
           "title": "Hub Congestion",
