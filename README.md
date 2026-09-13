@@ -66,9 +66,15 @@ Code: [src/lib/routing/](src/lib/routing/), routes `/routing/orders`, `/routing/
 
 ### Verify — on-device computer vision
 
-Load detection, hub congestion / dwell, and ODOL placeholder run **in the browser** — frames never upload. Judges can walk the story without a webcam via the CV tour.
+Load detection and hub congestion / dwell run **in the browser** — frames never upload. ODOL Detection is coming soon. Judges can walk Load and Hub without a webcam via the [CV tour](https://radr.nxtdev.xyz/flo-logistics/demo/computer-vision/tour).
 
-![Computer vision guided tour](docs/screenshots/05-cv-tour.png)
+**Load Detection** — kraft cartons counted through a bag opening:
+
+![FLO load detection session](docs/screenshots/load-detection.gif)
+
+**Hub Congestion** — dock occupancy and overstay on the platform:
+
+![FLO hub congestion session](docs/screenshots/hub-congestion.gif)
 
 Code: [src/lib/computer-vision/](src/lib/computer-vision/), routes `/computer-vision/tour`, `/computer-vision/load-detection`, `/computer-vision/hub-congestion-detection`.
 
@@ -76,7 +82,7 @@ Code: [src/lib/computer-vision/](src/lib/computer-vision/), routes `/computer-vi
 
 Admin workspace: describe a process in natural language, get a validated node graph, integrate with FLO’s process map, **save designs in SQLite**, export deterministic JSON. Drag nodes, inspect in a permanent detail pane, highlight what’s new after Refine.
 
-![Flo Designer blank canvas and saved designs](docs/screenshots/06-designer.png)
+![Flo Designer generating a process graph from a prompt](docs/screenshots/flo-designer.gif)
 
 Code: [src/lib/designer/](src/lib/designer/), route `/admin/designer` (ADMIN).
 
