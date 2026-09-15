@@ -37,6 +37,7 @@
       "home": "Beranda",
       "maintenance": "Pemeliharaan",
       "logistics": "Logistik",
+      "controlTower": "Menara Kendali",
       "companyAssistant": "Asisten Perusahaan",
       "aiSettings": "Pengaturan AI",
       "loadDetection": "Deteksi Muatan",
@@ -694,6 +695,11 @@
       "high": "Tinggi",
       "critical": "Kritis"
     },
+    "severity": {
+      "watch": "Pantau",
+      "high": "Tinggi",
+      "critical": "Kritis"
+    },
     "dtiPending": "DTI menunggu",
     "dtiWithRisk": "DTI {score} · {risk}",
     "cfiScore": "CFI {score}",
@@ -1207,6 +1213,11 @@
       "ordersLink": "Pesanan Perutean",
       "subtitle": "Mengurutkan titik jalan memakai jarak jalan OSRM dan kalibrasi lalu lintas jam sibuk Jakarta. Menghasilkan satu atau lebih rencana rute (maks. 15 pemberhentian per rute).",
       "trafficData": "Data lalu lintas:",
+      "conditionTitle": "Intelijen kondisi FLO",
+      "conditionSources": "Lalu lintas sudah termasuk dalam ETA provider; cuaca dan insiden dihitung terpisah.",
+      "trafficFactor": "Faktor lalu lintas: {factor}x",
+      "weatherFactor": "Faktor cuaca: {factor}x",
+      "incidentFactor": "Faktor insiden: {factor}x",
       "routeStartTime": "Waktu mulai rute",
       "rushHourHint": "Keberangkatan jam sibuk (mis. hari kerja 08:00) menghasilkan waktu leg yang lebih lama.",
       "savePlans": "Simpan Rencana Rute",
@@ -1597,6 +1608,73 @@
       "emissionsPreview": "emisi per rute pada kartu pratinjau."
     }
   },
+  "controlTower": {
+    "title": "Menara Kendali Pengiriman",
+    "subtitle": "Pengecualian terprioritas yang menghubungkan risiko SLA, waktu rute, dan kesehatan armada dalam satu antrean operator.",
+    "loadFailed": "Gagal memuat menara kendali",
+    "metrics": {
+      "openExceptions": "Pengecualian terbuka",
+      "openExceptionsDetail": "{critical} kritis · {high} tinggi",
+      "unassignedOrders": "Pesanan tanpa rute",
+      "unassignedOrdersDetail": "{open} pesanan terbuka dalam alur",
+      "lateStops": "Pemberhentian terlambat",
+      "atRiskOrders": "{count} pesanan perlu perhatian",
+      "fulfillmentBlocked": "Fulfillment terblokir",
+      "fleetRisks": "Risiko armada di rute",
+      "activeRoutes": "{count} rute aktif atau terencana",
+      "otif": "Performa OTIF",
+      "deliveredWithPromise": "{count} pesanan terkirim dengan janji waktu"
+    },
+    "queueTitle": "Antrean tindakan",
+    "queueDescription": "Pengecualian dengan dampak tertinggi muncul lebih dulu agar manajer operasional dapat bertindak sebelum SLA pelanggan terlewat.",
+    "criticalBadge": "{count} kritis",
+    "empty": "Tidak ada pengecualian aktif. Rencana pengiriman sedang aman.",
+    "exceptionTitles": {
+      "unassigned_order": "Pesanan belum memiliki rute",
+      "late_stop": "Pengiriman terlambat",
+      "sla_risk": "Risiko SLA",
+      "fulfillment_blocked": "Fulfillment terblokir",
+      "fleet_risk": "Kendaraan perlu perhatian",
+      "congestion_risk": "Risiko kemacetan",
+      "weather_risk": "Risiko cuaca",
+      "incident_near_route": "Insiden dekat rute",
+      "stale_traffic": "Feed lalu lintas sudah usang",
+      "stale_weather": "Feed cuaca sudah usang"
+    },
+    "exceptionDetails": {
+      "unassigned": "Diterima {age} jam lalu · belum ada rute",
+      "late": "ETA {eta} · terlambat {minutes} menit",
+      "soon": "ETA {eta} · jatuh tempo dalam {minutes} menit",
+      "fleet": "{driver} ditugaskan · VQI {vqi}/100"
+    },
+    "actions": {
+      "open": "Buka konteks",
+      "acknowledge": "Akui",
+      "resolve": "Selesaikan",
+      "planOrders": "Rencanakan pesanan",
+      "openRoutes": "Buka rute",
+      "openFleet": "Buka armada"
+    },
+    "filters": {
+      "allSeverity": "Semua tingkat",
+      "allTypes": "Semua jenis pengecualian",
+      "allSources": "Semua sumber"
+    },
+    "open": "Terbuka",
+    "acknowledged": "Diakui",
+    "promise": "janji {time}",
+    "resolveNotePrompt": "Catatan penyelesaian opsional",
+    "actionFailed": "Pengecualian tidak dapat diperbarui.",
+    "policyTitle": "Kebijakan risiko transparan",
+    "policyDescription": "Ambang berbasis aturan membuat setiap peringatan dapat dijelaskan dan mudah disesuaikan dengan operasi Blibli.",
+    "policyCritical": "Kritis",
+    "policyCriticalDetail": "Pesanan tanpa rute selama 12+ jam atau pemberhentian rute melewati ETA 60+ menit.",
+    "policyHigh": "Tinggi",
+    "policyHighDetail": "Pesanan tanpa rute selama 6+ jam, pemberhentian terlambat, atau kendaraan berisiko tinggi sudah ditugaskan.",
+    "policyWatch": "Pantau",
+    "policyWatchDetail": "Pesanan tanpa rute mulai menua, ETA dalam 30 menit, atau kendaraan berisiko sedang berada di rute.",
+    "generated": "Snapshot dibuat {time}"
+  },
   "fleet": {
     "vehicles": {
       "title": "Kendaraan",
@@ -1873,6 +1951,14 @@
       "test": "Uji",
       "sync": "Sinkronkan",
       "futureTooltip": "Tersedia dalam rilis mendatang",
+      "demoSync": "Sinkronisasi fixture / file Blibli",
+      "runSample": "Jalankan contoh sinkronisasi",
+      "upload": "Unggah CSV/JSON",
+      "template": "Templat",
+      "lastRuns": "Sinkronisasi terbaru",
+      "loadRuns": "Muat riwayat sinkronisasi",
+      "showRejected": "Tampilkan {count} baris ditolak",
+      "rowError": "Baris {row}: {error}",
       "type": "Jenis",
       "saving": "Menyimpan...",
       "status": {

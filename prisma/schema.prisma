@@ -33,49 +33,155 @@ enum UserRole {
   WAREHOUSE
 }
 
+enum FulfillmentStatus {
+  NOT_STARTED
+  PICKING
+  PACKED
+  READY_FOR_DISPATCH
+  LOADED
+  EXCEPTION
+}
+
+enum IntegrationRunKind {
+  OMS_ORDERS
+  WMS_FULFILLMENT
+  INTELLIGENCE
+}
+
+enum IntegrationRunStatus {
+  RUNNING
+  SUCCEEDED
+  PARTIAL
+  FAILED
+}
+
+enum ControlTowerExceptionKind {
+  UNASSIGNED_ORDER
+  SLA_RISK
+  LATE_STOP
+  FULFILLMENT_BLOCKED
+  FLEET_RISK
+  CONGESTION_RISK
+  WEATHER_RISK
+  INCIDENT_NEAR_ROUTE
+  STALE_TRAFFIC
+  STALE_WEATHER
+}
+
+enum ControlTowerSeverity {
+  WATCH
+  HIGH
+  CRITICAL
+}
+
+enum ControlTowerExceptionStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum RouteRevisionStatus {
+  DRAFT
+  APPROVED
+  REJECTED
+}
+
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  role         UserRole
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                     String                  @id @default(cuid())
+  email                  String                  @unique
+  name                   String
+  passwordHash           String
+  role                   UserRole
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  acknowledgedExceptions ControlTowerException[] @relation("ExceptionAcknowledgedBy")
+  resolvedExceptions     ControlTowerException[] @relation("ExceptionResolvedBy")
 }
 
 model Vehicle {
-  id                    String         @id @default(cuid())
-  name                  String
-  vehicleType           String
-  engineType            String
-  vehicleAgeYears       Float
-  odometerKm            Float
-  kilometersPerFleet    Float
-  vehicleLifetimeYears  Float
-  expectedLifetimeKm    Float
-  maintenanceCostUnit   Float
-  lastMaintenanceDate   DateTime?
-  nextMaintenanceDate   DateTime?
-  maintenanceIntervalKm Float
-  notes                 String?
-  dataSource            String         @default("manual")
-  connectorId           String?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
-  connector             DataConnector? @relation(fields: [connectorId], references: [id], onDelete: SetNull)
-  drivers               Driver[]
+  id                     String                  @id @default(cuid())
+  name                   String
+  vehicleType            String
+  engineType             String
+  vehicleAgeYears        Float
+  odometerKm             Float
+  kilometersPerFleet     Float
+  vehicleLifetimeYears   Float
+  expectedLifetimeKm     Float
+  maintenanceCostUnit    Float
+  lastMaintenanceDate    DateTime?
+  nextMaintenanceDate    DateTime?
+  maintenanceIntervalKm  Float
+  notes                  String?
+  dataSource             String                  @default("manual")
+  connectorId            String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  connector              DataConnector?          @relation(fields: [connectorId], references: [id], onDelete: SetNull)
+  drivers                Driver[]
+  controlTowerExceptions ControlTowerException[]
 }
 
 model DataConnector {
-  id          String    @id @default(cuid())
+  id              String           @id @default(cuid())
+  name            String
+  type            String
+  status          String           @default("disabled")
+  config          String?
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  vehicles        Vehicle[]
+  integrationRuns IntegrationRun[]
+}
+
+model IntelligenceRegion {
+  id          String   @id @default(cuid())
   name        String
-  type        String
-  status      String    @default("disabled")
-  config      String?
-  description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  vehicles    Vehicle[]
+  countryCode String
+  timezone    String   @default("Asia/Jakarta")
+  minLat      Float
+  minLng      Float
+  maxLat      Float
+  maxLng      Float
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  config             IntelligenceConfig?
+  ingestionRuns      IntelligenceIngestionRun[]
+  conditionSnapshots ConditionSnapshot[]
+  incidents          TrafficIncident[]
+
+  @@index([active])
+}
+
+model IntelligenceConfig {
+  id                   String             @id @default(cuid())
+  regionId             String             @unique
+  region               IntelligenceRegion @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  enabled              Boolean            @default(true)
+  refreshIntervalSec   Int                @default(300)
+  providerPriorityJson String             @default("[\"google\",\"open_meteo\",\"tomtom\"]")
+  thresholdsJson       String             @default("{}")
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+}
+
+model IntelligenceIngestionRun {
+  id            String             @id @default(cuid())
+  regionId      String
+  region        IntelligenceRegion @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  mode          String
+  status        String
+  startedAt     DateTime           @default(now())
+  completedAt   DateTime?
+  providersJson String
+  snapshotCount Int                @default(0)
+  incidentCount Int                @default(0)
+  errorJson     String?
+
+  @@index([regionId, startedAt])
 }
 
 model Warehouse {
@@ -117,14 +223,25 @@ model Order {
   etaAt       DateTime?
   deliveredAt DateTime?
 
+  externalOrderId   String?
+  sourceSystem      String            @default("manual")
+  promisedAt        DateTime?
+  serviceLevel      String?
+  priority          String?
+  fulfillmentStatus FulfillmentStatus @default(NOT_STARTED)
+
   routePlanId String?
   routePlan   RoutePlan? @relation(fields: [routePlanId], references: [id], onDelete: SetNull)
 
-  statusEvents OrderStatusEvent[]
+  statusEvents           OrderStatusEvent[]
+  fulfillmentEvents      FulfillmentEvent[]
+  controlTowerExceptions ControlTowerException[]
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   routeStop RouteStop?
+
+  @@unique([sourceSystem, externalOrderId])
 }
 
 model OrderStatusEvent {
@@ -135,6 +252,22 @@ model OrderStatusEvent {
   timestamp DateTime    @default(now())
 
   @@index([orderId])
+}
+
+model FulfillmentEvent {
+  id              String            @id @default(cuid())
+  orderId         String
+  order           Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sourceSystem    String
+  externalEventId String?
+  status          FulfillmentStatus
+  occurredAt      DateTime
+  receivedAt      DateTime          @default(now())
+  reason          String?
+  payloadJson     String?
+
+  @@unique([sourceSystem, externalEventId])
+  @@index([orderId, occurredAt])
 }
 
 model RoutePlan {
@@ -159,8 +292,94 @@ model RoutePlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  controlTowerExceptions ControlTowerException[]
+  conditionAssessments   RouteConditionAssessment[]
+  revisionPreviews       RouteRevision[]
+
   @@index([driverId])
   @@index([warehouseId])
+}
+
+model ConditionSnapshot {
+  id                     String             @id @default(cuid())
+  regionId               String
+  region                 IntelligenceRegion @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  dataType               String
+  observedAt             DateTime
+  expiresAt              DateTime
+  source                 String
+  trafficLevel           String?
+  congestionRatio        Float?
+  precipitationMmPerHour Float?
+  visibilityMeters       Float?
+  windKmh                Float?
+  incidentCount          Int?
+  stale                  Boolean            @default(false)
+  payloadJson            String?
+  createdAt              DateTime           @default(now())
+
+  @@unique([regionId, source, dataType, observedAt])
+  @@index([regionId, observedAt])
+  @@index([expiresAt, stale])
+}
+
+model TrafficIncident {
+  id          String             @id @default(cuid())
+  regionId    String
+  region      IntelligenceRegion @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  externalId  String
+  source      String
+  observedAt  DateTime
+  expiresAt   DateTime?
+  category    String
+  severity    String
+  lat         Float
+  lng         Float
+  description String?
+  roadClosed  Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([source, externalId])
+  @@index([regionId, observedAt])
+  @@index([lat, lng])
+}
+
+model RouteConditionAssessment {
+  id                    String    @id @default(cuid())
+  routePlanId           String
+  routePlan             RoutePlan @relation(fields: [routePlanId], references: [id], onDelete: Cascade)
+  riskLevel             String
+  trafficPenaltyFactor  Float     @default(1)
+  weatherPenaltyFactor  Float     @default(1)
+  incidentPenaltyFactor Float     @default(1)
+  reasonsJson           String
+  snapshotIdsJson       String
+  assessedAt            DateTime  @default(now())
+
+  @@index([routePlanId, assessedAt])
+}
+
+model RouteRevision {
+  id                  String              @id @default(cuid())
+  routePlanId         String
+  routePlan           RoutePlan           @relation(fields: [routePlanId], references: [id], onDelete: Cascade)
+  status              RouteRevisionStatus @default(DRAFT)
+  originalDurationMin Float
+  revisedDurationMin  Float
+  originalDistanceKm  Float
+  revisedDistanceKm   Float
+  affectedStops       Int                 @default(0)
+  reasonsJson         String
+  previewJson         String
+  createdByUserId     String?
+  approvedByUserId    String?
+  rejectedByUserId    String?
+  createdAt           DateTime            @default(now())
+  approvedAt          DateTime?
+  rejectedAt          DateTime?
+
+  @@index([routePlanId, status])
 }
 
 model RouteStop {
@@ -231,4 +450,50 @@ model DesignerDesign {
   updatedAt DateTime @updatedAt
 
   @@index([updatedAt])
+}
+
+model IntegrationRun {
+  id            String               @id @default(cuid())
+  connectorId   String
+  connector     DataConnector        @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  kind          IntegrationRunKind
+  mode          String               @default("fixture")
+  status        IntegrationRunStatus @default(RUNNING)
+  startedAt     DateTime             @default(now())
+  completedAt   DateTime?
+  createdCount  Int                  @default(0)
+  updatedCount  Int                  @default(0)
+  rejectedCount Int                  @default(0)
+  errorsJson    String?
+
+  @@index([connectorId, startedAt])
+}
+
+model ControlTowerException {
+  id                   String                      @id @default(cuid())
+  kind                 ControlTowerExceptionKind
+  severity             ControlTowerSeverity
+  status               ControlTowerExceptionStatus @default(OPEN)
+  dedupeKey            String                      @unique
+  sourceSystem         String?
+  reason               String
+  resolutionNote       String?
+  detectedAt           DateTime                    @default(now())
+  acknowledgedAt       DateTime?
+  resolvedAt           DateTime?
+  acknowledgedByUserId String?
+  acknowledgedBy       User?                       @relation("ExceptionAcknowledgedBy", fields: [acknowledgedByUserId], references: [id], onDelete: SetNull)
+  resolvedByUserId     String?
+  resolvedBy           User?                       @relation("ExceptionResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  orderId              String?
+  order                Order?                      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  routePlanId          String?
+  routePlan            RoutePlan?                  @relation(fields: [routePlanId], references: [id], onDelete: Cascade)
+  vehicleId            String?
+  vehicle              Vehicle?                    @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  updatedAt            DateTime                    @updatedAt
+
+  @@index([status, severity])
+  @@index([orderId])
+  @@index([routePlanId])
 }

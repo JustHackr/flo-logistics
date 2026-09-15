@@ -23,6 +23,7 @@ import {
   PackageSearch,
   Warehouse,
   ShieldCheck,
+  ShieldAlert,
   Clapperboard,
   LogOut,
   Workflow,
@@ -72,6 +73,11 @@ const navGroups: NavGroup[] = [
         href: "/routing/dashboard",
         labelKey: "nav.items.logistics",
         icon: Truck,
+      },
+      {
+        href: "/control-tower",
+        labelKey: "nav.items.controlTower",
+        icon: ShieldAlert,
       },
       {
         href: "/sovereign-ai",

@@ -1,8 +1,8 @@
 "use client";
 
 import { withBasePath } from "@/lib/base-path";
-import { useState } from "react";
-import { Plus, Pencil, Trash2, Wifi, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Download, Pencil, Plus, RefreshCw, Trash2, Upload, Wifi } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,32 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CONNECTOR_TYPE_REGISTRY } from "@/lib/connectors/registry";
-import {
-  connectorStatuses,
-  connectorTypes,
-  type ConnectorInput,
-} from "@/lib/schemas/connector";
+import { connectorStatuses, connectorTypes, type ConnectorInput } from "@/lib/schemas/connector";
 import { useI18n } from "@/components/i18n/use-i18n";
+import type { Role } from "@/lib/auth/roles";
 
 type ConnectorRecord = {
   id: string;
@@ -47,344 +28,190 @@ type ConnectorRecord = {
   _count?: { vehicles: number };
 };
 
-export function ConnectorsClient({
-  initialConnectors,
-}: {
-  initialConnectors: ConnectorRecord[];
-}) {
+type IntegrationRun = {
+  id: string;
+  kind: string;
+  mode: string;
+  status: string;
+  startedAt: string;
+  completedAt: string | null;
+  createdCount: number;
+  updatedCount: number;
+  rejectedCount: number;
+  errorsJson: string | null;
+};
+
+type IntelligenceRegionConfig = {
+  id: string;
+  name: string;
+  config: { enabled: boolean; refreshIntervalSec: number; providerPriority: string[]; thresholds: Record<string, number>; updatedAt: string } | null;
+};
+
+const OMS_TEMPLATE = "externalOrderId,recipientAddress,lat,lng,accessRequirement,promisedAt,serviceLevel,priority\nBLI-ORDER-001,Jl. Sudirman Jakarta,-6.2252,106.8087,BOTH,2026-09-15T18:00:00+07:00,SAME_DAY,HIGH\n";
+const WMS_TEMPLATE = "externalOrderId,externalEventId,status,occurredAt,warehouseCode,reason\nBLI-ORDER-001,WMS-EVENT-001,PACKED,2026-09-15T12:00:00+07:00,BLI-JKT-01,\n";
+
+function downloadText(filename: string, text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function formatRunDate(value: string) {
+  return new Date(value).toLocaleString(undefined, { month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+export function ConnectorsClient({ initialConnectors, userRole }: { initialConnectors: ConnectorRecord[]; userRole: Role }) {
   const { t, locale } = useI18n();
   const [connectors, setConnectors] = useState(initialConnectors);
+  const [runs, setRuns] = useState<Record<string, IntegrationRun[]>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ConnectorRecord | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState<ConnectorInput>({
-    name: "",
-    type: "iot",
-    status: "disabled",
-    config: "",
-    description: "",
-  });
+  const [form, setForm] = useState<ConnectorInput>({ name: "", type: "iot", status: "disabled", config: "", description: "" });
   const [configFields, setConfigFields] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [intelligenceRegions, setIntelligenceRegions] = useState<IntelligenceRegionConfig[]>([]);
+  const [savingIntelligence, setSavingIntelligence] = useState<string | null>(null);
+  const canConfigure = userRole === "ADMIN";
+
+  useEffect(() => {
+    void fetch(withBasePath("/api/intelligence/config"), { cache: "no-store" }).then(async (response) => {
+      if (response.ok) setIntelligenceRegions((await response.json()).regions ?? []);
+    }).catch(() => undefined);
+  }, []);
+
+  async function saveIntelligenceRegion(region: IntelligenceRegionConfig) {
+    if (!region.config) return;
+    setSavingIntelligence(region.id); setError(null);
+    try {
+      const response = await fetch(withBasePath(`/api/intelligence/config?regionId=${encodeURIComponent(region.id)}`), { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(region.config) });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body?.error ?? "Unable to save intelligence settings");
+      setIntelligenceRegions((current) => current.map((item) => item.id === region.id ? { ...item, config: body.config } : item));
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to save intelligence settings"); }
+    finally { setSavingIntelligence(null); }
+  }
 
   function openCreate() {
     setEditing(null);
-    setForm({
-      name: "",
-      type: "iot",
-      status: "disabled",
-      config: "",
-      description: "",
-    });
+    setForm({ name: "", type: "iot", status: "disabled", config: "", description: "" });
     setConfigFields({});
     setDialogOpen(true);
   }
 
   function openEdit(connector: ConnectorRecord) {
     setEditing(connector);
-    setForm({
-      name: connector.name,
-      type: connector.type as ConnectorInput["type"],
-      status: connector.status as ConnectorInput["status"],
-      config: connector.config ?? "",
-      description: connector.description ?? "",
-    });
-    try {
-      setConfigFields(
-        connector.config ? JSON.parse(connector.config) : {}
-      );
-    } catch {
-      setConfigFields({});
-    }
+    setForm({ name: connector.name, type: connector.type as ConnectorInput["type"], status: connector.status as ConnectorInput["status"], config: connector.config ?? "", description: connector.description ?? "" });
+    try { setConfigFields(connector.config ? JSON.parse(connector.config) : {}); } catch { setConfigFields({}); }
     setDialogOpen(true);
   }
 
   async function handleSave() {
-    setLoading(true);
-    setError(null);
-
-    const payload: ConnectorInput = {
-      ...form,
-      config: JSON.stringify(configFields),
-      description: form.description || null,
-    };
-
-    const url = editing
-      ? `/api/connectors/${editing.id}`
-      : "/api/connectors";
-    const method = editing ? "PUT" : "POST";
-
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      setError(data.error ?? t("errors.requestFailed"));
-      setLoading(false);
-      return;
-    }
-
-    const saved = await res.json();
-    if (editing) {
-      setConnectors((prev) =>
-        prev.map((c) => (c.id === saved.id ? { ...saved, _count: c._count } : c))
-      );
-    } else {
-      setConnectors((prev) => [...prev, { ...saved, _count: { vehicles: 0 } }]);
-    }
-    setLoading(false);
-    setDialogOpen(false);
+    setLoading(true); setError(null);
+    const payload: ConnectorInput = { ...form, config: JSON.stringify(configFields), description: form.description || null };
+    const response = await fetch(editing ? `/api/connectors/${editing.id}` : "/api/connectors", { method: editing ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    if (!response.ok) { const body = await response.json(); setError(body.error ?? t("errors.requestFailed")); setLoading(false); return; }
+    const saved = await response.json();
+    if (editing) setConnectors((prev) => prev.map((connector) => connector.id === saved.id ? { ...saved, _count: connector._count } : connector));
+    else setConnectors((prev) => [...prev, { ...saved, _count: { vehicles: 0 } }]);
+    setLoading(false); setDialogOpen(false);
   }
 
   async function handleDelete() {
     if (!deleteId) return;
-    const res = await fetch(withBasePath(`/api/connectors/${deleteId}`), {
-      method: "DELETE",
-    });
-    if (res.ok) {
-      setConnectors((prev) => prev.filter((c) => c.id !== deleteId));
-    }
+    const response = await fetch(withBasePath(`/api/connectors/${deleteId}`), { method: "DELETE" });
+    if (response.ok) setConnectors((prev) => prev.filter((connector) => connector.id !== deleteId));
     setDeleteId(null);
   }
 
-  function statusVariant(status: string) {
-    switch (status) {
-      case "active":
-        return "default" as const;
-      case "planned":
-        return "secondary" as const;
-      default:
-        return "outline" as const;
+  async function loadRuns(connectorId: string) {
+    const response = await fetch(withBasePath(`/api/connectors/${connectorId}/runs`));
+    if (response.ok) {
+      const body = await response.json();
+      setRuns((prev) => ({ ...prev, [connectorId]: body }));
     }
   }
 
-  const typeMeta = CONNECTOR_TYPE_REGISTRY[form.type];
+  async function syncConnector(connector: ConnectorRecord, fixture: "oms-orders" | "wms-events", file?: File) {
+    setSyncing(connector.id); setError(null);
+    const response = file
+      ? await fetch(withBasePath(`/api/connectors/${connector.id}/sync`), { method: "POST", body: (() => { const formData = new FormData(); formData.append("file", file); return formData; })() })
+      : await fetch(withBasePath(`/api/connectors/${connector.id}/sync`), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fixture }) });
+    const body = await response.json();
+    if (!response.ok) setError(body.error ?? t("errors.requestFailed"));
+    await loadRuns(connector.id);
+    setSyncing(null);
+  }
+
+  function statusVariant(status: string) {
+    return status === "active" ? "default" as const : status === "planned" ? "secondary" as const : "outline" as const;
+  }
 
   return (
     <div lang={locale} className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">{t("system.connectors.title")}</h2>
-          <p className="text-muted-foreground">
-            {t("system.connectors.description")}
-          </p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t("system.connectors.addConnector")}
-        </Button>
+        <div><h2 className="text-2xl font-bold tracking-tight">{t("system.connectors.title")}</h2><p className="text-muted-foreground">{t("system.connectors.description")}</p></div>
+        {canConfigure && <Button onClick={openCreate}><Plus className="mr-2 h-4 w-4" />{t("system.connectors.addConnector")}</Button>}
       </div>
-
+      {intelligenceRegions.length > 0 && <Card>
+        <CardHeader><CardTitle className="text-base">Traffic, weather & incident intelligence</CardTitle><CardDescription>Admin-controlled regions and refresh policy. Provider keys stay server-side in environment variables.</CardDescription></CardHeader>
+        <CardContent className="space-y-3">
+          {intelligenceRegions.map((region) => region.config && <div key={region.id} className="grid gap-3 rounded-lg border p-3 md:grid-cols-[1fr_auto_auto_auto] md:items-center">
+            <div><div className="font-medium">{region.name}</div><div className="text-xs text-muted-foreground">Priority: {region.config.providerPriority.join(" → ")}</div></div>
+            {canConfigure ? <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={region.config.enabled} onChange={(event) => setIntelligenceRegions((current) => current.map((item) => item.id === region.id && item.config ? { ...item, config: { ...item.config, enabled: event.target.checked } } : item))} />Enabled</label> : <Badge variant={region.config.enabled ? "outline" : "secondary"}>{region.config.enabled ? "Enabled" : "Disabled"}</Badge>}
+            {canConfigure ? <label className="flex items-center gap-2 text-sm">Refresh <Input className="w-24" type="number" min={60} value={region.config.refreshIntervalSec} onChange={(event) => setIntelligenceRegions((current) => current.map((item) => item.id === region.id && item.config ? { ...item, config: { ...item.config, refreshIntervalSec: Number(event.target.value) || 300 } } : item))} /> sec</label> : <span className="text-xs text-muted-foreground">Every {region.config.refreshIntervalSec}s</span>}
+            {canConfigure && <Button size="sm" onClick={() => void saveIntelligenceRegion(region)} disabled={savingIntelligence === region.id}>{savingIntelligence === region.id ? "Saving…" : "Save"}</Button>}
+          </div>)}
+        </CardContent>
+      </Card>}
+      {error && <div className="rounded-md border border-destructive/30 p-3 text-sm text-destructive">{error}</div>}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {connectors.map((connector) => {
-          const meta =
-            CONNECTOR_TYPE_REGISTRY[
-              connector.type as keyof typeof CONNECTOR_TYPE_REGISTRY
-            ];
-          const isInactive =
-            connector.status === "planned" || connector.status === "disabled";
+          const meta = CONNECTOR_TYPE_REGISTRY[connector.type as keyof typeof CONNECTOR_TYPE_REGISTRY];
+          const isDemoConnector = connector.type === "oms" || connector.type === "wms";
+          const fixture = connector.type === "oms" ? "oms-orders" : "wms-events";
+          const connectorRuns = runs[connector.id] ?? [];
           return (
-            <Card
-              key={connector.id}
-              className={cn(isInactive && "opacity-60")}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-base">{connector.name}</CardTitle>
-                    <CardDescription>
-                      {meta?.label ?? connector.type}
-                    </CardDescription>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    {isInactive && (
-                      <Badge variant="outline" className="text-xs">
-                        {t("common.comingSoon")}
-                      </Badge>
-                    )}
-                    <Badge variant={statusVariant(connector.status)} className="capitalize">
-                      {t(`system.connectors.status.${connector.status}`)}
-                    </Badge>
-                  </div>
-                </div>
-              </CardHeader>
+            <Card key={connector.id}>
+              <CardHeader><div className="flex items-start justify-between gap-2"><div><CardTitle className="text-base">{connector.name}</CardTitle><CardDescription>{meta?.label ?? connector.type}</CardDescription></div><Badge variant={statusVariant(connector.status)} className="capitalize">{t(`system.connectors.status.${connector.status}`)}</Badge></div></CardHeader>
               <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  {connector.description ?? meta?.description}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {t("system.connectors.linkedVehicles", { count: connector._count?.vehicles ?? 0 })}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Tooltip>
-                    <TooltipTrigger
-                      className={cn(
-                        buttonVariants({ size: "sm", variant: "outline" }),
-                        "pointer-events-none opacity-50"
-                      )}
-                      disabled
-                    >
-                      <Wifi className="mr-1 h-3 w-3" />
-                      {t("system.connectors.test")}
-                    </TooltipTrigger>
-                    <TooltipContent>{t("system.connectors.futureTooltip")}</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger
-                      className={cn(
-                        buttonVariants({ size: "sm", variant: "outline" }),
-                        "pointer-events-none opacity-50"
-                      )}
-                      disabled
-                    >
-                      <RefreshCw className="mr-1 h-3 w-3" />
-                      {t("system.connectors.sync")}
-                    </TooltipTrigger>
-                    <TooltipContent>{t("system.connectors.futureTooltip")}</TooltipContent>
-                  </Tooltip>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => openEdit(connector)}
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setDeleteId(connector.id)}
-                  >
-                    <Trash2 className="h-3 w-3 text-destructive" />
-                  </Button>
-                </div>
+                <p className="text-sm text-muted-foreground">{connector.description ?? meta?.description}</p>
+                <p className="text-xs text-muted-foreground">{t("system.connectors.linkedVehicles", { count: connector._count?.vehicles ?? 0 })}</p>
+                {isDemoConnector ? (
+                  <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+                    <p className="text-xs font-medium">{t("system.connectors.demoSync")}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" disabled={syncing === connector.id} onClick={() => void syncConnector(connector, fixture)}><RefreshCw className={cn("mr-1 h-3 w-3", syncing === connector.id && "animate-spin")} />{t("system.connectors.runSample")}</Button>
+                      <label className={cn(buttonVariants({ size: "sm", variant: "outline" }), "cursor-pointer")}><Upload className="mr-1 h-3 w-3" />{t("system.connectors.upload") }<input className="hidden" type="file" accept=".csv,.json" onChange={(event) => { const file = event.target.files?.[0]; if (file) void syncConnector(connector, fixture, file); event.currentTarget.value = ""; }} /></label>
+                      <Button size="sm" variant="ghost" onClick={() => downloadText(`${connector.type}-template.csv`, connector.type === "oms" ? OMS_TEMPLATE : WMS_TEMPLATE)}><Download className="mr-1 h-3 w-3" />{t("system.connectors.template")}</Button>
+                    </div>
+                    {connectorRuns.length > 0 && <div className="space-y-1 text-xs text-muted-foreground"><p className="font-medium text-foreground">{t("system.connectors.lastRuns")}</p>{connectorRuns.slice(0, 3).map((run) => { let errors: Array<{ row: number; error: string }> = []; try { errors = run.errorsJson ? JSON.parse(run.errorsJson) : []; } catch { errors = []; } return <div key={run.id} className="space-y-1"><div className="flex justify-between gap-2"><span>{formatRunDate(run.startedAt)} · {run.status}</span><span>+{run.createdCount} ↻{run.updatedCount} !{run.rejectedCount}</span></div>{errors.length > 0 && <details><summary className="cursor-pointer text-destructive">{t("system.connectors.showRejected", { count: errors.length })}</summary><ul className="mt-1 list-inside list-disc">{errors.slice(0, 3).map((item, index) => <li key={`${run.id}-${index}`}>{t("system.connectors.rowError", { row: item.row, error: item.error })}</li>)}</ul></details>}</div>; })}</div>}
+                    {connectorRuns.length === 0 && <button className="text-xs text-muted-foreground underline" onClick={() => void loadRuns(connector.id)}>{t("system.connectors.loadRuns")}</button>}
+                  </div>
+                ) : (
+                  <Tooltip><TooltipTrigger className={cn(buttonVariants({ size: "sm", variant: "outline" }), "pointer-events-none opacity-50")} disabled><Wifi className="mr-1 h-3 w-3" />{t("system.connectors.test")}</TooltipTrigger><TooltipContent>{t("system.connectors.futureTooltip")}</TooltipContent></Tooltip>
+                )}
+                {canConfigure && <div className="flex gap-2"><Button size="sm" variant="ghost" onClick={() => openEdit(connector)}><Pencil className="h-3 w-3" /></Button><Button size="sm" variant="ghost" onClick={() => setDeleteId(connector.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button></div>}
               </CardContent>
             </Card>
           );
         })}
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? t("system.connectors.editConnector") : t("system.connectors.addConnector")}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="connector-name">{t("common.name")}</Label>
-              <Input
-                id="connector-name"
-                value={form.name}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, name: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{t("system.connectors.type")}</Label>
-              <Select
-                value={form.type}
-                onValueChange={(v) => {
-                  const type = (v ?? "iot") as ConnectorInput["type"];
-                  setForm((f) => ({ ...f, type }));
-                  setConfigFields({});
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {connectorTypes.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {CONNECTOR_TYPE_REGISTRY[t].label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{t("common.status")}</Label>
-              <Select
-                value={form.status}
-                onValueChange={(v) =>
-                  setForm((f) => ({
-                    ...f,
-                    status: (v ?? "disabled") as ConnectorInput["status"],
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {connectorStatuses.map((s) => (
-                    <SelectItem key={s} value={s} className="capitalize">
-                      {t(`system.connectors.status.${s}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="connector-desc">{t("common.description")}</Label>
-              <Textarea
-                id="connector-desc"
-                value={form.description ?? ""}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, description: e.target.value }))
-                }
-              />
-            </div>
-            {typeMeta?.configFields.map((field) => (
-              <div key={field.key} className="space-y-2">
-                <Label htmlFor={field.key}>{field.label}</Label>
-                <Input
-                  id={field.key}
-                  type={field.type === "password" ? "password" : field.type === "number" ? "number" : "text"}
-                  placeholder={field.placeholder}
-                  value={configFields[field.key] ?? ""}
-                  onChange={(e) =>
-                    setConfigFields((prev) => ({
-                      ...prev,
-                      [field.key]: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            ))}
-            {error && <p className="text-sm text-destructive">{error}</p>}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button onClick={handleSave} disabled={loading}>
-              {loading ? t("system.connectors.saving") : t("common.save")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("system.connectors.deleteConnector")}</DialogTitle>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteId(null)}>
-              {t("common.cancel")}
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              {t("common.delete")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}><DialogContent className="max-w-lg"><DialogHeader><DialogTitle>{editing ? t("system.connectors.editConnector") : t("system.connectors.addConnector")}</DialogTitle></DialogHeader><div className="grid gap-4 py-2">
+        <div className="space-y-2"><Label htmlFor="connector-name">{t("common.name")}</Label><Input id="connector-name" value={form.name} onChange={(e) => setForm((value) => ({ ...value, name: e.target.value }))} /></div>
+        <div className="space-y-2"><Label>{t("system.connectors.type")}</Label><Select value={form.type} onValueChange={(value) => { const type = (value ?? "iot") as ConnectorInput["type"]; setForm((current) => ({ ...current, type })); setConfigFields({}); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{connectorTypes.map((type) => <SelectItem key={type} value={type}>{CONNECTOR_TYPE_REGISTRY[type].label}</SelectItem>)}</SelectContent></Select></div>
+        <div className="space-y-2"><Label>{t("common.status")}</Label><Select value={form.status} onValueChange={(value) => setForm((current) => ({ ...current, status: (value ?? "disabled") as ConnectorInput["status"] }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{connectorStatuses.map((status) => <SelectItem key={status} value={status}>{t(`system.connectors.status.${status}`)}</SelectItem>)}</SelectContent></Select></div>
+        <div className="space-y-2"><Label htmlFor="connector-desc">{t("common.description")}</Label><Textarea id="connector-desc" value={form.description ?? ""} onChange={(e) => setForm((value) => ({ ...value, description: e.target.value }))} /></div>
+        {CONNECTOR_TYPE_REGISTRY[form.type]?.configFields.map((field) => <div key={field.key} className="space-y-2"><Label htmlFor={field.key}>{field.label}</Label><Input id={field.key} type={field.type === "password" ? "password" : field.type === "number" ? "number" : "text"} placeholder={field.placeholder} value={configFields[field.key] ?? ""} onChange={(e) => setConfigFields((prev) => ({ ...prev, [field.key]: e.target.value }))} /></div>)}
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </div><DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>{t("common.cancel")}</Button><Button onClick={() => void handleSave()} disabled={loading}>{loading ? t("system.connectors.saving") : t("common.save")}</Button></DialogFooter></DialogContent></Dialog>
+      <Dialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}><DialogContent><DialogHeader><DialogTitle>{t("system.connectors.deleteConnector")}</DialogTitle></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setDeleteId(null)}>{t("common.cancel")}</Button><Button variant="destructive" onClick={() => void handleDelete()}>{t("common.delete")}</Button></DialogFooter></DialogContent></Dialog>
     </div>
   );
 }

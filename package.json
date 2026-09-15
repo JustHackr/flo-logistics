@@ -5,13 +5,15 @@
   "scripts": {
     "dev": "node node_modules/next/dist/bin/next dev",
     "postinstall": "prisma generate && npm rebuild better-sqlite3",
-    "build": "prisma generate && prisma migrate deploy && npm run db:seed && node node_modules/next/dist/bin/next build",
+    "build": "prisma generate && prisma migrate deploy && node node_modules/next/dist/bin/next build",
     "start": "node node_modules/next/dist/bin/next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:demo": "tsx prisma/seed.ts --force",
+    "intelligence:worker": "tsx scripts/intelligence-worker.ts",
     "db:reset": "prisma migrate reset --force"
   },
   "dependencies": {

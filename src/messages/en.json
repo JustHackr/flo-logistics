@@ -37,6 +37,7 @@
       "home": "Home",
       "maintenance": "Maintenance",
       "logistics": "Logistics",
+      "controlTower": "Control Tower",
       "companyAssistant": "Company Assistant",
       "aiSettings": "AI Settings",
       "loadDetection": "Load Detection",
@@ -694,6 +695,11 @@
       "high": "medium",
       "critical": "Critical"
     },
+    "severity": {
+      "watch": "Watch",
+      "high": "High",
+      "critical": "Critical"
+    },
     "dtiPending": "DTI pending",
     "dtiWithRisk": "DTI {score} · {risk}",
     "cfiScore": "CFI {score}",
@@ -1207,6 +1213,11 @@
       "ordersLink": "Routing Orders",
       "subtitle": "Sorts waypoints using OSRM road distances and Jakarta rush-hour traffic calibration. Produces one or more route plans (max 15 stops per route).",
       "trafficData": "Traffic data:",
+      "conditionTitle": "FLO condition intelligence",
+      "conditionSources": "Traffic is already included in provider ETA; weather and incidents are separate adjustments.",
+      "trafficFactor": "Traffic factor: {factor}x",
+      "weatherFactor": "Weather factor: {factor}x",
+      "incidentFactor": "Incident factor: {factor}x",
       "routeStartTime": "Route start time",
       "rushHourHint": "Rush-hour departures (e.g. weekday 08:00) produce longer leg times.",
       "savePlans": "Save Route Plan(s)",
@@ -1597,6 +1608,73 @@
       "emissionsPreview": "emissions per route on the preview card."
     }
   },
+  "controlTower": {
+    "title": "Delivery Control Tower",
+    "subtitle": "Prioritized exceptions that connect delivery SLA risk, route timing, and fleet health into one operator queue.",
+    "loadFailed": "Failed to load control tower",
+    "metrics": {
+      "openExceptions": "Open exceptions",
+      "openExceptionsDetail": "{critical} critical · {high} high",
+      "unassignedOrders": "Unassigned orders",
+      "unassignedOrdersDetail": "{open} open orders in the pipeline",
+      "lateStops": "Late delivery stops",
+      "atRiskOrders": "{count} orders need attention",
+      "fulfillmentBlocked": "Fulfillment blocked",
+      "fleetRisks": "Fleet risks on route",
+      "activeRoutes": "{count} active or planned routes",
+      "otif": "OTIF performance",
+      "deliveredWithPromise": "{count} delivered orders with a promise"
+    },
+    "queueTitle": "Action queue",
+    "queueDescription": "The highest-impact exceptions appear first so an ops manager can intervene before a customer SLA is missed.",
+    "criticalBadge": "{count} critical",
+    "empty": "No active exceptions. The delivery plan is clear for now.",
+    "exceptionTitles": {
+      "unassigned_order": "Order has no route",
+      "late_stop": "Delivery is late",
+      "sla_risk": "SLA risk",
+      "fulfillment_blocked": "Fulfillment is blocked",
+      "fleet_risk": "Vehicle needs attention",
+      "congestion_risk": "Traffic congestion risk",
+      "weather_risk": "Weather risk",
+      "incident_near_route": "Incident near route",
+      "stale_traffic": "Traffic feed is stale",
+      "stale_weather": "Weather feed is stale"
+    },
+    "exceptionDetails": {
+      "unassigned": "Received {age}h ago · no route assignment",
+      "late": "ETA {eta} · {minutes} minutes late",
+      "soon": "ETA {eta} · due in {minutes} minutes",
+      "fleet": "{driver} assigned · VQI {vqi}/100"
+    },
+    "actions": {
+      "open": "Open context",
+      "acknowledge": "Acknowledge",
+      "resolve": "Resolve",
+      "planOrders": "Plan orders",
+      "openRoutes": "Open routes",
+      "openFleet": "Open fleet"
+    },
+    "filters": {
+      "allSeverity": "All severity",
+      "allTypes": "All exception types",
+      "allSources": "All sources"
+    },
+    "open": "Open",
+    "acknowledged": "Acknowledged",
+    "promise": "promise {time}",
+    "resolveNotePrompt": "Optional resolution note",
+    "actionFailed": "Could not update this exception.",
+    "policyTitle": "Transparent risk policy",
+    "policyDescription": "Rule-based thresholds make every alert explainable and easy to tune with Blibli operations.",
+    "policyCritical": "Critical",
+    "policyCriticalDetail": "An order is unassigned for 12+ hours or a route stop is 60+ minutes past ETA.",
+    "policyHigh": "High",
+    "policyHighDetail": "An order is unassigned for 6+ hours, a stop is late, or a high-risk vehicle is already assigned.",
+    "policyWatch": "Watch",
+    "policyWatchDetail": "An unassigned order is aging, an ETA is within 30 minutes, or a medium-risk vehicle is on route.",
+    "generated": "Snapshot generated {time}"
+  },
   "fleet": {
     "vehicles": {
       "title": "Vehicles",
@@ -1873,6 +1951,14 @@
       "test": "Test",
       "sync": "Sync",
       "futureTooltip": "Available in a future release",
+      "demoSync": "Blibli fixture / file sync",
+      "runSample": "Run sample sync",
+      "upload": "Upload CSV/JSON",
+      "template": "Template",
+      "lastRuns": "Recent runs",
+      "loadRuns": "Load sync history",
+      "showRejected": "Show {count} rejected rows",
+      "rowError": "Row {row}: {error}",
       "type": "connector-name",
       "saving": "Saving...",
       "status": {

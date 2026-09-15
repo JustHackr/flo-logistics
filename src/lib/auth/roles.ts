@@ -16,6 +16,8 @@ const ROLE_PATHS: Record<Role, string[]> = {
     "/",
     "/dashboard",
     "/routing",
+    "/control-tower",
+    "/connectors",
     "/vehicles",
     "/reports",
     "/methodology",
@@ -34,6 +36,7 @@ const ROLE_PATHS: Record<Role, string[]> = {
   WAREHOUSE: [
     "/",
     "/routing/orders",
+    "/connectors",
     "/routing/methodology",
     "/computer-vision",
   ],
@@ -67,7 +70,7 @@ export function defaultHomeForRole(role: Role): string {
     case "WAREHOUSE":
       return "/computer-vision/load-detection";
     case "OPS_MANAGER":
-      return "/routing/dashboard";
+      return "/control-tower";
     default:
       return "/";
   }

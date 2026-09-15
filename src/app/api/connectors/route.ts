@@ -3,8 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { connectorSchema } from "@/lib/schemas/connector";
 import { apiError } from "@/lib/i18n/api-errors";
 import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
+import { requireApiRole } from "@/lib/auth/api";
 
 export async function GET() {
+  const access = await requireApiRole(["ADMIN", "OPS_MANAGER", "WAREHOUSE"]);
+  if (!access.ok) return access.response;
   const connectors = await prisma.dataConnector.findMany({
     orderBy: { name: "asc" },
     include: { _count: { select: { vehicles: true } } },
@@ -13,6 +16,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const access = await requireApiRole(["ADMIN"]);
+  if (!access.ok) return access.response;
   try {
     const body = await request.json();
     const parsed = connectorSchema.parse(body);

@@ -63,6 +63,7 @@ function daysFromNow(days: number) {
 
 async function main() {
   const forceSeed =
+    process.argv.includes("--force") ||
     process.env.FORCE_SEED === "1" ||
     process.env.FORCE_SEED?.toLowerCase() === "true";
   const skipSeed =
@@ -78,6 +79,20 @@ async function main() {
       return;
     }
     console.log("SKIP_SEED set but database is empty — seeding baseline demo data.");
+  }
+
+  if (!forceSeed) {
+    const [existingUsers, existingOrders, existingVehicles] = await Promise.all([
+      prisma.user.count(),
+      prisma.order.count(),
+      prisma.vehicle.count(),
+    ]);
+    if (existingUsers > 0 || existingOrders > 0 || existingVehicles > 0) {
+      console.log(
+        `Skipping seed — database already contains operational data (${existingUsers} users, ${existingOrders} orders, ${existingVehicles} vehicles). Set FORCE_SEED=1 or use npm run db:seed:demo to reset demo data.`
+      );
+      return;
+    }
   }
 
   // Avoid wiping judge-created demo state during a hot redeploy: if any route
@@ -99,6 +114,13 @@ async function main() {
 
   // Routing tables must be cleared before vehicles because Driver -> Vehicle uses
   // `onDelete: Restrict`.
+  await prisma.routeRevision.deleteMany();
+  await prisma.routeConditionAssessment.deleteMany();
+  await prisma.intelligenceIngestionRun.deleteMany();
+  await prisma.trafficIncident.deleteMany();
+  await prisma.conditionSnapshot.deleteMany();
+  await prisma.intelligenceConfig.deleteMany();
+  await prisma.intelligenceRegion.deleteMany();
   await prisma.routeStop.deleteMany();
   await prisma.routePlan.deleteMany();
   await prisma.orderStatusEvent.deleteMany();
@@ -163,7 +185,7 @@ async function main() {
         name: "Blibli OMS",
         type: "oms",
         status: "planned",
-        description: "Order Management System integration — planned for a future release.",
+        description: "Blibli OMS fixture and CSV/JSON order ingestion.",
         config: JSON.stringify({
           endpointUrl: "https://oms.blibli.example.com/api/v1",
           pollingIntervalMinutes: 15,
@@ -175,7 +197,7 @@ async function main() {
         name: "Blibli WMS",
         type: "wms",
         status: "planned",
-        description: "Warehouse Management System integration — planned for a future release.",
+        description: "Blibli WMS fulfillment-event fixture and CSV/JSON ingestion.",
         config: JSON.stringify({
           endpointUrl: "https://wms.blibli.example.com/api/v1",
           pollingIntervalMinutes: 30,
@@ -215,6 +237,20 @@ async function main() {
     },
   });
 
+  await prisma.intelligenceRegion.create({
+    data: {
+      id: "jakarta",
+      name: "Jakarta & Jabodetabek",
+      countryCode: "ID",
+      timezone: "Asia/Jakarta",
+      minLat: -6.45,
+      minLng: 106.55,
+      maxLat: -6.05,
+      maxLng: 107.15,
+      config: { create: {} },
+    },
+  });
+
   const driverAssignments = [
     { name: "Andi Pratama", phone: "+62 812-3456-7801", employeeId: "EMP-BLI-2401", licenseNumber: "SIM B1 3175-120988-0001", vehicleName: "B 1721 KXP – Daihatsu Gran Max" },
     { name: "Bima Nugraha", phone: "+62 813-7788-2202", employeeId: "EMP-BLI-2402", licenseNumber: "SIM C 3175-150395-0044", vehicleName: "B 1234 AB – Honda Beat" },
@@ -241,6 +277,9 @@ async function main() {
     lng: loc.lng,
     accessRequirement: loc.accessRequirement,
     receivedAtOffsetDays: [0.2, 0.4, 0.1, 0.3, 0.6, 0.7, 0.25, 0.35, 0.8, 0.45, 0.55, 0.15][idx] ?? 0.3,
+    promisedAt: new Date(now.getTime() + ((idx % 6) - 2) * 60 * 60_000),
+    serviceLevel: idx % 3 === 0 ? "SAME_DAY" : "NEXT_DAY",
+    priority: idx % 4 === 0 ? "HIGH" : "NORMAL",
   }));
 
   const createdOrderIds: string[] = [];
@@ -258,6 +297,9 @@ async function main() {
         accessRequirement: o.accessRequirement,
         status: "RECEIVED",
         receivedAt,
+        promisedAt: o.promisedAt,
+        serviceLevel: o.serviceLevel,
+        priority: o.priority,
       },
     });
 

@@ -3,10 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { connectorSchema } from "@/lib/schemas/connector";
 import { apiError } from "@/lib/i18n/api-errors";
 import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
+import { requireApiRole } from "@/lib/auth/api";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, context: RouteContext) {
+  const access = await requireApiRole(["ADMIN", "OPS_MANAGER", "WAREHOUSE"]);
+  if (!access.ok) return access.response;
   const { id } = await context.params;
   const connector = await prisma.dataConnector.findUnique({
     where: { id },
@@ -19,6 +22,8 @@ export async function GET(request: Request, context: RouteContext) {
 }
 
 export async function PUT(request: Request, context: RouteContext) {
+  const access = await requireApiRole(["ADMIN"]);
+  if (!access.ok) return access.response;
   const { id } = await context.params;
   try {
     const body = await request.json();
@@ -41,6 +46,8 @@ export async function PUT(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
+  const access = await requireApiRole(["ADMIN"]);
+  if (!access.ok) return access.response;
   const { id } = await context.params;
   try {
     await prisma.dataConnector.delete({ where: { id } });

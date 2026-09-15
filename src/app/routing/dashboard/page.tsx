@@ -1,6 +1,8 @@
 import { LogisticsDashboardClient } from "@/components/routing/logistics-dashboard-client";
+import { getSession } from "@/lib/auth/session";
 
-export default function RoutingDashboardPage() {
-  return <LogisticsDashboardClient />;
+export default async function RoutingDashboardPage() {
+  const session = await getSession();
+  return <LogisticsDashboardClient canApproveRevisions={session?.role === "ADMIN" || session?.role === "OPS_MANAGER"} />;
 }
 
