@@ -14,6 +14,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:demo": "tsx prisma/seed.ts --force",
     "intelligence:worker": "tsx scripts/intelligence-worker.ts",
+    "cv:generate-barcode-fixtures": "tsx scripts/generate-barcode-fixtures.ts",
     "db:reset": "prisma migrate reset --force"
   },
   "dependencies": {

@@ -65,6 +65,12 @@ Computer vision demos process webcam frames **on-device** in the browser. The
 guided tour at `/computer-vision/tour` uses static sample frames so judges can
 review the feature without camera permission.
 
+Parcel verification follows the same posture: webcam and uploaded label images
+are decoded in the browser, are not sent to a vision provider, and are not
+stored. Only the scanned barcode value and the resulting OMS/WMS verification
+decision can be sent to the authenticated FLO API; an operator may explicitly
+create an audited Control Tower exception.
+
 ## Reporting
 
 For security issues in this competition prototype, contact the Quasarian /

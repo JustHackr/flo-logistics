@@ -114,6 +114,25 @@ Load detection and hub congestion / dwell run **in the browser** — frames neve
 
 Code: [src/lib/computer-vision/](src/lib/computer-vision/), routes `/computer-vision/tour`, `/computer-vision/load-detection`, `/computer-vision/hub-congestion-detection`.
 
+### Parcel label & barcode verification
+
+The `/computer-vision/parcel-verification` page adds a lightweight warehouse
+gate check. FLO ships eight deterministic Code 128 fixture labels covering
+verified, not-ready, unknown, duplicate, and damaged-package review paths.
+Testers can click a fixture, type a value, upload a label image, or use a
+webcam. Chrome/Edge use the browser's on-device `BarcodeDetector`; older
+browsers retain deterministic fixture and manual verification fallbacks.
+Live values are checked against the OMS/WMS order and fulfillment state. A
+non-verified result can create a persistent `BARCODE_MISMATCH` Control Tower
+exception with an audit event. Camera frames stay in the browser and are not
+uploaded.
+
+Regenerate the exact fixture images after changing the fixture catalog with:
+
+```bash
+npm run cv:generate-barcode-fixtures
+```
+
 ### Flo Designer — prompt → graph → save → JSON
 
 Admin workspace: describe a process in natural language, get a validated node graph, integrate with FLO’s process map, **save designs in SQLite**, export deterministic JSON. Drag nodes, inspect in a permanent detail pane, highlight what’s new after Refine.
@@ -282,6 +301,7 @@ Canonical source: the *Sovereignty* slide in [team-site/src/components/Presentat
 | Computer Vision | `/computer-vision/tour` | Guided tour of the on-device inference story (static samples, no camera). |
 | Computer Vision | `/computer-vision/load-detection` | Bag load detection (count kraft cartons through a bag opening). |
 | Computer Vision | `/computer-vision/hub-congestion-detection` | Hub congestion / dwell-time detection (yellow-platform calibration). |
+| Computer Vision | `/computer-vision/parcel-verification` | On-device barcode scan matched to OMS/WMS readiness. |
 | Computer Vision | `/computer-vision/odol-detection` | ODOL detection (overdimension / overload) — placeholder. |
 | AI | `/ai/chat` | Sovereign ops assistant (intent router + optional external LLM). |
 | AI | `/ai/settings` | Sovereign / external status, test connection. |

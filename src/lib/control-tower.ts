@@ -16,7 +16,8 @@ export type ControlTowerExceptionKind =
   | "weather_risk"
   | "incident_near_route"
   | "stale_traffic"
-  | "stale_weather";
+  | "stale_weather"
+  | "barcode_mismatch";
 
 export type ControlTowerException = {
   id: string;
@@ -115,6 +116,7 @@ const DB_KIND = {
   incident_near_route: "INCIDENT_NEAR_ROUTE",
   stale_traffic: "STALE_TRAFFIC",
   stale_weather: "STALE_WEATHER",
+  barcode_mismatch: "BARCODE_MISMATCH",
 } as const;
 
 const DB_SEVERITY = {
@@ -375,6 +377,7 @@ async function syncExceptionRecords(desired: ControlTowerException[], now: Date)
     const stale = await tx.controlTowerException.findMany({
       where: {
         status: { not: "RESOLVED" },
+        kind: { not: "BARCODE_MISMATCH" },
         ...(desiredKeys.length > 0 ? { dedupeKey: { notIn: desiredKeys } } : {}),
       },
       select: { id: true },

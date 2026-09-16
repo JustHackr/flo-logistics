@@ -66,6 +66,7 @@ enum ControlTowerExceptionKind {
   INCIDENT_NEAR_ROUTE
   STALE_TRAFFIC
   STALE_WEATHER
+  BARCODE_MISMATCH
 }
 
 enum ControlTowerSeverity {

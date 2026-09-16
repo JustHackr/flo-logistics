@@ -29,6 +29,7 @@ import {
   Workflow,
   PencilRuler,
   BarChart3,
+  ScanBarcode,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -138,6 +139,12 @@ const navGroups: NavGroup[] = [
         href: "/computer-vision/hub-congestion-detection",
         labelKey: "nav.items.hubCongestion",
         icon: Warehouse,
+      },
+      {
+        href: "/computer-vision/parcel-verification",
+        labelKey: "nav.items.parcelVerification",
+        icon: ScanBarcode,
+        badgeKey: "nav.badges.demo",
       },
     ],
   },
