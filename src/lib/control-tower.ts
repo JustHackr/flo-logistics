@@ -43,6 +43,7 @@ export type ControlTowerException = {
   riskLevel?: RiskLevel;
   acknowledgedAt?: string | null;
   resolvedAt?: string | null;
+  detectedAt?: string | null;
 };
 
 export type ControlTowerOverview = {
@@ -399,6 +400,7 @@ function mapStoredException(exception: {
   status: string;
   reason: string;
   sourceSystem: string | null;
+  detectedAt: Date;
   acknowledgedAt: Date | null;
   resolvedAt: Date | null;
   order: { id: string; externalOrderId: string | null; recipientAddress: string; promisedAt: Date | null; fulfillmentStatus: string } | null;
@@ -424,6 +426,7 @@ function mapStoredException(exception: {
     vehicleName: exception.vehicle?.name,
     acknowledgedAt: exception.acknowledgedAt?.toISOString() ?? null,
     resolvedAt: exception.resolvedAt?.toISOString() ?? null,
+    detectedAt: exception.detectedAt.toISOString(),
   };
 }
 

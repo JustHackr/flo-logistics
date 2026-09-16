@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { FixtureIntelligenceProvider } from "./fixtures";
 import { DEFAULT_JAKARTA_REGION, isInRegion } from "./regions";
 import { GoogleTrafficProvider, OpenMeteoWeatherProvider, TomTomIncidentProvider } from "./providers";
+import { recordAuditEventSafe } from "@/lib/audit";
+import { distanceToRouteKm, nearestRouteStop } from "./geo";
 import type { ConditionSnapshotView, IntelligenceProvider, IntelligenceRegion, IntelligenceSource, NormalizedIncident, NormalizedTraffic, NormalizedWeather, RouteConditionAssessment } from "./types";
 
 function parseStringArray(value: string) {
@@ -148,10 +150,12 @@ async function refreshRegion(region: IntelligenceRegion, mode: "live" | "fixture
     const cutoff = new Date(startedAt.getTime() - 2 * 5 * 60_000);
     await prisma.conditionSnapshot.updateMany({ where: { regionId: region.id, createdAt: { lt: cutoff }, stale: false }, data: { stale: true } });
     await prisma.intelligenceIngestionRun.update({ where: { id: run.id }, data: { status: errors.length > 0 ? "PARTIAL" : "SUCCEEDED", completedAt: new Date(), providersJson: JSON.stringify(providers), snapshotCount, incidentCount, errorJson: errors.length > 0 ? JSON.stringify(errors) : null } });
+    await recordAuditEventSafe({ eventType: "INTELLIGENCE_INGESTION", action: errors.length > 0 ? "PARTIAL" : "COMPLETE", summary: `Intelligence refresh ${errors.length > 0 ? "completed partially" : "completed"}.`, reason: errors.length > 0 ? errors.join(" ") : undefined, entityType: "IntelligenceIngestionRun", entityId: run.id, ingestionRunId: run.id, regionId: region.id, provider: providers.join(","), after: { status: errors.length > 0 ? "PARTIAL" : "SUCCEEDED", snapshotCount, incidentCount, errors } });
     return { regionId: region.id, runId: run.id, status: errors.length > 0 ? "PARTIAL" : "SUCCEEDED", snapshotCount, incidentCount, errors };
   } catch (error) {
     const message = error instanceof Error ? error.message : "ingestion failed";
     await prisma.intelligenceIngestionRun.update({ where: { id: run.id }, data: { status: "FAILED", completedAt: new Date(), providersJson: JSON.stringify(providers), snapshotCount, incidentCount, errorJson: JSON.stringify([...errors, message]) } });
+    await recordAuditEventSafe({ eventType: "INTELLIGENCE_INGESTION", action: "FAIL", summary: "Intelligence refresh failed.", reason: message, entityType: "IntelligenceIngestionRun", entityId: run.id, ingestionRunId: run.id, regionId: region.id, provider: providers.join(","), after: { status: "FAILED", snapshotCount, incidentCount, errors: [...errors, message] } });
     throw error;
   }
 }
@@ -188,5 +192,77 @@ export async function assessRouteConditions(input: { points: Array<{ lat: number
   if (config) {
     try { thresholds = JSON.parse(config.thresholdsJson) as Record<string, number>; } catch { thresholds = {}; }
   }
-  return (await import("./risk")).assessConditions({ traffic, weather, incidents: normalizedIncidents, snapshotIds: snapshots.map((item) => item.id), thresholds });
+  return (await import("./risk")).assessConditions({ traffic, weather, incidents: normalizedIncidents, snapshotIds: freshSnapshots.map((item) => item.id), thresholds });
+}
+
+/**
+ * Attach the latest regional conditions to a concrete route. Regional traffic and
+ * weather observations are deliberately marked as route-level; incidents receive
+ * a measured distance and nearest stop so operators can see why a route was hit.
+ */
+export async function associateRouteConditions(input: {
+  routePlanId: string;
+  points: Array<{ lat: number; lng: number }>;
+  stops?: Array<{ routeStopId: string; lat: number; lng: number }>;
+  regionId?: string;
+}) {
+  const regions = await getRegions();
+  const region = input.regionId
+    ? regions.find((item) => item.id === input.regionId)
+    : regions.find((item) => input.points.some((point) => isInRegion(item, point.lat, point.lng))) ?? regions[0];
+  if (!region) return [];
+
+  const [snapshots, incidents] = await Promise.all([getLatestSnapshots(region.id), getRecentIncidents(region.id)]);
+  const freshSnapshots = snapshots.filter((snapshot) => !snapshot.stale);
+  const routePoints = input.points;
+  const routeStops = input.stops ?? [];
+  const incidentBySnapshot = (snapshot: ConditionSnapshotView) => incidents.find((incident) => incident.source === snapshot.source && Math.abs(incident.observedAt.getTime() - new Date(snapshot.observedAt).getTime()) <= 10 * 60_000);
+  const rows = freshSnapshots.map((snapshot) => {
+    const incident = snapshot.dataType === "INCIDENT" ? incidentBySnapshot(snapshot) : undefined;
+    const distanceKm = incident ? distanceToRouteKm({ lat: incident.lat, lng: incident.lng }, routePoints) : Number.POSITIVE_INFINITY;
+    const nearestStop = incident ? nearestRouteStop({ lat: incident.lat, lng: incident.lng }, routeStops) : null;
+    const affected = incident ? distanceKm <= 5 : snapshot.dataType !== "INCIDENT" && routePoints.some((point) => isInRegion(region, point.lat, point.lng));
+    const relevanceScore = incident ? Math.max(0, Math.round((1 - Math.min(distanceKm, 5) / 5) * 100) / 100) : affected ? 0.5 : 0;
+    return {
+      routePlanId: input.routePlanId,
+      routeStopId: nearestStop && nearestStop.distanceKm <= 5 ? nearestStop.routeStopId : null,
+      snapshotId: snapshot.id,
+      regionId: region.id,
+      distanceToRouteKm: Number.isFinite(distanceKm) ? Math.round(distanceKm * 100) / 100 : -1,
+      affected,
+      relevanceScore,
+    };
+  });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.routeConditionObservation.deleteMany({ where: { routePlanId: input.routePlanId } });
+    if (rows.length > 0) await tx.routeConditionObservation.createMany({ data: rows });
+  });
+  return rows;
+}
+
+export async function getRouteConditionObservations(routePlanId: string) {
+  const observations = await prisma.routeConditionObservation.findMany({
+    where: { routePlanId },
+    orderBy: [{ affected: "desc" }, { relevanceScore: "desc" }, { createdAt: "desc" }],
+    include: { snapshot: true, routeStop: { include: { order: { select: { externalOrderId: true, recipientAddress: true } } } } },
+  });
+  return observations.map((observation) => ({
+    id: observation.id,
+    routePlanId: observation.routePlanId,
+    routeStopId: observation.routeStopId,
+    snapshotId: observation.snapshotId,
+    regionId: observation.regionId,
+    distanceToRouteKm: observation.distanceToRouteKm,
+    affected: observation.affected,
+    relevanceScore: observation.relevanceScore,
+    createdAt: observation.createdAt.toISOString(),
+    source: observation.snapshot.source,
+    dataType: observation.snapshot.dataType,
+    observedAt: observation.snapshot.observedAt.toISOString(),
+    stale: observation.snapshot.stale || observation.snapshot.expiresAt < new Date(),
+    reason: observation.snapshot.dataType === "INCIDENT"
+      ? observation.distanceToRouteKm >= 0 ? `${observation.distanceToRouteKm.toFixed(1)} km from route${observation.routeStop?.order.externalOrderId ? ` near ${observation.routeStop.order.externalOrderId}` : ""}.` : "Incident snapshot has no matching active incident."
+      : "Regional condition applies to this route.",
+  }));
 }

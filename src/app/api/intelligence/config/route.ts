@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireApiRole } from "@/lib/auth/api";
 import { prisma } from "@/lib/prisma";
 import { ensureDefaultRegion } from "@/lib/intelligence/service";
+import { recordAuditEventSafe } from "@/lib/audit";
 
 const configSchema = z.object({
   enabled: z.boolean().optional(),
@@ -65,6 +66,7 @@ export async function PATCH(request: Request) {
         ...(body.thresholds === undefined ? {} : { thresholdsJson: JSON.stringify(body.thresholds) }),
       },
     });
+    await recordAuditEventSafe({ eventType: "INTELLIGENCE_CONFIG", action: "UPDATE", summary: "Intelligence provider configuration updated.", actorUserId: access.session.id, actorRole: access.session.role, entityType: "IntelligenceConfig", entityId: config.id, regionId, before: { regionId }, after: { enabled: config.enabled, refreshIntervalSec: config.refreshIntervalSec, providerPriority: parseJson(config.providerPriorityJson, [] as string[]), thresholds: parseJson(config.thresholdsJson, {}) } });
     return NextResponse.json({ ok: true, config: {
       regionId,
       enabled: config.enabled,

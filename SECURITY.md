@@ -17,20 +17,24 @@ opts into a third-party service that cannot run locally.
 
 ## Demo access (RBAC)
 
-The demo uses role-based access control on **pages and navigation**; `/api/*` is
-intentionally left unauthenticated for the live demo so the public can review
-the system without holding accounts. Roles and seeded personas:
+The demo uses role-based access control on **pages, navigation, and API routes**.
+Read and mutation APIs call `requireApiRole` server-side; there is no browser
+credential or API-key path. The health endpoint is intentionally public for
+deployment checks. Roles and seeded personas:
 
 | Role | Persona | Sees |
 |------|---------|------|
 | `ADMIN` | admin@flo.demo | Everything (including `/admin/process-map` and `/admin/mockup-data`) |
-| `OPS_MANAGER` | ops@flo.demo | Fleet, routing, reports, AI assistant, Sovereign AI, computer-vision tour |
+| `OPS_MANAGER` | ops@flo.demo | Fleet, routing, reports, Control Tower, intelligence, reconciliation, AI assistant |
 | `DRIVER` | driver@flo.demo | `/routing/plan` and `/routing/dashboard` only |
 | `WAREHOUSE` | warehouse@flo.demo | `/routing/orders` and `/computer-vision/*` |
 
 `src/proxy.ts` redirects unauthenticated visitors to `/login?next=…` and sends
 role-mismatched paths to each role's default home (`defaultHomeForRole` in
-`src/lib/auth/roles.ts`).
+`src/lib/auth/roles.ts`). API handlers repeat the check because proxy routing is
+not an authorization boundary. Admin-only configuration includes intelligence
+provider priority, regions, thresholds, and connector settings; Ops/Warehouse
+can inspect feeds, run reconciliation, and resolve operational issues.
 
 We do **not** ship product analytics, ad pixels, or third-party telemetry SDKs.
 
@@ -52,6 +56,8 @@ API keys are never accepted from the browser and never returned by
 | Integration | Env | Purpose |
 |-------------|-----|---------|
 | Google Maps / Routes | `GOOGLE_MAPS_API_KEY`, optional `GOOGLE_MAPS_JS_API_KEY` | Live traffic geometry + map UI |
+| Open-Meteo | (none for the public forecast endpoint) | Weather observations and forecast conditions |
+| TomTom Orbis Traffic | `TOMTOM_API_KEY` | Traffic incidents and road closures |
 | Pertamina fuel list | (none — public page fetch) | Regional fuel prices for cost estimates |
 | External LLM | `AI_ALLOW_EXTERNAL` + key + base URL | Optional richer NL answers |
 

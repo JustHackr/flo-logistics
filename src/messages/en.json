@@ -38,6 +38,8 @@
       "maintenance": "Maintenance",
       "logistics": "Logistics",
       "controlTower": "Control Tower",
+      "demoScenario": "Judge Scenario",
+      "impactDashboard": "Impact Dashboard",
       "companyAssistant": "Company Assistant",
       "aiSettings": "AI Settings",
       "loadDetection": "Load Detection",

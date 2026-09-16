@@ -50,7 +50,7 @@ export async function POST(request: Request, context: RouteContext) {
       mode = fixture ? "fixture" : "json";
     }
 
-    const result = await runIntegrationSync({ connector, fixture, rows, mode });
+    const result = await runIntegrationSync({ connector, fixture, rows, mode, actorUserId: access.session.id, actorRole: access.session.role });
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(

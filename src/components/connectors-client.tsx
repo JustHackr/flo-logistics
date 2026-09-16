@@ -2,7 +2,7 @@
 
 import { withBasePath } from "@/lib/base-path";
 import { useEffect, useState } from "react";
-import { Download, Pencil, Plus, RefreshCw, Trash2, Upload, Wifi } from "lucide-react";
+import { ClipboardCheck, Download, Pencil, Plus, RefreshCw, Trash2, Upload, Wifi } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,6 +47,18 @@ type IntelligenceRegionConfig = {
   config: { enabled: boolean; refreshIntervalSec: number; providerPriority: string[]; thresholds: Record<string, number>; updatedAt: string } | null;
 };
 
+type ReconciliationIssue = {
+  id: string;
+  issueType: string;
+  status: string;
+  externalOrderId: string;
+  omsStatus: string | null;
+  wmsStatus: string | null;
+  firstDetectedAt: string;
+  lastDetectedAt: string;
+  details: { message?: string };
+};
+
 const OMS_TEMPLATE = "externalOrderId,recipientAddress,lat,lng,accessRequirement,promisedAt,serviceLevel,priority\nBLI-ORDER-001,Jl. Sudirman Jakarta,-6.2252,106.8087,BOTH,2026-09-15T18:00:00+07:00,SAME_DAY,HIGH\n";
 const WMS_TEMPLATE = "externalOrderId,externalEventId,status,occurredAt,warehouseCode,reason\nBLI-ORDER-001,WMS-EVENT-001,PACKED,2026-09-15T12:00:00+07:00,BLI-JKT-01,\n";
 
@@ -77,6 +89,8 @@ export function ConnectorsClient({ initialConnectors, userRole }: { initialConne
   const [error, setError] = useState<string | null>(null);
   const [intelligenceRegions, setIntelligenceRegions] = useState<IntelligenceRegionConfig[]>([]);
   const [savingIntelligence, setSavingIntelligence] = useState<string | null>(null);
+  const [reconciliationIssues, setReconciliationIssues] = useState<ReconciliationIssue[]>([]);
+  const [reconciliationLoading, setReconciliationLoading] = useState(false);
   const canConfigure = userRole === "ADMIN";
 
   useEffect(() => {
@@ -84,6 +98,29 @@ export function ConnectorsClient({ initialConnectors, userRole }: { initialConne
       if (response.ok) setIntelligenceRegions((await response.json()).regions ?? []);
     }).catch(() => undefined);
   }, []);
+
+  async function loadReconciliation() {
+    const response = await fetch(withBasePath("/api/connectors/reconciliation?status=OPEN"), { cache: "no-store" });
+    if (response.ok) setReconciliationIssues(((await response.json()).issues ?? []) as ReconciliationIssue[]);
+  }
+
+  useEffect(() => { const timer = window.setTimeout(() => void loadReconciliation(), 0); return () => window.clearTimeout(timer); }, []);
+
+  async function scanReconciliation() {
+    setReconciliationLoading(true); setError(null);
+    try {
+      const response = await fetch(withBasePath("/api/connectors/reconciliation"), { method: "POST" });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body?.error ?? "Unable to scan OMS/WMS reconciliation");
+      await loadReconciliation();
+    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to scan OMS/WMS reconciliation"); }
+    finally { setReconciliationLoading(false); }
+  }
+
+  async function resolveReconciliation(issueId: string) {
+    const response = await fetch(withBasePath(`/api/connectors/reconciliation/${issueId}`), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note: "Reviewed in FLO connector console." }) });
+    if (response.ok) setReconciliationIssues((current) => current.filter((issue) => issue.id !== issueId));
+  }
 
   async function saveIntelligenceRegion(region: IntelligenceRegionConfig) {
     if (!region.config) return;
@@ -169,6 +206,10 @@ export function ConnectorsClient({ initialConnectors, userRole }: { initialConne
           </div>)}
         </CardContent>
       </Card>}
+      <Card>
+        <CardHeader><div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><CardTitle className="text-base">OMS/WMS reconciliation</CardTitle><CardDescription>Checks Blibli order and warehouse feeds for missing, duplicated, stale, or conflicting state.</CardDescription></div><Button size="sm" variant="outline" onClick={() => void scanReconciliation()} disabled={reconciliationLoading}><ClipboardCheck className="mr-2 h-4 w-4" />{reconciliationLoading ? "Scanning…" : "Scan now"}</Button></div></CardHeader>
+        <CardContent>{reconciliationIssues.length === 0 ? <p className="text-sm text-muted-foreground">No open reconciliation issues.</p> : <div className="space-y-2">{reconciliationIssues.slice(0, 8).map((issue) => <div key={issue.id} className="flex flex-col gap-2 rounded-lg border p-3 text-sm sm:flex-row sm:items-center sm:justify-between"><div><div className="flex flex-wrap items-center gap-2"><Badge variant="destructive">{issue.issueType.replaceAll("_", " ")}</Badge><span className="font-medium">{issue.externalOrderId}</span></div><p className="mt-1 text-xs text-muted-foreground">{issue.details.message ?? "Feed state needs operator review."}{issue.omsStatus ? ` OMS: ${issue.omsStatus}.` : ""}{issue.wmsStatus ? ` WMS: ${issue.wmsStatus}.` : ""}</p></div><Button size="sm" variant="ghost" onClick={() => void resolveReconciliation(issue.id)}>Resolve</Button></div>)}</div>}</CardContent>
+      </Card>
       {error && <div className="rounded-md border border-destructive/30 p-3 text-sm text-destructive">{error}</div>}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {connectors.map((connector) => {

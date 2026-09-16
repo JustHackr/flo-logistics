@@ -17,6 +17,8 @@ const ROLE_PATHS: Record<Role, string[]> = {
     "/dashboard",
     "/routing",
     "/control-tower",
+    "/demo",
+    "/impact",
     "/connectors",
     "/vehicles",
     "/reports",

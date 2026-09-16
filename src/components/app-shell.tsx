@@ -28,6 +28,7 @@ import {
   LogOut,
   Workflow,
   PencilRuler,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -78,6 +79,17 @@ const navGroups: NavGroup[] = [
         href: "/control-tower",
         labelKey: "nav.items.controlTower",
         icon: ShieldAlert,
+      },
+      {
+        href: "/demo/scenario",
+        labelKey: "nav.items.demoScenario",
+        icon: Clapperboard,
+        badgeKey: "nav.badges.demo",
+      },
+      {
+        href: "/impact",
+        labelKey: "nav.items.impactDashboard",
+        icon: BarChart3,
       },
       {
         href: "/sovereign-ai",

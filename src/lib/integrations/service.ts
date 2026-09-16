@@ -7,6 +7,8 @@ import type {
   OmsOrderInput,
   WmsFulfillmentInput,
 } from "./types";
+import { recordAuditEventSafe } from "@/lib/audit";
+import { reconcileIntegrationData } from "./reconciliation";
 
 type ConnectorForSync = {
   id: string;
@@ -22,6 +24,7 @@ export type SyncResult = {
   updated: number;
   rejected: number;
   errors: IntegrationRowError[];
+  reconciliation?: { ordersScanned: number; openIssuesDetected: number };
 };
 
 function sourceSystemFor(connector: ConnectorForSync) {
@@ -40,6 +43,8 @@ export async function runIntegrationSync(input: {
   fixture?: IntegrationFixture;
   rows: unknown[];
   mode: "fixture" | "file" | "json";
+  actorUserId?: string;
+  actorRole?: string;
 }): Promise<SyncResult> {
   const kind = input.connector.type === "oms" ? "OMS_ORDERS" : "WMS_FULFILLMENT";
   const sourceSystem = sourceSystemFor(input.connector);
@@ -97,8 +102,10 @@ export async function runIntegrationSync(input: {
       where: { id: input.connector.id },
       data: { status: "active" },
     });
+    const reconciliation = await reconcileIntegrationData({ integrationRunId: run.id, actorUserId: input.actorUserId, actorRole: input.actorRole });
+    await recordAuditEventSafe({ eventType: "INTEGRATION_SYNC", action: "COMPLETE", summary: `${kind} synchronization completed.`, actorUserId: input.actorUserId, actorRole: input.actorRole, entityType: "IntegrationRun", entityId: run.id, integrationRunId: run.id, connectorId: input.connector.id, sourceSystem, after: { status, created, updated, rejected: errors.length }, metadata: { mode: input.mode, fixture: input.fixture ?? null } });
 
-    return { runId: run.id, kind, status, created, updated, rejected: errors.length, errors };
+    return { runId: run.id, kind, status, created, updated, rejected: errors.length, errors, reconciliation };
   } catch (error) {
     await prisma.integrationRun.update({
       where: { id: run.id },
@@ -114,6 +121,7 @@ export async function runIntegrationSync(input: {
         ]),
       },
     });
+    await recordAuditEventSafe({ eventType: "INTEGRATION_SYNC", action: "FAIL", summary: `${kind} synchronization failed.`, reason: error instanceof Error ? error.message : "Sync failed", actorUserId: input.actorUserId, actorRole: input.actorRole, entityType: "IntegrationRun", entityId: run.id, integrationRunId: run.id, connectorId: input.connector.id, sourceSystem, after: { status: "FAILED", rejected: errors.length } });
     throw error;
   }
 }
@@ -182,6 +190,7 @@ async function applyWmsRows(sourceSystem: string, runId: string, rows: WmsFulfil
       });
       if (existingEvent) {
         updated += 1;
+        errors.push({ row: index + 2, error: `Duplicate WMS event ${row.externalEventId}`, input: row });
         continue;
       }
 

@@ -80,6 +80,26 @@ The intelligence layer normalizes Google traffic, Open-Meteo weather, and TomTom
 
 Code: [src/lib/intelligence/](src/lib/intelligence/), worker [scripts/intelligence-worker.ts](scripts/intelligence-worker.ts), APIs `/api/intelligence/*`, and revision APIs under `/api/routing/routes/[id]/revisions/`.
 
+### Judge-ready disruption scenario, impact KPIs, and trust layer
+
+The `/demo/scenario` page runs a deterministic, clearly labelled `SYNTHETIC`
+rain-disruption story: baseline route → heavy rain and incident feed → route
+risk alert → revised-route preview → operator approve/reject. It changes the
+active plan only after approval and can be reset without deleting its audit
+history. `/impact` reports the measurable operational story (route deltas,
+protected promises, OTIF, distance/fuel/CO₂, provider uptime, stale feeds, and
+open exceptions). Every ingestion, configuration change, integration sync,
+exception decision, scenario step, and route revision is persisted in the
+`AuditEvent` table and can be read through `/api/audit`.
+
+The connector console also includes an OMS/WMS reconciliation scan. It links
+Blibli-style order IDs to fulfillment events and flags OMS-only orders, unknown
+WMS rows, duplicate events, stale updates, and delivery/warehouse status
+conflicts. Operators can resolve an issue with a note; the action is audited.
+Route-specific condition observations are persisted with source, freshness,
+distance-to-route, relevance, and nearest affected stop through
+`/api/intelligence/routes/[routeId]`.
+
 ### Verify — on-device computer vision
 
 Load detection and hub congestion / dwell run **in the browser** — frames never upload. ODOL Detection is coming soon. Judges can walk Load and Hub without a webcam via the [CV tour](https://radr.nxtdev.xyz/flo-logistics/demo/computer-vision/tour).
@@ -268,6 +288,8 @@ Canonical source: the *Sovereignty* slide in [team-site/src/components/Presentat
 | AI | `/sovereign-ai` | Sovereign AI manifesto page. |
 | System | `/system/gas-price` | Fuel price snapshot from Pertamina. |
 | Integrations | `/connectors` | Data connectors registry (IoT, REST, Webhook, OMS, WMS, ...). |
+| Demo | `/demo/scenario` | Guided synthetic rain-disruption scenario with approve/reject gate. |
+| Impact | `/impact` | KPI, intervention, provider-health, and sustainability dashboard. |
 | Admin | `/admin/process-map` | FLO process map (swimlane with live stats, drag, permanent detail pane). |
 | Admin | `/admin/designer` | FLO Designer (prompt → graph → integrate → save/load → export JSON). |
 | Admin | `/admin/mockup-data` | Mockup data generator for demo seeding. |
@@ -295,7 +317,7 @@ Open [http://localhost:3000/login](http://localhost:3000/login) (or the public d
 
 After signing in, the demo lands on the role's default workspace (`/routing/plan` for drivers, `/computer-vision/load-detection` for warehouse, `/control-tower` for ops).
 
-The `build` script runs `prisma migrate deploy` but does not mutate operational data. Run `npm run db:seed` only on an empty database, or use `npm run db:seed:demo` when you explicitly want to reset the local demo dataset. To demo the Blibli flow, sign in as Ops or Warehouse, open `/connectors`, run the **OMS sample sync** first, then the **WMS sample sync**, and open `/control-tower` to see the fulfillment exception. WMS rows for unknown OMS IDs are intentionally rejected and shown in the sync history.
+The `build` script runs `prisma migrate deploy` but does not mutate operational data. Run `npm run db:seed` only on an empty database, or use `npm run db:seed:demo` when you explicitly want to reset the local demo dataset. To demo the Blibli flow, sign in as Ops or Warehouse, open `/connectors`, run the **OMS sample sync** first, then the **WMS sample sync**, and open `/control-tower` to see the fulfillment exception. WMS rows for unknown OMS IDs are intentionally rejected and shown in the sync history. For the strongest judge flow, open `/demo/scenario`, click **Start scenario**, advance through disruption and route preview, then approve or reject the revision; `/impact` shows the resulting KPI story. The connector page's **Scan now** action runs OMS/WMS reconciliation and lets an operator resolve an issue with an audit note.
 
 Demo warehouse: **Blok M Square**. Order coordinates are validated against Greater Jakarta (Jabodetabek) bounds. Generate sample CSVs at `/admin/mockup-data`. Guided computer-vision walkthrough (no webcam): `/computer-vision/tour`. Admin-only business-process visualization (swimlane with live stats): `/admin/process-map`. Admin-only FLO Designer (generate, save designs, export JSON): `/admin/designer`.
 
