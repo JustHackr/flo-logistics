@@ -30,6 +30,7 @@ import {
   PencilRuler,
   BarChart3,
   ScanBarcode,
+  RotateCcw,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,12 @@ const navGroups: NavGroup[] = [
         href: "/control-tower",
         labelKey: "nav.items.controlTower",
         icon: ShieldAlert,
+      },
+      {
+        href: "/returns",
+        labelKey: "nav.items.returns",
+        icon: RotateCcw,
+        badgeKey: "nav.badges.demo",
       },
       {
         href: "/demo/scenario",

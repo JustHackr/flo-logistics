@@ -38,6 +38,7 @@
       "maintenance": "Maintenance",
       "logistics": "Logistics",
       "controlTower": "Control Tower",
+      "returns": "Returns Intelligence",
       "demoScenario": "Judge Scenario",
       "impactDashboard": "Impact Dashboard",
       "companyAssistant": "Company Assistant",
@@ -1699,7 +1700,18 @@
       "incident_near_route": "Incident near route",
       "stale_traffic": "Traffic feed is stale",
       "stale_weather": "Weather feed is stale"
-      ,"barcode_mismatch": "Barcode verification exception"
+      ,"barcode_mismatch": "Barcode verification exception",
+      "return_qr_mismatch": "Return QR mismatch",
+      "return_duplicate_scan": "Duplicate return scan",
+      "return_wrong_hub": "Return at wrong hub",
+      "return_damage_detected": "Return damage detected",
+      "return_serial_mismatch": "Return serial mismatch",
+      "return_fraud_review": "Return fraud review",
+      "return_refund_held": "Return refund held",
+      "return_missing_custody": "Return custody gap",
+      "return_disposition_overdue": "Return disposition overdue",
+      "return_oms_wms_conflict": "Return OMS/WMS conflict",
+      "return_stalled": "Return workflow stalled"
     },
     "exceptionDetails": {
       "unassigned": "Received {age}h ago · no route assignment",

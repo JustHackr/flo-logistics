@@ -33,6 +33,7 @@ function ExceptionIcon({ kind }: { kind: ControlTowerExceptionKind }) {
   if (kind === "predictive_sla_risk") return <Clock3 className="h-4 w-4" />;
   if (kind === "late_stop") return <AlertTriangle className="h-4 w-4" />;
   if (kind === "barcode_mismatch") return <ScanBarcode className="h-4 w-4" />;
+  if (kind.startsWith("return_")) return <ShieldAlert className="h-4 w-4" />;
   return <Route className="h-4 w-4" />;
 }
 
@@ -43,6 +44,7 @@ function exceptionHref(exception: ControlTowerException) {
   if (exception.kind === "unassigned_order") return "/routing/orders";
   if (exception.kind === "barcode_mismatch") return "/computer-vision/parcel-verification";
   if (exception.kind === "predictive_sla_risk") return "/routing/dashboard";
+  if (exception.kind.startsWith("return_")) return "/returns";
     return "/routing/dashboard";
 }
 

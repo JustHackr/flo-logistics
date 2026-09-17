@@ -441,3 +441,30 @@ npm run db:reset   # Migrate reset + reseed
 - Pre-selection proposal: [Google Drive](https://drive.google.com/file/d/1c8f-1THAi4TozxX7LcI1pnTgPu5breM9/view)
 - [SECURITY.md](SECURITY.md) — Sovereign AI & security posture
 - [deploy/README.md](deploy/README.md) — Deployment guide
+# Reverse Logistics & Returns Intelligence
+
+The `GoldenBough` branch includes a return-control workflow at `/returns`. It is intentionally fixture-first so judges and testers can run the full experience without credentials:
+
+`return requested → QR scanned → hub received → inspection → fraud assessment → refund preview → disposition preview → operator approval → OMS/WMS handoff`
+
+The return case `BLI-RET-DEMO-001` is linked to the existing OMS order `BLI-DEMO-1003` and hub `JKT-01`. The page labels synthetic data as `SYNTHETIC`; optional server-side OMS/WMS adapters use `BLIBLI_OMS_RETURNS_URL` and `BLIBLI_INTEGRATION_TOKEN`, and fall back to fixtures when a provider is unavailable. No credentials are sent to the browser or stored in SQLite.
+
+What is persisted:
+
+- append-only return custody events and QR scans with duplicate/wrong-hub checks;
+- structured inspection results using safe, lightweight fixture/manual/on-device-CV signals;
+- explainable 0–100 fraud scoring with reasons and human approval gates;
+- refund and disposition recommendations as separate operator decisions;
+- estimated return cost, recovery value, net recovery, and carbon footprint;
+- return-specific Control Tower exceptions linked to the return case and audit events.
+
+Useful commands:
+
+```bash
+npm install
+npx prisma migrate deploy
+npm run db:seed:demo
+npm run dev
+```
+
+Open `http://localhost:3000/returns` and sign in with `ops@flo.demo` / `demo1234` or `warehouse@flo.demo` / `demo1234`. The worker can be run once with `RETURNS_WORKER_ONCE=true npm run returns:worker`, or continuously at the five-minute default with `npm run returns:worker`.

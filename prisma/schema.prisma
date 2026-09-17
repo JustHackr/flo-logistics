@@ -68,6 +68,17 @@ enum ControlTowerExceptionKind {
   STALE_WEATHER
   BARCODE_MISMATCH
   PREDICTIVE_SLA_RISK
+  RETURN_QR_MISMATCH
+  RETURN_DUPLICATE_SCAN
+  RETURN_WRONG_HUB
+  RETURN_DAMAGE_DETECTED
+  RETURN_SERIAL_MISMATCH
+  RETURN_FRAUD_REVIEW
+  RETURN_REFUND_HELD
+  RETURN_MISSING_CUSTODY
+  RETURN_DISPOSITION_OVERDUE
+  RETURN_OMS_WMS_CONFLICT
+  RETURN_STALLED
 }
 
 enum ControlTowerSeverity {
@@ -100,6 +111,13 @@ model User {
   resolvedExceptions      ControlTowerException[]  @relation("ExceptionResolvedBy")
   auditEvents             AuditEvent[]
   parcelVerificationScans ParcelVerificationScan[]
+  returnCases             ReturnCase[]
+  returnEvents            ReturnEvent[]
+  returnScans             ReturnScan[]
+  returnInspections       ReturnInspection[]
+  fraudAssessments        ReturnFraudAssessment[]
+  refundDecisions         RefundDecision[]
+  dispositionDecisions    DispositionDecision[]
 }
 
 model Vehicle {
@@ -247,6 +265,7 @@ model Order {
   reconciliationIssues    ReconciliationIssue[]
   parcelVerificationScans ParcelVerificationScan[]
   slaRiskPredictions      SlaRiskPrediction[]
+  returnCases             ReturnCase[]
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -521,6 +540,8 @@ model ControlTowerException {
   vehicle              Vehicle?                    @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
   slaRiskPredictionId  String?
   slaRiskPrediction    SlaRiskPrediction?          @relation(fields: [slaRiskPredictionId], references: [id], onDelete: SetNull)
+  returnCaseId         String?
+  returnCase           ReturnCase?                 @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
   updatedAt            DateTime                    @updatedAt
   auditEvents          AuditEvent[]
 
@@ -602,6 +623,280 @@ model DemoScenarioRun {
 
   @@unique([scenarioKey, status])
   @@index([updatedAt])
+}
+
+model ReturnCase {
+  id                String    @id @default(cuid())
+  externalReturnId  String    @unique
+  orderId           String?
+  order             Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  parcelId          String?
+  customerReference String?
+  reason            String
+  state             String    @default("REQUESTED")
+  expectedHub       String
+  sourceSystem      String    @default("fixture")
+  dataSource        String    @default("SYNTHETIC")
+  riskLevel         String    @default("LOW")
+  riskScore         Float     @default(0)
+  currentSku        String?
+  expectedSku       String?
+  expectedSerial    String?
+  currentSerial     String?
+  expectedWeightKg  Float?
+  observedWeightKg  Float?
+  openedAt          DateTime  @default(now())
+  closedAt          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  parcel                 ReturnParcel?
+  events                 ReturnEvent[]
+  scans                  ReturnScan[]
+  inspections            ReturnInspection[]
+  fraudAssessments       ReturnFraudAssessment[]
+  refundDecisions        RefundDecision[]
+  dispositionDecisions   DispositionDecision[]
+  costEstimates          ReturnCostEstimate[]
+  carbonEstimates        ReturnCarbonEstimate[]
+  exceptions             ReturnException[]
+  policies               ReturnPolicy[]
+  controlTowerExceptions ControlTowerException[]
+  user                   User?                   @relation(fields: [userId], references: [id])
+  userId                 String?
+
+  @@index([state, updatedAt])
+  @@index([orderId])
+  @@index([parcelId])
+  @@index([expectedHub, state])
+  @@index([riskLevel, updatedAt])
+}
+
+model ReturnParcel {
+  id             String     @id @default(cuid())
+  returnCaseId   String     @unique
+  returnCase     ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  code           String
+  qrPayload      String?
+  barcodePayload String?
+  sku            String?
+  serialNumber   String?
+  expectedHub    String
+  currentHub     String?
+  weightKg       Float?
+  dimensionsJson String?
+  custodyStatus  String     @default("EXPECTED")
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@unique([code])
+  @@index([expectedHub, currentHub])
+}
+
+model ReturnEvent {
+  id              String     @id @default(cuid())
+  returnCaseId    String
+  returnCase      ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  eventType       String
+  fromState       String?
+  toState         String?
+  externalEventId String?
+  sourceSystem    String     @default("flo")
+  dataSource      String     @default("LIVE")
+  location        String?
+  payloadJson     String?
+  actorUserId     String?
+  actorUser       User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  occurredAt      DateTime
+  createdAt       DateTime   @default(now())
+
+  @@unique([sourceSystem, externalEventId])
+  @@index([returnCaseId, occurredAt])
+}
+
+model ReturnScan {
+  id           String     @id @default(cuid())
+  returnCaseId String
+  returnCase   ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  code         String
+  format       String     @default("QR_CODE")
+  stage        String
+  outcome      String
+  hubCode      String?
+  expectedHub  String?
+  source       String     @default("SYNTHETIC")
+  reason       String?
+  metadataJson String?
+  actorUserId  String?
+  actorUser    User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  createdAt    DateTime   @default(now())
+
+  @@index([returnCaseId, createdAt])
+  @@index([code, outcome])
+}
+
+model ReturnInspection {
+  id            String     @id @default(cuid())
+  returnCaseId  String
+  returnCase    ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  result        String
+  checklistJson String
+  cvResultJson  String?
+  notes         String?
+  evidenceCount Int        @default(0)
+  source        String     @default("MANUAL_AND_FIXTURE")
+  actorUserId   String?
+  actorUser     User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  createdAt     DateTime   @default(now())
+
+  evidence InspectionEvidence[]
+
+  @@index([returnCaseId, createdAt])
+}
+
+model InspectionEvidence {
+  id           String           @id @default(cuid())
+  inspectionId String
+  inspection   ReturnInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  evidenceType String
+  label        String
+  score        Float?
+  metadataJson String?
+  storageRef   String?
+  createdAt    DateTime         @default(now())
+}
+
+model ReturnFraudAssessment {
+  id                 String     @id @default(cuid())
+  returnCaseId       String
+  returnCase         ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  score              Float
+  riskLevel          String
+  confidence         String
+  reasonsJson        String
+  signalsJson        String
+  recommendation     String
+  requiresApproval   Boolean    @default(false)
+  sourceEventIdsJson String
+  createdAt          DateTime   @default(now())
+  actorUserId        String?
+  actorUser          User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([returnCaseId, createdAt])
+  @@index([riskLevel, createdAt])
+}
+
+model RefundDecision {
+  id           String     @id @default(cuid())
+  returnCaseId String
+  returnCase   ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  decision     String
+  amount       Float
+  currency     String     @default("IDR")
+  rationale    String
+  status       String     @default("PREVIEW")
+  source       String     @default("RULE_ENGINE")
+  actorUserId  String?
+  actorUser    User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  createdAt    DateTime   @default(now())
+  decidedAt    DateTime?
+
+  @@index([returnCaseId, createdAt])
+}
+
+model DispositionDecision {
+  id            String     @id @default(cuid())
+  returnCaseId  String
+  returnCase    ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  disposition   String
+  status        String     @default("PREVIEW")
+  rationale     String
+  recoveryValue Float      @default(0)
+  totalCost     Float      @default(0)
+  netRecovery   Float      @default(0)
+  source        String     @default("RULE_ENGINE")
+  actorUserId   String?
+  actorUser     User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  createdAt     DateTime   @default(now())
+  decidedAt     DateTime?
+
+  @@index([returnCaseId, createdAt])
+}
+
+model ReturnCostEstimate {
+  id              String     @id @default(cuid())
+  returnCaseId    String
+  returnCase      ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  pickupCost      Float      @default(0)
+  transportCost   Float      @default(0)
+  hubLaborCost    Float      @default(0)
+  inspectionCost  Float      @default(0)
+  repackCost      Float      @default(0)
+  repairCost      Float      @default(0)
+  recycleCost     Float      @default(0)
+  refundCost      Float      @default(0)
+  totalCost       Float      @default(0)
+  recoveryValue   Float      @default(0)
+  netRecovery     Float      @default(0)
+  isEstimate      Boolean    @default(true)
+  assumptionsJson String
+  createdAt       DateTime   @default(now())
+
+  @@index([returnCaseId, createdAt])
+}
+
+model ReturnCarbonEstimate {
+  id              String     @id @default(cuid())
+  returnCaseId    String
+  returnCase      ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  reverseRouteKg  Float      @default(0)
+  handlingKg      Float      @default(0)
+  repairKg        Float      @default(0)
+  recycleKg       Float      @default(0)
+  totalKg         Float      @default(0)
+  isEstimate      Boolean    @default(true)
+  assumptionsJson String
+  createdAt       DateTime   @default(now())
+
+  @@index([returnCaseId, createdAt])
+}
+
+model ReturnException {
+  id               String     @id @default(cuid())
+  returnCaseId     String
+  returnCase       ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  kind             String
+  severity         String
+  status           String     @default("OPEN")
+  reason           String
+  explanation      String
+  source           String
+  evidenceJson     String?
+  recommendation   String?
+  acknowledgedAt   DateTime?
+  resolvedAt       DateTime?
+  resolvedByUserId String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@index([status, severity])
+  @@index([returnCaseId, createdAt])
+}
+
+model ReturnPolicy {
+  id                      String      @id @default(cuid())
+  name                    String
+  active                  Boolean     @default(true)
+  refundWindowDays        Int         @default(30)
+  autoRestock             Boolean     @default(false)
+  requireHighRiskApproval Boolean     @default(true)
+  thresholdsJson          String      @default("{}")
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+  returnCaseId            String?
+  returnCase              ReturnCase? @relation(fields: [returnCaseId], references: [id], onDelete: SetNull)
+
+  @@index([active])
 }
 
 model RouteConditionObservation {

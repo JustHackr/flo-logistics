@@ -38,6 +38,7 @@
       "maintenance": "Pemeliharaan",
       "logistics": "Logistik",
       "controlTower": "Menara Kendali",
+      "returns": "Inteligensi Retur",
       "demoScenario": "Skenario Juri",
       "impactDashboard": "Dasbor Dampak",
       "companyAssistant": "Asisten Perusahaan",
@@ -1699,7 +1700,18 @@
       "incident_near_route": "Insiden dekat rute",
       "stale_traffic": "Feed lalu lintas sudah usang",
       "stale_weather": "Feed cuaca sudah usang"
-      ,"barcode_mismatch": "Pengecualian verifikasi barcode"
+      ,"barcode_mismatch": "Pengecualian verifikasi barcode",
+      "return_qr_mismatch": "QR retur tidak cocok",
+      "return_duplicate_scan": "Scan retur ganda",
+      "return_wrong_hub": "Retur berada di hub yang salah",
+      "return_damage_detected": "Kerusakan retur terdeteksi",
+      "return_serial_mismatch": "Serial retur tidak cocok",
+      "return_fraud_review": "Tinjauan fraud retur",
+      "return_refund_held": "Refund retur ditahan",
+      "return_missing_custody": "Kesenjangan custody retur",
+      "return_disposition_overdue": "Disposisi retur terlambat",
+      "return_oms_wms_conflict": "Konflik OMS/WMS retur",
+      "return_stalled": "Alur retur terhenti"
     },
     "exceptionDetails": {
       "unassigned": "Diterima {age} jam lalu · belum ada rute",

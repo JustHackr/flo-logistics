@@ -18,7 +18,18 @@ export type ControlTowerExceptionKind =
   | "stale_traffic"
   | "stale_weather"
   | "barcode_mismatch"
-  | "predictive_sla_risk";
+  | "predictive_sla_risk"
+  | "return_qr_mismatch"
+  | "return_duplicate_scan"
+  | "return_wrong_hub"
+  | "return_damage_detected"
+  | "return_serial_mismatch"
+  | "return_fraud_review"
+  | "return_refund_held"
+  | "return_missing_custody"
+  | "return_disposition_overdue"
+  | "return_oms_wms_conflict"
+  | "return_stalled";
 
 export type ControlTowerException = {
   id: string;
@@ -128,6 +139,17 @@ const DB_KIND = {
   stale_weather: "STALE_WEATHER",
   barcode_mismatch: "BARCODE_MISMATCH",
   predictive_sla_risk: "PREDICTIVE_SLA_RISK",
+  return_qr_mismatch: "RETURN_QR_MISMATCH",
+  return_duplicate_scan: "RETURN_DUPLICATE_SCAN",
+  return_wrong_hub: "RETURN_WRONG_HUB",
+  return_damage_detected: "RETURN_DAMAGE_DETECTED",
+  return_serial_mismatch: "RETURN_SERIAL_MISMATCH",
+  return_fraud_review: "RETURN_FRAUD_REVIEW",
+  return_refund_held: "RETURN_REFUND_HELD",
+  return_missing_custody: "RETURN_MISSING_CUSTODY",
+  return_disposition_overdue: "RETURN_DISPOSITION_OVERDUE",
+  return_oms_wms_conflict: "RETURN_OMS_WMS_CONFLICT",
+  return_stalled: "RETURN_STALLED",
 } as const;
 
 const DB_SEVERITY = {
@@ -388,7 +410,7 @@ async function syncExceptionRecords(desired: ControlTowerException[], now: Date)
     const stale = await tx.controlTowerException.findMany({
       where: {
         status: { not: "RESOLVED" },
-        kind: { notIn: ["BARCODE_MISMATCH", "PREDICTIVE_SLA_RISK"] },
+        kind: { notIn: ["BARCODE_MISMATCH", "PREDICTIVE_SLA_RISK", "RETURN_QR_MISMATCH", "RETURN_DUPLICATE_SCAN", "RETURN_WRONG_HUB", "RETURN_DAMAGE_DETECTED", "RETURN_SERIAL_MISMATCH", "RETURN_FRAUD_REVIEW", "RETURN_REFUND_HELD", "RETURN_MISSING_CUSTODY", "RETURN_DISPOSITION_OVERDUE", "RETURN_OMS_WMS_CONFLICT", "RETURN_STALLED"] },
         ...(desiredKeys.length > 0 ? { dedupeKey: { notIn: desiredKeys } } : {}),
       },
       select: { id: true },

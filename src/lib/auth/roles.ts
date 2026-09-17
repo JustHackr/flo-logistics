@@ -28,6 +28,7 @@ const ROLE_PATHS: Record<Role, string[]> = {
     "/sovereign-ai",
     "/system/gas-price",
     "/computer-vision",
+    "/returns",
   ],
   DRIVER: [
     "/",
@@ -41,6 +42,7 @@ const ROLE_PATHS: Record<Role, string[]> = {
     "/connectors",
     "/routing/methodology",
     "/computer-vision",
+    "/returns",
   ],
 };
 
