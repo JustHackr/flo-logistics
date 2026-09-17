@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BARCODE_FIXTURES, barcodeSvg, syntheticBarcodeVerification } from "./barcode-verification";
+import { QR_FIXTURES, syntheticQrVerification } from "./qr-verification";
 
 describe("parcel barcode verification", () => {
   it("ships a varied deterministic fixture catalog", () => {
@@ -21,5 +22,14 @@ describe("parcel barcode verification", () => {
     expect(syntheticBarcodeVerification("BLI-DEMO-1003").outcome).toBe("REVIEW");
     expect(syntheticBarcodeVerification("BLI-DEMO-9999").outcome).toBe("EXCEPTION");
     expect(syntheticBarcodeVerification("BLI-DEMO-1001", BARCODE_FIXTURES.find((fixture) => fixture.id === "duplicate"))?.message).toContain("already");
+  });
+
+  it("ships QR fixtures that use the same decision vocabulary", () => {
+    expect(QR_FIXTURES).toHaveLength(8);
+    expect(new Set(QR_FIXTURES.map((fixture) => fixture.assetPath)).size).toBe(QR_FIXTURES.length);
+    const result = syntheticQrVerification("BLI-DEMO-1001", QR_FIXTURES[0]);
+    expect(result.format).toBe("QR_CODE");
+    expect(result.outcome).toBe("VERIFIED");
+    expect(result.checks.map((check) => check.key)).toContain("OMS_MATCH");
   });
 });

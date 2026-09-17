@@ -12,13 +12,22 @@ export type BarcodeFixture = {
 };
 
 export type BarcodeVerificationOutcome = "VERIFIED" | "REVIEW" | "EXCEPTION";
+export type ScanFormat = "BARCODE" | "QR_CODE";
+
+export type VerificationCheck = {
+  key: "FORMAT_DECODED" | "OMS_MATCH" | "WMS_READY" | "ROUTE_ASSIGNED" | "DUPLICATE_SCAN_FREE" | "PACKAGE_REVIEW";
+  label: string;
+  status: "PASS" | "WARN" | "FAIL";
+};
 
 export type BarcodeVerification = {
   code: string;
+  format: ScanFormat;
   outcome: BarcodeVerificationOutcome;
   source: "SYNTHETIC" | "OMS_WMS";
   message: string;
   nextAction: string;
+  checks: VerificationCheck[];
   fixture?: BarcodeFixture;
 };
 
@@ -44,11 +53,12 @@ export function findBarcodeFixtureById(id: string) {
 export function syntheticBarcodeVerification(code: string, selectedFixture?: BarcodeFixture): BarcodeVerification {
   const normalized = code.trim().toUpperCase();
   const fixture = selectedFixture ?? findBarcodeFixture(normalized);
-  if (!fixture || fixture.kind === "unknown") return { code: normalized, outcome: "EXCEPTION", source: "SYNTHETIC", message: "Barcode is not present in the OMS fixture catalog.", nextAction: "Hold the parcel and create an exception for warehouse review.", fixture };
-  if (fixture.kind === "duplicate") return { code: normalized, outcome: "EXCEPTION", source: "SYNTHETIC", message: "This label was already scanned for the current dispatch batch.", nextAction: "Check the parcel and remove the duplicate scan before dispatch.", fixture };
-  if (fixture.kind === "not_ready") return { code: normalized, outcome: "REVIEW", source: "SYNTHETIC", message: "Order is known, but fulfillment is not ready for dispatch.", nextAction: `Keep the parcel in ${fixture.expectedLane} until WMS reaches READY_FOR_DISPATCH.`, fixture };
-  if (fixture.kind === "damaged") return { code: normalized, outcome: "REVIEW", source: "SYNTHETIC", message: "Barcode is valid, but the package image requires a manual packaging review.", nextAction: "Inspect the damaged corner and confirm the parcel can travel safely.", fixture };
-  return { code: normalized, outcome: "VERIFIED", source: "SYNTHETIC", message: "Barcode, OMS identity, and dispatch readiness are valid.", nextAction: `Release the parcel to dispatch lane ${fixture.expectedLane}.`, fixture };
+  const baseChecks: VerificationCheck[] = [{ key: "FORMAT_DECODED", label: "Code decoded", status: fixture ? "PASS" : "FAIL" }];
+  if (!fixture || fixture.kind === "unknown") return { code: normalized, format: "BARCODE", outcome: "EXCEPTION", source: "SYNTHETIC", message: "Barcode is not present in the OMS fixture catalog.", nextAction: "Hold the parcel and create an exception for warehouse review.", checks: [...baseChecks, { key: "OMS_MATCH", label: "OMS order match", status: "FAIL" }, { key: "WMS_READY", label: "WMS dispatch readiness", status: "FAIL" }, { key: "ROUTE_ASSIGNED", label: "Route assignment", status: "WARN" }], fixture };
+  if (fixture.kind === "duplicate") return { code: normalized, format: "BARCODE", outcome: "EXCEPTION", source: "SYNTHETIC", message: "This label was already scanned for the current dispatch batch.", nextAction: "Check the parcel and remove the duplicate scan before dispatch.", checks: [...baseChecks, { key: "OMS_MATCH", label: "OMS order match", status: "PASS" }, { key: "WMS_READY", label: "WMS dispatch readiness", status: "PASS" }, { key: "DUPLICATE_SCAN_FREE", label: "Duplicate scan check", status: "FAIL" }], fixture };
+  if (fixture.kind === "not_ready") return { code: normalized, format: "BARCODE", outcome: "REVIEW", source: "SYNTHETIC", message: "Order is known, but fulfillment is not ready for dispatch.", nextAction: `Keep the parcel in ${fixture.expectedLane} until WMS reaches READY_FOR_DISPATCH.`, checks: [...baseChecks, { key: "OMS_MATCH", label: "OMS order match", status: "PASS" }, { key: "WMS_READY", label: "WMS dispatch readiness", status: "WARN" }, { key: "ROUTE_ASSIGNED", label: "Route assignment", status: "PASS" }], fixture };
+  if (fixture.kind === "damaged") return { code: normalized, format: "BARCODE", outcome: "REVIEW", source: "SYNTHETIC", message: "Barcode is valid, but the package image requires a manual packaging review.", nextAction: "Inspect the damaged corner and confirm the parcel can travel safely.", checks: [...baseChecks, { key: "OMS_MATCH", label: "OMS order match", status: "PASS" }, { key: "WMS_READY", label: "WMS dispatch readiness", status: "PASS" }, { key: "PACKAGE_REVIEW", label: "Package condition review", status: "WARN" }], fixture };
+  return { code: normalized, format: "BARCODE", outcome: "VERIFIED", source: "SYNTHETIC", message: "Barcode, OMS identity, route assignment, and dispatch readiness are valid.", nextAction: `Release the parcel to dispatch lane ${fixture.expectedLane}.`, checks: [...baseChecks, { key: "OMS_MATCH", label: "OMS order match", status: "PASS" }, { key: "WMS_READY", label: "WMS dispatch readiness", status: "PASS" }, { key: "ROUTE_ASSIGNED", label: "Route assignment", status: "PASS" }, { key: "DUPLICATE_SCAN_FREE", label: "Duplicate scan check", status: "PASS" }], fixture };
 }
 
 const CODE128_PATTERNS = [

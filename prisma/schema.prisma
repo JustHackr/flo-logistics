@@ -88,16 +88,17 @@ enum RouteRevisionStatus {
 }
 
 model User {
-  id                     String                  @id @default(cuid())
-  email                  String                  @unique
-  name                   String
-  passwordHash           String
-  role                   UserRole
-  createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @updatedAt
-  acknowledgedExceptions ControlTowerException[] @relation("ExceptionAcknowledgedBy")
-  resolvedExceptions     ControlTowerException[] @relation("ExceptionResolvedBy")
-  auditEvents            AuditEvent[]
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  name                    String
+  passwordHash            String
+  role                    UserRole
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  acknowledgedExceptions  ControlTowerException[]  @relation("ExceptionAcknowledgedBy")
+  resolvedExceptions      ControlTowerException[]  @relation("ExceptionResolvedBy")
+  auditEvents             AuditEvent[]
+  parcelVerificationScans ParcelVerificationScan[]
 }
 
 model Vehicle {
@@ -239,10 +240,11 @@ model Order {
   routePlanId String?
   routePlan   RoutePlan? @relation(fields: [routePlanId], references: [id], onDelete: SetNull)
 
-  statusEvents           OrderStatusEvent[]
-  fulfillmentEvents      FulfillmentEvent[]
-  controlTowerExceptions ControlTowerException[]
-  reconciliationIssues   ReconciliationIssue[]
+  statusEvents            OrderStatusEvent[]
+  fulfillmentEvents       FulfillmentEvent[]
+  controlTowerExceptions  ControlTowerException[]
+  reconciliationIssues    ReconciliationIssue[]
+  parcelVerificationScans ParcelVerificationScan[]
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -299,11 +301,12 @@ model RoutePlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  controlTowerExceptions ControlTowerException[]
-  conditionAssessments   RouteConditionAssessment[]
-  revisionPreviews       RouteRevision[]
-  conditionObservations  RouteConditionObservation[]
-  auditEvents            AuditEvent[]
+  controlTowerExceptions  ControlTowerException[]
+  conditionAssessments    RouteConditionAssessment[]
+  revisionPreviews        RouteRevision[]
+  conditionObservations   RouteConditionObservation[]
+  auditEvents             AuditEvent[]
+  parcelVerificationScans ParcelVerificationScan[]
 
   @@index([driverId])
   @@index([warehouseId])
@@ -518,6 +521,28 @@ model ControlTowerException {
   @@index([status, severity])
   @@index([orderId])
   @@index([routePlanId])
+}
+
+model ParcelVerificationScan {
+  id          String     @id @default(cuid())
+  code        String
+  format      String     @default("BARCODE")
+  outcome     String
+  source      String
+  message     String
+  checksJson  String
+  fixtureId   String?
+  orderId     String?
+  order       Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  routePlanId String?
+  routePlan   RoutePlan? @relation(fields: [routePlanId], references: [id], onDelete: SetNull)
+  actorUserId String?
+  actorUser   User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+
+  @@index([code, createdAt])
+  @@index([outcome, createdAt])
+  @@index([orderId])
 }
 
 model DemoScenarioRun {

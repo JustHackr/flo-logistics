@@ -119,19 +119,28 @@ Code: [src/lib/computer-vision/](src/lib/computer-vision/), routes `/computer-vi
 The `/computer-vision/parcel-verification` page adds a lightweight warehouse
 gate check. FLO ships eight deterministic Code 128 fixture labels covering
 verified, not-ready, unknown, duplicate, and damaged-package review paths.
-Testers can click a fixture, type a value, upload a label image, or use a
-webcam. Chrome/Edge use the browser's on-device `BarcodeDetector`; older
+It also ships eight deterministic QR fixture labels, with the same outcome
+paths. Testers can click a fixture, type a value, upload a label image, or use
+a webcam. Chrome/Edge use the browser's on-device `BarcodeDetector`; older
 browsers retain deterministic fixture and manual verification fallbacks.
-Live values are checked against the OMS/WMS order and fulfillment state. A
-non-verified result can create a persistent `BARCODE_MISMATCH` Control Tower
-exception with an audit event. Camera frames stay in the browser and are not
-uploaded.
+Live values are checked against OMS identity, WMS dispatch readiness, route
+assignment, and a 15-minute duplicate-scan window. Every decision persists a
+scan record and audit event containing the format, source, checks, and outcome.
+A non-verified result can create a persistent `BARCODE_MISMATCH` Control Tower
+exception. Camera frames stay in the browser and are not uploaded.
 
 Regenerate the exact fixture images after changing the fixture catalog with:
 
 ```bash
 npm run cv:generate-barcode-fixtures
+npm run cv:generate-qr-fixtures
 ```
+
+The test page is available at `/computer-vision/parcel-verification`. Exact
+QR SVG samples are under `public/cv/qr/`, while the generated parcel photo
+guide is `public/cv/parcel-qr-sample-guide.png`. All fixture results are clearly
+synthetic; live checks require the normal authenticated demo session and OMS/WMS
+fixture sync.
 
 ### Flo Designer — prompt → graph → save → JSON
 
