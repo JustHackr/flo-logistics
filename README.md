@@ -80,6 +80,14 @@ The intelligence layer normalizes Google traffic, Open-Meteo weather, and TomTom
 
 Code: [src/lib/intelligence/](src/lib/intelligence/), worker [scripts/intelligence-worker.ts](scripts/intelligence-worker.ts), APIs `/api/intelligence/*`, and revision APIs under `/api/routing/routes/[id]/revisions/`.
 
+### Predictive SLA risk — intervene before the promise is missed
+
+FLO also calculates an explainable late-delivery risk for every active order with a promised delivery time. The score is a weighted rule engine, not a black-box claim: promise pressure (30%), fulfillment readiness from WMS (20%), traffic (20%), weather (10%), driver/vehicle/workload (10%), and historical delivery delay (10%). For example, an order that is still `PACKED`, has only a small promise buffer, and is travelling through heavy congestion will rise to `WATCH`, `HIGH`, or `CRITICAL` before it becomes late. Each prediction stores the score, risk band, confidence, dominant cause, separate factor values, recommendation, source snapshots, data age, and score change from the previous run.
+
+The flow is: OMS/WMS and route data establish the order context → the five-minute worker reads region-scoped traffic, weather, incidents, fleet, and delivery history → the engine validates and scores the order → a persistent predictive exception is created or superseded in Control Tower → Ops sees the reasons and recommended action, acknowledges/monitors it, or previews a safer route. A route is never replaced automatically. Live provider data remains server-side; fixture mode is available for a repeatable synthetic demo, and fallback/stale data lowers confidence and is shown explicitly.
+
+Use `/routing/dashboard` for the active risk queue, `/control-tower` for persistent exceptions, and `/impact` for early-warning, accuracy, and prevented-late-delivery estimates. The API surface is `/api/risk/sla`, `/api/risk/sla/[orderId]`, `/api/risk/sla/recalculate`, `/api/risk/sla/metrics`, and the order `acknowledge`/`monitor` actions. Run `npm run intelligence:worker` (with `INTELLIGENCE_FIXTURES=true` for a credential-free demo) to refresh conditions and produce predictions. Tests for the deterministic engine live in [src/lib/sla-risk.test.ts](src/lib/sla-risk.test.ts).
+
 ### Judge-ready disruption scenario, impact KPIs, and trust layer
 
 The `/demo/scenario` page runs a deterministic, clearly labelled `SYNTHETIC`

@@ -17,7 +17,8 @@ export type ControlTowerExceptionKind =
   | "incident_near_route"
   | "stale_traffic"
   | "stale_weather"
-  | "barcode_mismatch";
+  | "barcode_mismatch"
+  | "predictive_sla_risk";
 
 export type ControlTowerException = {
   id: string;
@@ -45,6 +46,15 @@ export type ControlTowerException = {
   acknowledgedAt?: string | null;
   resolvedAt?: string | null;
   detectedAt?: string | null;
+  slaRisk?: {
+    score: number;
+    confidence: string;
+    predictedDeliveryAt: string | null;
+    remainingBufferMin: number | null;
+    stale: boolean;
+    reasons: string[];
+    recommendation: string;
+  };
 };
 
 export type ControlTowerOverview = {
@@ -117,6 +127,7 @@ const DB_KIND = {
   stale_traffic: "STALE_TRAFFIC",
   stale_weather: "STALE_WEATHER",
   barcode_mismatch: "BARCODE_MISMATCH",
+  predictive_sla_risk: "PREDICTIVE_SLA_RISK",
 } as const;
 
 const DB_SEVERITY = {
@@ -377,7 +388,7 @@ async function syncExceptionRecords(desired: ControlTowerException[], now: Date)
     const stale = await tx.controlTowerException.findMany({
       where: {
         status: { not: "RESOLVED" },
-        kind: { not: "BARCODE_MISMATCH" },
+        kind: { notIn: ["BARCODE_MISMATCH", "PREDICTIVE_SLA_RISK"] },
         ...(desiredKeys.length > 0 ? { dedupeKey: { notIn: desiredKeys } } : {}),
       },
       select: { id: true },
@@ -409,6 +420,7 @@ function mapStoredException(exception: {
   order: { id: string; externalOrderId: string | null; recipientAddress: string; promisedAt: Date | null; fulfillmentStatus: string } | null;
   routePlan: { id: string; driver: { name: string } } | null;
   vehicle: { id: string; name: string } | null;
+  slaRiskPrediction: { score: number; confidence: string; predictedDeliveryAt: Date | null; remainingBufferMin: number | null; stale: boolean; reasonsJson: string; recommendation: string } | null;
 }): ControlTowerException {
   return {
     id: exception.id,
@@ -430,11 +442,14 @@ function mapStoredException(exception: {
     acknowledgedAt: exception.acknowledgedAt?.toISOString() ?? null,
     resolvedAt: exception.resolvedAt?.toISOString() ?? null,
     detectedAt: exception.detectedAt.toISOString(),
+    slaRisk: exception.slaRiskPrediction ? { score: exception.slaRiskPrediction.score, confidence: exception.slaRiskPrediction.confidence, predictedDeliveryAt: exception.slaRiskPrediction.predictedDeliveryAt?.toISOString() ?? null, remainingBufferMin: exception.slaRiskPrediction.remainingBufferMin, stale: exception.slaRiskPrediction.stale, reasons: (() => { try { return JSON.parse(exception.slaRiskPrediction.reasonsJson) as string[]; } catch { return []; } })(), recommendation: exception.slaRiskPrediction.recommendation } : undefined,
   };
 }
 
 export async function getControlTowerOverview(): Promise<ControlTowerOverview> {
   const now = new Date();
+  const { recalculateSlaRisk } = await import("@/lib/sla-risk-service");
+  await recalculateSlaRisk({ trigger: "WORKER", actorRole: "SYSTEM" });
   const [unassignedOrders, routePlans, vehicles] = await Promise.all([
     prisma.order.findMany({
       where: { routePlanId: null, status: { not: "DELIVERED" } },
@@ -514,6 +529,7 @@ export async function getControlTowerOverview(): Promise<ControlTowerOverview> {
       },
       routePlan: { select: { id: true, driver: { select: { name: true } } } },
       vehicle: { select: { id: true, name: true } },
+      slaRiskPrediction: { select: { score: true, confidence: true, predictedDeliveryAt: true, remainingBufferMin: true, stale: true, reasonsJson: true, recommendation: true } },
     },
   });
   const exceptions = stored.map(mapStoredException);

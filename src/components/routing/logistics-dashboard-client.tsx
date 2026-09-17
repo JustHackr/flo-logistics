@@ -27,6 +27,24 @@ type IntelligenceOverview = {
   incidents: Array<{ id: string; severity: string; roadClosed: boolean; description: string | null }>;
 };
 
+type SlaRiskPrediction = {
+  id: string;
+  orderId: string;
+  externalOrderId: string | null;
+  recipientAddress: string;
+  routePlanId: string | null;
+  score: number;
+  riskLevel: "LOW" | "WATCH" | "HIGH" | "CRITICAL";
+  confidence: "LOW" | "MEDIUM" | "HIGH";
+  predictedDeliveryAt: string | null;
+  remainingBufferMin: number | null;
+  reasons: string[];
+  recommendation: string;
+  dataSources: string[];
+  generatedAt: string;
+  stale: boolean;
+};
+
 type RouteRevisionPreview = {
   id: string;
   originalDurationMin: number;
@@ -135,11 +153,12 @@ function DriverVehicleCard({
   );
 }
 
-export function LogisticsDashboardClient({ canApproveRevisions = false }: { canApproveRevisions?: boolean }) {
+export function LogisticsDashboardClient({ canApproveRevisions = false, canRefreshRisk = false }: { canApproveRevisions?: boolean; canRefreshRisk?: boolean }) {
   const { t, locale } = useI18n();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<RoutingLogisticsOverview | null>(null);
   const [intelligence, setIntelligence] = useState<IntelligenceOverview | null>(null);
+  const [slaRisks, setSlaRisks] = useState<SlaRiskPrediction[]>([]);
   const [revisions, setRevisions] = useState<Record<string, RouteRevisionPreview>>({});
   const [revisionBusy, setRevisionBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -169,11 +188,34 @@ export function LogisticsDashboardClient({ canApproveRevisions = false }: { canA
     }
   }
 
+  async function loadSlaRisk() {
+    try {
+      const res = await fetch(withBasePath("/api/risk/sla"), { cache: "no-store" });
+      const json = await res.json();
+      if (res.ok) setSlaRisks(json.predictions ?? []);
+    } catch {
+      // Risk data is additive; the route dashboard remains usable if it is unavailable.
+    }
+  }
+
+  async function refreshSlaRisk() {
+    if (!canRefreshRisk) return loadSlaRisk();
+    try {
+      const res = await fetch(withBasePath("/api/risk/sla/recalculate"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error ?? "Unable to recalculate SLA risk");
+      setSlaRisks(json.predictions ?? []);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to recalculate SLA risk");
+    }
+  }
+
   useEffect(() => {
     // These loaders synchronize the client with server data after mount.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
     void loadIntelligence();
+    void loadSlaRisk();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -247,7 +289,7 @@ export function LogisticsDashboardClient({ canApproveRevisions = false }: { canA
             <FileBarChart className="mr-2 h-4 w-4" />
             {t("routing.dashboard.reports")}
           </Button>
-          <Button variant="outline" onClick={() => void load()} disabled={loading}>
+          <Button variant="outline" onClick={() => { void load(); void loadIntelligence(); void loadSlaRisk(); }} disabled={loading}>
             {t("common.refresh")}
           </Button>
         </div>
@@ -280,6 +322,45 @@ export function LogisticsDashboardClient({ canApproveRevisions = false }: { canA
               </CardContent>
             </Card>
           )}
+
+          <Card className="border-primary/20">
+            <CardHeader className="pb-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle className="text-base">Predictive SLA risk</CardTitle>
+                  <p className="text-xs text-muted-foreground">A forward-looking estimate from promise pressure, WMS readiness, route conditions, driver/fleet capacity, and delivery history.</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => void refreshSlaRisk()}>Refresh predictions</Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {slaRisks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No active predictions yet. Run the intelligence worker or use the SLA risk API as an Admin/Ops Manager.</p>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {[...slaRisks].sort((a, b) => b.score - a.score).slice(0, 6).map((risk) => (
+                    <div key={risk.id} className="rounded-lg border p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="font-semibold">{risk.externalOrderId ?? risk.orderId}</div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={risk.riskLevel === "CRITICAL" ? "destructive" : risk.riskLevel === "HIGH" ? "secondary" : "outline"}>{risk.riskLevel} · {risk.score.toFixed(0)}%</Badge>
+                          <Badge variant="outline">{risk.confidence} confidence</Badge>
+                        </div>
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">{risk.recipientAddress}</div>
+                      <div className="mt-2 grid gap-1 text-xs sm:grid-cols-3">
+                        <span>Predicted: <strong>{formatDateTime(risk.predictedDeliveryAt, locale)}</strong></span>
+                        <span>Buffer: <strong>{risk.remainingBufferMin == null ? "—" : `${risk.remainingBufferMin.toFixed(0)} min`}</strong></span>
+                        <span>Data: <strong>{risk.stale ? "STALE/FALLBACK" : risk.dataSources.join(" + ")}</strong></span>
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground">{risk.reasons.slice(0, 2).join(" ")}</p>
+                      <p className="mt-1 text-xs font-medium text-primary">Next action: {risk.recommendation}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
           <CvSessionReportsPanel
             title={t("routing.dashboard.cvTitle")}
             description={t("routing.dashboard.cvDescription")}

@@ -25,6 +25,7 @@ export type AuditEventInput = {
   connectorId?: string | null;
   conditionAssessmentId?: string | null;
   trafficIncidentId?: string | null;
+  slaRiskPredictionId?: string | null;
 };
 
 function json(value: unknown) {
@@ -58,6 +59,7 @@ export async function recordAuditEvent(input: AuditEventInput) {
       connectorId: input.connectorId ?? null,
       conditionAssessmentId: input.conditionAssessmentId ?? null,
       trafficIncidentId: input.trafficIncidentId ?? null,
+      slaRiskPredictionId: input.slaRiskPredictionId ?? null,
     },
   });
 }

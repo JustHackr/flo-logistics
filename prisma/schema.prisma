@@ -67,6 +67,7 @@ enum ControlTowerExceptionKind {
   STALE_TRAFFIC
   STALE_WEATHER
   BARCODE_MISMATCH
+  PREDICTIVE_SLA_RISK
 }
 
 enum ControlTowerSeverity {
@@ -245,6 +246,7 @@ model Order {
   controlTowerExceptions  ControlTowerException[]
   reconciliationIssues    ReconciliationIssue[]
   parcelVerificationScans ParcelVerificationScan[]
+  slaRiskPredictions      SlaRiskPrediction[]
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -307,6 +309,7 @@ model RoutePlan {
   conditionObservations   RouteConditionObservation[]
   auditEvents             AuditEvent[]
   parcelVerificationScans ParcelVerificationScan[]
+  slaRiskPredictions      SlaRiskPrediction[]
 
   @@index([driverId])
   @@index([warehouseId])
@@ -420,6 +423,7 @@ model RouteStop {
   createdAt             DateTime                    @default(now())
   updatedAt             DateTime                    @updatedAt
   conditionObservations RouteConditionObservation[]
+  slaRiskPredictions    SlaRiskPrediction[]
 
   @@unique([routePlanId, sequence])
   @@index([routePlanId])
@@ -515,12 +519,50 @@ model ControlTowerException {
   routePlan            RoutePlan?                  @relation(fields: [routePlanId], references: [id], onDelete: Cascade)
   vehicleId            String?
   vehicle              Vehicle?                    @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  slaRiskPredictionId  String?
+  slaRiskPrediction    SlaRiskPrediction?          @relation(fields: [slaRiskPredictionId], references: [id], onDelete: SetNull)
   updatedAt            DateTime                    @updatedAt
   auditEvents          AuditEvent[]
 
   @@index([status, severity])
   @@index([orderId])
   @@index([routePlanId])
+}
+
+model SlaRiskPrediction {
+  id                     String                  @id @default(cuid())
+  orderId                String
+  order                  Order                   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  routePlanId            String?
+  routePlan              RoutePlan?              @relation(fields: [routePlanId], references: [id], onDelete: SetNull)
+  routeStopId            String?
+  routeStop              RouteStop?              @relation(fields: [routeStopId], references: [id], onDelete: SetNull)
+  score                  Float
+  riskLevel              String
+  confidence             String
+  promisedAt             DateTime
+  predictedDeliveryAt    DateTime?
+  remainingBufferMin     Float?
+  factorsJson            String
+  reasonsJson            String
+  recommendation         String
+  sourceSnapshotIdsJson  String
+  dataSourcesJson        String                  @default("[]")
+  generatedAt            DateTime
+  expiresAt              DateTime
+  stale                  Boolean                 @default(false)
+  previousScore          Float?
+  previousRiskLevel      String?
+  scoreChange            Float?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  auditEvents            AuditEvent[]
+  controlTowerExceptions ControlTowerException[]
+
+  @@index([orderId, generatedAt])
+  @@index([riskLevel, generatedAt])
+  @@index([routePlanId])
+  @@index([expiresAt, stale])
 }
 
 model ParcelVerificationScan {
@@ -643,6 +685,8 @@ model AuditEvent {
   conditionAssessment   RouteConditionAssessment? @relation(fields: [conditionAssessmentId], references: [id], onDelete: SetNull)
   trafficIncidentId     String?
   trafficIncident       TrafficIncident?          @relation(fields: [trafficIncidentId], references: [id], onDelete: SetNull)
+  slaRiskPredictionId   String?
+  slaRiskPrediction     SlaRiskPrediction?        @relation(fields: [slaRiskPredictionId], references: [id], onDelete: SetNull)
   createdAt             DateTime                  @default(now())
 
   @@index([entityType, entityId, createdAt])

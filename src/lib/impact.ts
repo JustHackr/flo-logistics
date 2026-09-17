@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getLatestSnapshots } from "@/lib/intelligence/service";
 import { getRoutingLogisticsOverview } from "@/lib/routing-overview";
 import { RAIN_DISRUPTION_SCENARIO } from "@/lib/demo-scenario";
+import { getSlaRiskMetrics } from "@/lib/sla-risk-service";
 
 function round(value: number, digits = 1) {
   const factor = 10 ** digits;
@@ -15,7 +16,7 @@ function parseJson<T>(value: string | null, fallback: T): T {
 
 export async function getImpactOverview() {
   const now = new Date();
-  const [orders, routes, revisions, runs, snapshots, activeExceptions, scenario] = await Promise.all([
+  const [orders, routes, revisions, runs, snapshots, activeExceptions, scenario, slaRisk] = await Promise.all([
     prisma.order.findMany({ select: { id: true, status: true, promisedAt: true, deliveredAt: true } }),
     prisma.routePlan.findMany({ select: { id: true, status: true, totalDurationMin: true, totalDistanceKm: true, estimatedEmissionsKg: true } }),
     prisma.routeRevision.findMany({ orderBy: { createdAt: "desc" }, include: { routePlan: { include: { stops: { include: { order: { select: { promisedAt: true } } } } } } } }),
@@ -23,6 +24,7 @@ export async function getImpactOverview() {
     getLatestSnapshots(),
     prisma.controlTowerException.findMany({ where: { status: { not: "RESOLVED" } }, select: { kind: true, severity: true } }),
     prisma.demoScenarioRun.findUnique({ where: { id: RAIN_DISRUPTION_SCENARIO } }),
+    getSlaRiskMetrics(),
   ]);
 
   const promisedOrders = orders.filter((order) => order.promisedAt);
@@ -64,7 +66,7 @@ export async function getImpactOverview() {
       totalOrders: orders.length,
       deliveredOrders: orders.filter((order) => order.status === "DELIVERED").length,
       lateOrders: deliveredWithPromise.filter((order) => order.deliveredAt! > order.promisedAt!).length,
-      ordersAtRisk: activeExceptions.filter((exception) => ["SLA_RISK", "WEATHER_RISK", "CONGESTION_RISK", "INCIDENT_NEAR_ROUTE"].includes(exception.kind)).length,
+      ordersAtRisk: activeExceptions.filter((exception) => ["SLA_RISK", "PREDICTIVE_SLA_RISK", "WEATHER_RISK", "CONGESTION_RISK", "INCIDENT_NEAR_ROUTE"].includes(exception.kind)).length,
       protectedSlaOrders,
       averageRouteDurationMin: round(activeRoutes.length ? totalDurationMin / activeRoutes.length : 0),
       averageRouteDistanceKm: round(activeRoutes.length ? totalDistanceKm / activeRoutes.length : 0),
@@ -107,5 +109,6 @@ export async function getImpactOverview() {
       open: activeExceptions.length,
       critical: activeExceptions.filter((exception) => exception.severity === "CRITICAL").length,
     },
+    slaRisk,
   };
 }

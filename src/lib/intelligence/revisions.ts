@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { adjustedDurationMin } from "./risk";
 import { assessRouteConditions, associateRouteConditions } from "./service";
 import { recordAuditEventSafe } from "@/lib/audit";
+import { recalculateSlaRisk } from "@/lib/sla-risk-service";
 
 type RevisionStop = { routeStopId: string; orderId: string; etaAt: string | null; durationMin: number; revisedEtaAt: string; revisedDurationMin: number };
 
@@ -35,6 +36,7 @@ export async function approveRouteRevision(revisionId: string, userId: string) {
     await tx.routeRevision.update({ where: { id: revisionId }, data: { status: "APPROVED", approvedAt: new Date(), approvedByUserId: userId } });
   });
   await recordAuditEventSafe({ eventType: "ROUTE_REVISION", action: "APPROVE", summary: "Route revision approved and applied.", actorUserId: userId, entityType: "RouteRevision", entityId: revision.id, routePlanId: revision.routePlanId, routeRevisionId: revision.id, before: { status: "DRAFT", totalDurationMin: revision.originalDurationMin, totalDistanceKm: revision.originalDistanceKm }, after: { status: "APPROVED", totalDurationMin: revision.revisedDurationMin, totalDistanceKm: revision.revisedDistanceKm }, metadata: { affectedStops: revision.affectedStops } });
+  await recalculateSlaRisk({ trigger: "ROUTE_UPDATE", actorUserId: userId, actorRole: "OPS_MANAGER" });
   return { ok: true, revisionId, status: "APPROVED" as const };
 }
 

@@ -9,6 +9,7 @@ import type {
 } from "./types";
 import { recordAuditEventSafe } from "@/lib/audit";
 import { reconcileIntegrationData } from "./reconciliation";
+import { recalculateSlaRisk } from "@/lib/sla-risk-service";
 
 type ConnectorForSync = {
   id: string;
@@ -103,6 +104,7 @@ export async function runIntegrationSync(input: {
       data: { status: "active" },
     });
     const reconciliation = await reconcileIntegrationData({ integrationRunId: run.id, actorUserId: input.actorUserId, actorRole: input.actorRole });
+    await recalculateSlaRisk({ trigger: "WMS_UPDATE", actorUserId: input.actorUserId, actorRole: input.actorRole });
     await recordAuditEventSafe({ eventType: "INTEGRATION_SYNC", action: "COMPLETE", summary: `${kind} synchronization completed.`, actorUserId: input.actorUserId, actorRole: input.actorRole, entityType: "IntegrationRun", entityId: run.id, integrationRunId: run.id, connectorId: input.connector.id, sourceSystem, after: { status, created, updated, rejected: errors.length }, metadata: { mode: input.mode, fixture: input.fixture ?? null } });
 
     return { runId: run.id, kind, status, created, updated, rejected: errors.length, errors, reconciliation };
