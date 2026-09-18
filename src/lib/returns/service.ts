@@ -73,6 +73,25 @@ function mapView(row: Awaited<ReturnType<typeof getCase>>): ReturnCaseView {
 
 export async function listReturns() { await ensureDemoReturnCase(); const rows = await prisma.returnCase.findMany({ orderBy: { updatedAt: "desc" }, select: { id: true } }); return Promise.all(rows.map(async (row) => mapView(await getCase(row.id)))); }
 export async function getReturnView(id: string) { return mapView(await getCase(id)); }
+export async function resetDemoReturnCase(actorUserId?: string) {
+  const id = await ensureDemoReturnCase(actorUserId);
+  await prisma.$transaction(async (tx) => {
+    await tx.controlTowerException.deleteMany({ where: { returnCaseId: id } });
+    await tx.returnException.deleteMany({ where: { returnCaseId: id } });
+    await tx.returnCarbonEstimate.deleteMany({ where: { returnCaseId: id } });
+    await tx.returnCostEstimate.deleteMany({ where: { returnCaseId: id } });
+    await tx.dispositionDecision.deleteMany({ where: { returnCaseId: id } });
+    await tx.refundDecision.deleteMany({ where: { returnCaseId: id } });
+    await tx.returnFraudAssessment.deleteMany({ where: { returnCaseId: id } });
+    await tx.returnInspection.deleteMany({ where: { returnCaseId: id } });
+    await tx.returnScan.deleteMany({ where: { returnCaseId: id } });
+    await tx.returnEvent.deleteMany({ where: { returnCaseId: id } });
+    await tx.returnCase.update({ where: { id }, data: { state: "REQUESTED", riskLevel: "LOW", riskScore: 0, closedAt: null, currentSku: null, currentSerial: null } });
+    await tx.returnEvent.create({ data: { returnCaseId: id, eventType: "DEMO_RESET", toState: "REQUESTED", sourceSystem: "flo", dataSource: "SYNTHETIC", location: "FLO Demo", actorUserId, occurredAt: new Date() } });
+  });
+  await recordAuditEventSafe({ eventType: "RETURN_DEMO", action: "RESET", summary: "Reverse logistics demo scenario reset.", actorUserId, actorRole: "OPS_MANAGER", entityType: "ReturnCase", entityId: id, metadata: { synthetic: true } });
+  return getReturnView(id);
+}
 export async function createReturnCase(input: { externalReturnId: string; orderId?: string; reason: string; expectedHub: string; expectedSku?: string; expectedSerial?: string; actorUserId?: string; dataSource?: string }) {
   const row = await prisma.returnCase.create({ data: { externalReturnId: input.externalReturnId, orderId: input.orderId, reason: input.reason, expectedHub: input.expectedHub, expectedSku: input.expectedSku, expectedSerial: input.expectedSerial, sourceSystem: "blibli_oms", dataSource: input.dataSource ?? "LIVE", parcel: { create: { code: `RET-QR-${input.externalReturnId}`, qrPayload: input.externalReturnId, sku: input.expectedSku, serialNumber: input.expectedSerial, expectedHub: input.expectedHub } }, events: { create: { eventType: "RETURN_CREATED", toState: "REQUESTED", sourceSystem: "blibli_oms", dataSource: input.dataSource ?? "LIVE", occurredAt: new Date(), actorUserId: input.actorUserId } } } });
   return getReturnView(row.id);
