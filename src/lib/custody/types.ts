@@ -125,7 +125,10 @@ export type CustodyParcelView = {
   anomalies: AnomalyView[];
   evidence: EvidenceView[];
   responsibilityWindow: ResponsibilityWindow;
+  investigations: InvestigationView[];
 };
+
+export type InvestigationView = { id: string; status: string; finding: string | null; confidence: number | null; assignedToUserId: string | null; notes: string[]; updatedAt: string };
 
 export type CustodyGraph = {
   nodes: ActorView[];
