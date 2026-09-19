@@ -31,6 +31,7 @@ import {
   BarChart3,
   ScanBarcode,
   RotateCcw,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -86,6 +87,12 @@ const navGroups: NavGroup[] = [
         href: "/returns",
         labelKey: "nav.items.returns",
         icon: RotateCcw,
+        badgeKey: "nav.badges.demo",
+      },
+      {
+        href: "/custody",
+        labelKey: "nav.items.custody",
+        icon: Network,
         badgeKey: "nav.badges.demo",
       },
       {

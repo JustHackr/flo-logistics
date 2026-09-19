@@ -29,7 +29,17 @@ export type ControlTowerExceptionKind =
   | "return_missing_custody"
   | "return_disposition_overdue"
   | "return_oms_wms_conflict"
-  | "return_stalled";
+  | "return_stalled"
+  | "custody_missing_handoff"
+  | "custody_wrong_hub"
+  | "custody_wrong_custodian"
+  | "custody_duplicate_scan"
+  | "custody_location_conflict"
+  | "custody_time_conflict"
+  | "custody_serial_mismatch"
+  | "custody_condition_conflict"
+  | "custody_repeated_anomaly"
+  | "custody_investigation_required";
 
 export type ControlTowerException = {
   id: string;
@@ -66,6 +76,7 @@ export type ControlTowerException = {
     reasons: string[];
     recommendation: string;
   };
+  custodyParcelId?: string;
 };
 
 export type ControlTowerOverview = {
@@ -150,6 +161,16 @@ const DB_KIND = {
   return_disposition_overdue: "RETURN_DISPOSITION_OVERDUE",
   return_oms_wms_conflict: "RETURN_OMS_WMS_CONFLICT",
   return_stalled: "RETURN_STALLED",
+  custody_missing_handoff: "CUSTODY_MISSING_HANDOFF",
+  custody_wrong_hub: "CUSTODY_WRONG_HUB",
+  custody_wrong_custodian: "CUSTODY_WRONG_CUSTODIAN",
+  custody_duplicate_scan: "CUSTODY_DUPLICATE_SCAN",
+  custody_location_conflict: "CUSTODY_LOCATION_CONFLICT",
+  custody_time_conflict: "CUSTODY_TIME_CONFLICT",
+  custody_serial_mismatch: "CUSTODY_SERIAL_MISMATCH",
+  custody_condition_conflict: "CUSTODY_CONDITION_CONFLICT",
+  custody_repeated_anomaly: "CUSTODY_REPEATED_ANOMALY",
+  custody_investigation_required: "CUSTODY_INVESTIGATION_REQUIRED",
 } as const;
 
 const DB_SEVERITY = {
@@ -410,7 +431,7 @@ async function syncExceptionRecords(desired: ControlTowerException[], now: Date)
     const stale = await tx.controlTowerException.findMany({
       where: {
         status: { not: "RESOLVED" },
-        kind: { notIn: ["BARCODE_MISMATCH", "PREDICTIVE_SLA_RISK", "RETURN_QR_MISMATCH", "RETURN_DUPLICATE_SCAN", "RETURN_WRONG_HUB", "RETURN_DAMAGE_DETECTED", "RETURN_SERIAL_MISMATCH", "RETURN_FRAUD_REVIEW", "RETURN_REFUND_HELD", "RETURN_MISSING_CUSTODY", "RETURN_DISPOSITION_OVERDUE", "RETURN_OMS_WMS_CONFLICT", "RETURN_STALLED"] },
+        kind: { notIn: ["BARCODE_MISMATCH", "PREDICTIVE_SLA_RISK", "RETURN_QR_MISMATCH", "RETURN_DUPLICATE_SCAN", "RETURN_WRONG_HUB", "RETURN_DAMAGE_DETECTED", "RETURN_SERIAL_MISMATCH", "RETURN_FRAUD_REVIEW", "RETURN_REFUND_HELD", "RETURN_MISSING_CUSTODY", "RETURN_DISPOSITION_OVERDUE", "RETURN_OMS_WMS_CONFLICT", "RETURN_STALLED", "CUSTODY_MISSING_HANDOFF", "CUSTODY_WRONG_HUB", "CUSTODY_WRONG_CUSTODIAN", "CUSTODY_DUPLICATE_SCAN", "CUSTODY_LOCATION_CONFLICT", "CUSTODY_TIME_CONFLICT", "CUSTODY_SERIAL_MISMATCH", "CUSTODY_CONDITION_CONFLICT", "CUSTODY_REPEATED_ANOMALY", "CUSTODY_INVESTIGATION_REQUIRED"] },
         ...(desiredKeys.length > 0 ? { dedupeKey: { notIn: desiredKeys } } : {}),
       },
       select: { id: true },
@@ -443,6 +464,7 @@ function mapStoredException(exception: {
   routePlan: { id: string; driver: { name: string } } | null;
   vehicle: { id: string; name: string } | null;
   slaRiskPrediction: { score: number; confidence: string; predictedDeliveryAt: Date | null; remainingBufferMin: number | null; stale: boolean; reasonsJson: string; recommendation: string } | null;
+  custodyParcel: { id: string } | null;
 }): ControlTowerException {
   return {
     id: exception.id,
@@ -465,6 +487,7 @@ function mapStoredException(exception: {
     resolvedAt: exception.resolvedAt?.toISOString() ?? null,
     detectedAt: exception.detectedAt.toISOString(),
     slaRisk: exception.slaRiskPrediction ? { score: exception.slaRiskPrediction.score, confidence: exception.slaRiskPrediction.confidence, predictedDeliveryAt: exception.slaRiskPrediction.predictedDeliveryAt?.toISOString() ?? null, remainingBufferMin: exception.slaRiskPrediction.remainingBufferMin, stale: exception.slaRiskPrediction.stale, reasons: (() => { try { return JSON.parse(exception.slaRiskPrediction.reasonsJson) as string[]; } catch { return []; } })(), recommendation: exception.slaRiskPrediction.recommendation } : undefined,
+    custodyParcelId: exception.custodyParcel?.id,
   };
 }
 
@@ -552,6 +575,7 @@ export async function getControlTowerOverview(): Promise<ControlTowerOverview> {
       routePlan: { select: { id: true, driver: { select: { name: true } } } },
       vehicle: { select: { id: true, name: true } },
       slaRiskPrediction: { select: { score: true, confidence: true, predictedDeliveryAt: true, remainingBufferMin: true, stale: true, reasonsJson: true, recommendation: true } },
+      custodyParcel: { select: { id: true } },
     },
   });
   const exceptions = stored.map(mapStoredException);

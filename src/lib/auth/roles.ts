@@ -29,12 +29,14 @@ const ROLE_PATHS: Record<Role, string[]> = {
     "/system/gas-price",
     "/computer-vision",
     "/returns",
+    "/custody",
   ],
   DRIVER: [
     "/",
     "/routing/dashboard",
     "/routing/plan",
     "/routing/methodology",
+    "/custody",
   ],
   WAREHOUSE: [
     "/",
@@ -43,6 +45,7 @@ const ROLE_PATHS: Record<Role, string[]> = {
     "/routing/methodology",
     "/computer-vision",
     "/returns",
+    "/custody",
   ],
 };
 

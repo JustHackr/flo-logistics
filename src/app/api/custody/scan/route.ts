@@ -1,0 +1,7 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requireApiRole } from "@/lib/auth/api";
+import { ingestCustodyEvent } from "@/lib/custody/service";
+const schema = z.object({ externalParcelId: z.string().min(3), code: z.string().min(3), eventType: z.string().min(3), externalEventId: z.string().min(3), sourceSystem: z.string().default("flo_scan"), dataSource: z.enum(["LIVE", "SYNTHETIC", "FALLBACK", "MANUAL"]).default("MANUAL"), hubCode: z.string().optional() });
+export async function POST(request: Request) { const access = await requireApiRole(["ADMIN", "OPS_MANAGER", "DRIVER", "WAREHOUSE"]); if (!access.ok) return access.response; try { const input = schema.parse(await request.json()); if (input.code.trim().toUpperCase() !== input.externalParcelId.trim().toUpperCase()) return NextResponse.json({ outcome: "IDENTITY_MISMATCH", explanation: "Scan code does not match the parcel identity.", dataSource: input.dataSource }, { status: 422 }); return NextResponse.json(await ingestCustodyEvent({ externalParcelId: input.externalParcelId, eventType: input.eventType, externalEventId: input.externalEventId, sourceSystem: input.sourceSystem, dataSource: input.dataSource, hubCode: input.hubCode, scanMethod: "QR_OR_BARCODE", observedAt: new Date(), actorUserId: access.session.id })); } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid scan" }, { status: 400 }); } }
+

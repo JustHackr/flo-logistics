@@ -45,6 +45,7 @@ function exceptionHref(exception: ControlTowerException) {
   if (exception.kind === "barcode_mismatch") return "/computer-vision/parcel-verification";
   if (exception.kind === "predictive_sla_risk") return "/routing/dashboard";
   if (exception.kind.startsWith("return_")) return "/returns";
+  if (exception.kind.startsWith("custody_")) return exception.custodyParcelId ? `/custody/${exception.custodyParcelId}` : "/custody";
     return "/routing/dashboard";
 }
 

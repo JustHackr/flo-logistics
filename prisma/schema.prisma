@@ -79,6 +79,16 @@ enum ControlTowerExceptionKind {
   RETURN_DISPOSITION_OVERDUE
   RETURN_OMS_WMS_CONFLICT
   RETURN_STALLED
+  CUSTODY_MISSING_HANDOFF
+  CUSTODY_WRONG_HUB
+  CUSTODY_WRONG_CUSTODIAN
+  CUSTODY_DUPLICATE_SCAN
+  CUSTODY_LOCATION_CONFLICT
+  CUSTODY_TIME_CONFLICT
+  CUSTODY_SERIAL_MISMATCH
+  CUSTODY_CONDITION_CONFLICT
+  CUSTODY_REPEATED_ANOMALY
+  CUSTODY_INVESTIGATION_REQUIRED
 }
 
 enum ControlTowerSeverity {
@@ -118,6 +128,9 @@ model User {
   fraudAssessments        ReturnFraudAssessment[]
   refundDecisions         RefundDecision[]
   dispositionDecisions    DispositionDecision[]
+  custodyEvents           CustodyEvent[]
+  custodyEvidence         CustodyEvidence[]
+  assignedInvestigations  CustodyInvestigation[]   @relation("CustodyInvestigator")
 }
 
 model Vehicle {
@@ -266,6 +279,7 @@ model Order {
   parcelVerificationScans ParcelVerificationScan[]
   slaRiskPredictions      SlaRiskPrediction[]
   returnCases             ReturnCase[]
+  custodyParcels          CustodyParcel[]
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -542,12 +556,15 @@ model ControlTowerException {
   slaRiskPrediction    SlaRiskPrediction?          @relation(fields: [slaRiskPredictionId], references: [id], onDelete: SetNull)
   returnCaseId         String?
   returnCase           ReturnCase?                 @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  custodyParcelId      String?
+  custodyParcel        CustodyParcel?              @relation(fields: [custodyParcelId], references: [id], onDelete: Cascade)
   updatedAt            DateTime                    @updatedAt
   auditEvents          AuditEvent[]
 
   @@index([status, severity])
   @@index([orderId])
   @@index([routePlanId])
+  @@index([custodyParcelId])
 }
 
 model SlaRiskPrediction {
@@ -662,6 +679,7 @@ model ReturnCase {
   exceptions             ReturnException[]
   policies               ReturnPolicy[]
   controlTowerExceptions ControlTowerException[]
+  custodyParcels         CustodyParcel[]
   user                   User?                   @relation(fields: [userId], references: [id])
   userId                 String?
 
@@ -897,6 +915,160 @@ model ReturnPolicy {
   returnCase              ReturnCase? @relation(fields: [returnCaseId], references: [id], onDelete: SetNull)
 
   @@index([active])
+}
+
+/// Relational representation of the parcel custody graph. Events are immutable
+/// observations; graph edges are reconstructed from from/to actor references.
+model CustodyParcel {
+  id                 String                  @id @default(cuid())
+  externalParcelId   String                  @unique
+  orderId            String?
+  order              Order?                  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  returnCaseId       String?
+  returnCase         ReturnCase?             @relation(fields: [returnCaseId], references: [id], onDelete: SetNull)
+  barcode            String?
+  qrPayload          String?
+  sku                String?
+  serialNumber       String?
+  originHub          String?
+  destinationHub     String?
+  currentState       String                  @default("CREATED")
+  currentLocation    String?
+  currentCustodianId String?
+  currentCustodian   CustodyActor?           @relation("CurrentCustodyActor", fields: [currentCustodianId], references: [id], onDelete: SetNull)
+  confidenceScore    Float                   @default(0)
+  riskLevel          String                  @default("CRITICAL")
+  dataSource         String                  @default("SYNTHETIC")
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  events             CustodyEvent[]
+  evidence           CustodyEvidence[]
+  anomalies          CustodyAnomaly[]
+  investigations     CustodyInvestigation[]
+  exceptions         ControlTowerException[]
+
+  @@index([orderId])
+  @@index([returnCaseId])
+  @@index([currentCustodianId])
+  @@index([riskLevel, updatedAt])
+}
+
+model CustodyActor {
+  id             String           @id @default(cuid())
+  actorType      String
+  externalId     String
+  name           String
+  hubCode        String?
+  vehicleCode    String?
+  active         Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  currentParcels CustodyParcel[]  @relation("CurrentCustodyActor")
+  outgoingEvents CustodyEvent[]   @relation("CustodyFromActor")
+  incomingEvents CustodyEvent[]   @relation("CustodyToActor")
+  candidateFor   CustodyAnomaly[]
+
+  @@unique([actorType, externalId])
+  @@index([actorType, active])
+  @@index([hubCode])
+}
+
+model CustodyEvent {
+  id               String            @id @default(cuid())
+  parcelId         String
+  parcel           CustodyParcel     @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  eventType        String
+  externalEventId  String
+  sourceSystem     String
+  source           String?
+  dataSource       String            @default("SYNTHETIC")
+  fromActorId      String?
+  fromActor        CustodyActor?     @relation("CustodyFromActor", fields: [fromActorId], references: [id], onDelete: SetNull)
+  toActorId        String?
+  toActor          CustodyActor?     @relation("CustodyToActor", fields: [toActorId], references: [id], onDelete: SetNull)
+  actorUserId      String?
+  actorUser        User?             @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  hubCode          String?
+  lat              Float?
+  lng              Float?
+  scanMethod       String?
+  correlationId    String?
+  validationStatus String            @default("MANUAL_REVIEW")
+  validationJson   String?
+  confidenceDelta  Int               @default(0)
+  payloadJson      String?
+  observedAt       DateTime
+  receivedAt       DateTime          @default(now())
+  evidence         CustodyEvidence[]
+  anomalies        CustodyAnomaly[]
+
+  @@unique([sourceSystem, externalEventId])
+  @@index([parcelId, observedAt])
+  @@index([validationStatus, observedAt])
+  @@index([hubCode, observedAt])
+}
+
+model CustodyEvidence {
+  id              String        @id @default(cuid())
+  parcelId        String
+  parcel          CustodyParcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  eventId         String?
+  event           CustodyEvent? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  evidenceType    String
+  reference       String
+  metadataJson    String?
+  capturedAt      DateTime?
+  createdByUserId String?
+  createdByUser   User?         @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
+
+  @@index([parcelId, createdAt])
+  @@index([eventId])
+}
+
+model CustodyAnomaly {
+  id                        String         @id @default(cuid())
+  parcelId                  String
+  parcel                    CustodyParcel  @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  eventId                   String?
+  event                     CustodyEvent?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  kind                      String
+  severity                  String
+  status                    String         @default("OPEN")
+  dedupeKey                 String         @unique
+  reason                    String
+  explanation               String
+  sourceEventIdsJson        String         @default("[]")
+  candidateCustodianIdsJson String         @default("[]")
+  recommendedAction         String
+  dataSource                String         @default("SYNTHETIC")
+  createdAt                 DateTime       @default(now())
+  acknowledgedAt            DateTime?
+  resolvedAt                DateTime?
+  resolvedByUserId          String?
+  candidateCustodianIds     CustodyActor[]
+
+  @@index([parcelId, status])
+  @@index([kind, severity])
+}
+
+model CustodyInvestigation {
+  id               String        @id @default(cuid())
+  parcelId         String
+  parcel           CustodyParcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  status           String        @default("OPEN")
+  finding          String?
+  confidence       Int?
+  assignedToUserId String?
+  assignedTo       User?         @relation("CustodyInvestigator", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  notesJson        String        @default("[]")
+  resolutionNote   String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  resolvedAt       DateTime?
+
+  @@index([parcelId, status])
+  @@index([assignedToUserId, status])
 }
 
 model RouteConditionObservation {
