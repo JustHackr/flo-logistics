@@ -211,12 +211,14 @@ model FuelPriceItem {
   @@index([snapshotId])
 }
 
-/// Singleton row (id = "default") for site-wide OpenAI-compatible AI provider settings.
+/// Singleton row (id = "default") for site-wide AI provider settings.
+/// mode: sovereign | ollama | openai_compatible
 model AiProviderConfig {
   id        String   @id @default("default")
-  apiKey    String
-  baseUrl   String
-  model     String
+  mode      String   @default("sovereign")
+  apiKey    String   @default("")
+  baseUrl   String   @default("")
+  model     String   @default("")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

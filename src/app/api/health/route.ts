@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
  * Never exposes secrets or connection strings.
  */
 export async function GET() {
-  const provider = getAiProviderStatus();
+  const provider = await getAiProviderStatus();
   let db: "ok" | "error" = "ok";
 
   try {

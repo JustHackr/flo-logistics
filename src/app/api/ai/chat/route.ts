@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     return apiError(locale, "validation", 400);
   }
 
-  const settings = getAiProviderSettings();
+  const settings = await getAiProviderSettings();
 
   if (settings) {
     try {

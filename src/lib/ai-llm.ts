@@ -111,7 +111,9 @@ export async function callOpenAiCompatibleChat(input: {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${input.settings.apiKey}`,
+      ...(input.settings.apiKey.trim()
+        ? { Authorization: `Bearer ${input.settings.apiKey}` }
+        : {}),
     },
     body: JSON.stringify({
       model: input.settings.model,

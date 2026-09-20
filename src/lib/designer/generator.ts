@@ -76,13 +76,13 @@ export async function generateDesignerGraph(input: {
   history?: DesignerMessage[];
   locale?: Locale;
 }): Promise<DesignerGenerateResult> {
-  const settings = getAiProviderSettings();
+  const settings = await getAiProviderSettings();
   if (!settings) {
     return {
       ok: false,
       code: "no-key",
       message:
-        "Connect an LLM API key in AI Settings first (set AI_ALLOW_EXTERNAL=true, AI_API_KEY, AI_BASE_URL, AI_MODEL).",
+        "Connect an LLM in AI Settings first (Ollama or OpenAI-compatible), or set AI_ALLOW_EXTERNAL with AI_API_KEY and AI_BASE_URL.",
     };
   }
 

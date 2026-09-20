@@ -259,6 +259,15 @@ Canonical source: the *Sovereignty* slide in [team-site/src/components/Presentat
 ## Quick start
 
 ```bash
+git clone https://github.com/JustHackr/flo-logistics.git
+cd flo-logistics
+npm run install:flo   # interactive: AI mode, .env.local, migrate, seed
+npm run dev
+```
+
+Or manually:
+
+```bash
 npm install
 npm run dev
 ```
@@ -272,7 +281,7 @@ Open [http://localhost:3000/login](http://localhost:3000/login) (or the public d
 | Bima Nugraha (driver) | driver@flo.demo | DRIVER |
 | Warehouse Lead | warehouse@flo.demo | WAREHOUSE |
 
-After signing in, the demo lands on the role's default workspace (`/routing/plan` for drivers, `/computer-vision/load-detection` for warehouse, `/routing/dashboard` for ops).
+After signing in as Demo Admin, configure **Ollama** or an **OpenAI-compatible** endpoint at `/ai/settings` (SQLite overrides any `.env.local` bootstrap).
 
 The `build` script runs `prisma migrate deploy` and `db:seed` automatically, so production builds also include demo warehouse, drivers, and orders. Seed skips if a route plan was updated in the last hour (set `FORCE_SEED=true` to override, or `SKIP_SEED=true` to never reseed).
 
@@ -328,6 +337,7 @@ Deployment is documented in [deploy/README.md](deploy/README.md): a VPS at `radr
 ## Development
 
 ```bash
+npm run install:flo # Laptop wizard (.env.local, migrate, seed, optional Ollama)
 npm run dev        # Start dev server
 npm run lint       # ESLint
 npm run test       # Unit tests (no network)
