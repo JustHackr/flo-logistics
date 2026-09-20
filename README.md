@@ -14,6 +14,17 @@ Built by **Quasarian Radr-Lyon Dynasty** for the **AI Open Innovation Challenge 
 | Team site / final hub | [radr.nxtdev.xyz/flo-logistics/](https://radr.nxtdev.xyz/flo-logistics/) · [/final](https://radr.nxtdev.xyz/flo-logistics/final) |
 | Source | [github.com/JustHackr/flo-logistics](https://github.com/JustHackr/flo-logistics) |
 
+### Install on your laptop
+
+```bash
+git clone https://github.com/JustHackr/flo-logistics.git
+cd flo-logistics
+npm run install:flo
+npm run dev
+```
+
+`npm run install:flo` walks you through Sovereign / Ollama / OpenAI-compatible setup, writes `.env.local`, migrates SQLite, and seeds demo data. Then open [http://localhost:3000/login](http://localhost:3000/login) (`admin@flo.demo` / `demo1234`) and optionally configure AI at `/ai/settings`.
+
 ![FLO login — role-based demo personas](docs/screenshots/01-login.png)
 
 ---
@@ -88,15 +99,15 @@ Code: [src/lib/designer/](src/lib/designer/), route `/admin/designer` (ADMIN).
 
 ### Process map — system self-description
 
-Schema of the whole FLO pipeline with live stats, drag, and a permanent detail pane — architecture readable without leaving the app.
+Swimlane of the whole FLO pipeline with live stats, drag, and a permanent detail pane — architecture readable without leaving the app.
 
-![Admin process map schema](docs/screenshots/07-process-map.png)
+![Admin process map swimlane](docs/screenshots/07-process-map.png)
 
 Code: [src/lib/process-map/](src/lib/process-map/), route `/admin/process-map` (ADMIN).
 
 ### Sovereign AI
 
-System is designed to be able to deployed on-premise, with system prompt available without connecting to external (rule-based ops assistant over live SQLite). Operators may opt into any OpenAI-compatible / open-weight endpoint (Ollama, vLLM, …). Aligned with Stranas KA, UU PDP, UU ITE — see [SECURITY.md](SECURITY.md).
+Prompts stay on the deployment by default (rule-based ops assistant over live SQLite). Operators may opt into any OpenAI-compatible / open-weight endpoint (Ollama, vLLM, …). Aligned with Stranas KA, UU PDP, UU ITE — see [SECURITY.md](SECURITY.md).
 
 ![Sovereign AI posture page](docs/screenshots/08-sovereign-ai.png)
 
@@ -259,6 +270,15 @@ Canonical source: the *Sovereignty* slide in [team-site/src/components/Presentat
 ## Quick start
 
 ```bash
+git clone https://github.com/JustHackr/flo-logistics.git
+cd flo-logistics
+npm run install:flo   # interactive: AI mode, .env.local, migrate, seed
+npm run dev
+```
+
+Or manually:
+
+```bash
 npm install
 npm run dev
 ```
@@ -272,7 +292,7 @@ Open [http://localhost:3000/login](http://localhost:3000/login) (or the public d
 | Bima Nugraha (driver) | driver@flo.demo | DRIVER |
 | Warehouse Lead | warehouse@flo.demo | WAREHOUSE |
 
-After signing in, the demo lands on the role's default workspace (`/routing/plan` for drivers, `/computer-vision/load-detection` for warehouse, `/routing/dashboard` for ops).
+After signing in as Demo Admin, configure **Ollama** or an **OpenAI-compatible** endpoint at `/ai/settings` (SQLite overrides any `.env.local` bootstrap).
 
 The `build` script runs `prisma migrate deploy` and `db:seed` automatically, so production builds also include demo warehouse, drivers, and orders. Seed skips if a route plan was updated in the last hour (set `FORCE_SEED=true` to override, or `SKIP_SEED=true` to never reseed).
 
@@ -328,6 +348,7 @@ Deployment is documented in [deploy/README.md](deploy/README.md): a VPS at `radr
 ## Development
 
 ```bash
+npm run install:flo # Laptop wizard (.env.local, migrate, seed, optional Ollama)
 npm run dev        # Start dev server
 npm run lint       # ESLint
 npm run test       # Unit tests (no network)
