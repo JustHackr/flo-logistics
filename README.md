@@ -14,25 +14,26 @@ Built by **Quasarian Radr-Lyon Dynasty** for the **AI Open Innovation Challenge 
 | Team site / final hub | [radr.nxtdev.xyz/flo-logistics/](https://radr.nxtdev.xyz/flo-logistics/) · [/final](https://radr.nxtdev.xyz/flo-logistics/final) |
 | Source | [github.com/JustHackr/flo-logistics](https://github.com/JustHackr/flo-logistics) |
 
-**On this page:** 
-[Install](#install)
-[Requirements](#requirements)
-[Team](#team)
-[Features](#features)
-[Predict](#predict)
-[Route](#route)
-[Verify](#verify)
-[Flo Designer](#flo-designer)
-[Process map](#process-map)
-[Sovereign AI](#sovereign-ai)
-[Summary](#summary)
-[For AI reviewers](#for-ai-reviewers)
-[Feature map](#feature-map)
-[Quick start](#quick-start)
-[Configuration](#configuration)
-[Deploy](#deploy)
-[Development](#development)
-[Learn more](#learn-more)
+**On this page:**
+
+- [Install](#install)
+- [Requirements](#requirements)
+- [Team](#team)
+- [Features](#features)
+- [Predict](#predict)
+- [Route](#route)
+- [Verify](#verify)
+- [Flo Designer](#flo-designer)
+- [Process map](#process-map)
+- [Sovereign AI](#sovereign-ai)
+- [Summary](#summary)
+- [For AI reviewers](#for-ai-reviewers)
+- [Feature map](#feature-map)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Deploy](#deploy)
+- [Development](#development)
+- [Learn more](#learn-more)
 
 <a id="install"></a>
 
