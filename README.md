@@ -14,6 +14,17 @@ Built by **Quasarian Radr-Lyon Dynasty** for the **AI Open Innovation Challenge 
 | Team site / final hub | [radr.nxtdev.xyz/flo-logistics/](https://radr.nxtdev.xyz/flo-logistics/) · [/final](https://radr.nxtdev.xyz/flo-logistics/final) |
 | Source | [github.com/JustHackr/flo-logistics](https://github.com/JustHackr/flo-logistics) |
 
+### Install on your laptop
+
+```bash
+git clone https://github.com/JustHackr/flo-logistics.git
+cd flo-logistics
+npm run install:flo
+npm run dev
+```
+
+`npm run install:flo` walks you through Sovereign / Ollama / OpenAI-compatible setup, writes `.env.local`, migrates SQLite, and seeds demo data. Then open [http://localhost:3000/login](http://localhost:3000/login) (`admin@flo.demo` / `demo1234`) and optionally configure AI at `/ai/settings`.
+
 ![FLO login — role-based demo personas](docs/screenshots/01-login.png)
 
 ---
