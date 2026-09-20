@@ -1,5 +1,6 @@
 import "dotenv/config";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import {
   JAKARTA_DEMO_LOCATIONS,
@@ -9,9 +10,9 @@ import { refreshFuelPricesFromPertamina } from "../src/lib/fuel-price-service";
 import { hashPassword } from "../src/lib/auth/password";
 import { DEMO_ACCOUNTS } from "../src/lib/auth/roles";
 
-const adapter = new PrismaBetterSqlite3({
-  url: process.env.DATABASE_URL ?? "file:./dev.db",
-});
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) throw new Error("DATABASE_URL is required to seed the database.");
+const adapter = new PrismaPg(new Pool({ connectionString: databaseUrl }));
 const prisma = new PrismaClient({ adapter });
 
 const vehicles = [
