@@ -462,3 +462,4 @@ npm run db:reset   # Migrate reset + reseed
 - Pre-selection proposal: [Google Drive](https://drive.google.com/file/d/1c8f-1THAi4TozxX7LcI1pnTgPu5breM9/view)
 - [SECURITY.md](SECURITY.md) — Sovereign AI & security posture
 - [deploy/README.md](deploy/README.md) — Deployment guide
+- [docs/TODO-android.md](docs/TODO-android.md) — Android companion backlog (Compose, RBAC, Maps)
