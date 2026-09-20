@@ -16,6 +16,47 @@ Built by **Quasarian Radr-Lyon Dynasty** for the **AI Open Innovation Challenge 
 
 ### Install on your laptop
 
+#### Requirements
+
+| Requirement | Notes |
+|-------------|--------|
+| **Node.js 20+** (LTS) | [nodejs.org](https://nodejs.org/) — installer checks this |
+| **npm 10+** | Bundled with Node |
+| **Git** | To clone the repo |
+| **OS** | macOS, Linux, or Windows (WSL2 recommended) |
+| **Disk** | ~500 MB for `node_modules` + SQLite |
+| **Ollama** (optional) | Local LLM — [ollama.com/download](https://ollama.com/download) |
+| **OpenAI-compatible API key** (optional) | Cloud / self-hosted LLM |
+| **Google Maps API keys** (optional) | Live traffic — see [`.env.example`](.env.example) |
+
+Webcam is only needed for live Load Detection / Hub Congestion demos; the [CV tour](https://radr.nxtdev.xyz/flo-logistics/demo/computer-vision/tour) works without a camera.
+
+#### Automated install (one command)
+
+Clones `main`, writes `.env.local`, runs `npm ci`, migrates SQLite, and seeds demo data (Sovereign AI by default — no API key):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JustHackr/flo-logistics/main/scripts/bootstrap.sh | bash
+cd flo-logistics
+npm run dev
+```
+
+With local Ollama (if installed):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JustHackr/flo-logistics/main/scripts/bootstrap.sh | bash -s -- --mode=ollama --pull-ollama
+```
+
+Already cloned the repo?
+
+```bash
+npm run install:flo -- --yes
+# or: npm run install:flo -- --yes --mode=ollama --pull-ollama
+# or: npm run install:flo -- --yes --mode=openai_compatible --api-key=sk-… --base-url=https://api.openai.com/v1 --model=gpt-4o-mini
+```
+
+#### Interactive install
+
 ```bash
 git clone https://github.com/JustHackr/flo-logistics.git
 cd flo-logistics
@@ -23,7 +64,16 @@ npm run install:flo
 npm run dev
 ```
 
-`npm run install:flo` walks you through Sovereign / Ollama / OpenAI-compatible setup, writes `.env.local`, migrates SQLite, and seeds demo data. Then open [http://localhost:3000/login](http://localhost:3000/login) (`admin@flo.demo` / `demo1234`) and optionally configure AI at `/ai/settings`.
+Then open [http://localhost:3000/login](http://localhost:3000/login):
+
+| Persona | Email | Password |
+|---------|-------|----------|
+| Demo Admin | `admin@flo.demo` | `demo1234` |
+| Ops Manager | `ops@flo.demo` | `demo1234` |
+| Driver | `driver@flo.demo` | `demo1234` |
+| Warehouse | `warehouse@flo.demo` | `demo1234` |
+
+Configure Ollama or an OpenAI-compatible endpoint anytime at `/ai/settings` (Demo Admin). SQLite settings override the `.env.local` bootstrap from the installer.
 
 ![FLO login — role-based demo personas](docs/screenshots/01-login.png)
 
@@ -269,30 +319,14 @@ Canonical source: the *Sovereignty* slide in [team-site/src/components/Presentat
 
 ## Quick start
 
-```bash
-git clone https://github.com/JustHackr/flo-logistics.git
-cd flo-logistics
-npm run install:flo   # interactive: AI mode, .env.local, migrate, seed
-npm run dev
-```
-
-Or manually:
+Full requirements and the one-line automated installer are at the top under **Install on your laptop**. Short version:
 
 ```bash
-npm install
-npm run dev
+curl -fsSL https://raw.githubusercontent.com/JustHackr/flo-logistics/main/scripts/bootstrap.sh | bash
+cd flo-logistics && npm run dev
 ```
 
-Open [http://localhost:3000/login](http://localhost:3000/login) (or the public demo login at [radr.nxtdev.xyz/flo-logistics/demo/login](https://radr.nxtdev.xyz/flo-logistics/demo/login)) and pick a demo persona (all accounts share the password `demo1234`):
-
-| Persona | Email | Role |
-|---------|-------|------|
-| Demo Admin | admin@flo.demo | ADMIN |
-| Ops Manager | ops@flo.demo | OPS_MANAGER |
-| Bima Nugraha (driver) | driver@flo.demo | DRIVER |
-| Warehouse Lead | warehouse@flo.demo | WAREHOUSE |
-
-After signing in as Demo Admin, configure **Ollama** or an **OpenAI-compatible** endpoint at `/ai/settings` (SQLite overrides any `.env.local` bootstrap).
+Or: `git clone … && npm run install:flo -- --yes && npm run dev`. Demo login: `admin@flo.demo` / `demo1234`. Public demo: [radr.nxtdev.xyz/flo-logistics/demo/login](https://radr.nxtdev.xyz/flo-logistics/demo/login).
 
 The `build` script runs `prisma migrate deploy` and `db:seed` automatically, so production builds also include demo warehouse, drivers, and orders. Seed skips if a route plan was updated in the last hour (set `FORCE_SEED=true` to override, or `SKIP_SEED=true` to never reseed).
 
