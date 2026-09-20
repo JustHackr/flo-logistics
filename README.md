@@ -14,7 +14,13 @@ Built by **Quasarian Radr-Lyon Dynasty** for the **AI Open Innovation Challenge 
 | Team site / final hub | [radr.nxtdev.xyz/flo-logistics/](https://radr.nxtdev.xyz/flo-logistics/) · [/final](https://radr.nxtdev.xyz/flo-logistics/final) |
 | Source | [github.com/JustHackr/flo-logistics](https://github.com/JustHackr/flo-logistics) |
 
+**On this page:** [Install](#install) · [Requirements](#requirements) · [Team](#team) · [Features](#features) · [Predict](#predict) · [Route](#route) · [Verify](#verify) · [Flo Designer](#flo-designer) · [Process map](#process-map) · [Sovereign AI](#sovereign-ai) · [Summary](#summary) · [For AI reviewers](#for-ai-reviewers) · [Feature map](#feature-map) · [Quick start](#quick-start) · [Configuration](#configuration) · [Deploy](#deploy) · [Development](#development) · [Learn more](#learn-more)
+
+<a id="install"></a>
+
 ### Install on your laptop
+
+<a id="requirements"></a>
 
 #### Requirements
 
@@ -79,6 +85,8 @@ Configure Ollama or an OpenAI-compatible endpoint anytime at `/ai/settings` (Dem
 
 ---
 
+<a id="team"></a>
+
 ## Why Quasarian built FLO
 
 **Quasarian Radr-Lyon Dynasty** is a three-person student team from **SMAS Pilar Indonesia**, building at **FabLab Jababeka**, with academic partners **Universitas Presiden** and case provider **Blibli**.
@@ -101,6 +109,8 @@ Competition journey: [pre-selection](https://radr.nxtdev.xyz/flo-logistics/pre-s
 
 ---
 
+<a id="features"></a>
+
 ## Features
 
 ### Operations home
@@ -108,6 +118,8 @@ Competition journey: [pre-selection](https://radr.nxtdev.xyz/flo-logistics/pre-s
 Role-aware dashboard: route progress, fleet VQI, and “needs attention” maintenance signals in one place. Personas (Admin, Ops Manager, Driver, Warehouse) share password `demo1234` in the demo.
 
 ![Home dashboard — Today at FLO](docs/screenshots/02-home.png)
+
+<a id="predict"></a>
 
 ### Predict — fleet health & maintenance
 
@@ -117,6 +129,8 @@ Role-aware dashboard: route progress, fleet VQI, and “needs attention” maint
 
 Code: [src/lib/vqi.ts](src/lib/vqi.ts), [src/lib/predictor.ts](src/lib/predictor.ts), routes `/vehicles`, `/dashboard`, `/reports`.
 
+<a id="route"></a>
+
 ### Route — traffic-aware, low-carbon planning
 
 Jakarta-aware optimization with **DTI** (delivery time), **CFI** (carbon), fuel cost, and driver–vehicle matching. Logistics monitors in-progress routes (progress, ETA, emissions).
@@ -124,6 +138,8 @@ Jakarta-aware optimization with **DTI** (delivery time), **CFI** (carbon), fuel 
 ![Logistics live route monitor](docs/screenshots/03-routing-plan.png)
 
 Code: [src/lib/routing/](src/lib/routing/), routes `/routing/orders`, `/routing/plan`, `/routing/dashboard`.
+
+<a id="verify"></a>
 
 ### Verify — on-device computer vision
 
@@ -139,6 +155,8 @@ Load detection and hub congestion / dwell run **in the browser** — frames neve
 
 Code: [src/lib/computer-vision/](src/lib/computer-vision/), routes `/computer-vision/tour`, `/computer-vision/load-detection`, `/computer-vision/hub-congestion-detection`.
 
+<a id="flo-designer"></a>
+
 ### Flo Designer — prompt → graph → save → JSON
 
 Admin workspace: describe a process in natural language, get a validated node graph, integrate with FLO’s process map, **save designs in SQLite**, export deterministic JSON. Drag nodes, inspect in a permanent detail pane, highlight what’s new after Refine.
@@ -147,6 +165,8 @@ Admin workspace: describe a process in natural language, get a validated node gr
 
 Code: [src/lib/designer/](src/lib/designer/), route `/admin/designer` (ADMIN).
 
+<a id="process-map"></a>
+
 ### Process map — system self-description
 
 Swimlane of the whole FLO pipeline with live stats, drag, and a permanent detail pane — architecture readable without leaving the app.
@@ -154,6 +174,8 @@ Swimlane of the whole FLO pipeline with live stats, drag, and a permanent detail
 ![Admin process map swimlane](docs/screenshots/07-process-map.png)
 
 Code: [src/lib/process-map/](src/lib/process-map/), route `/admin/process-map` (ADMIN).
+
+<a id="sovereign-ai"></a>
 
 ### Sovereign AI
 
@@ -164,6 +186,8 @@ Prompts stay on the deployment by default (rule-based ops assistant over live SQ
 Route: `/sovereign-ai` · assistant: `/ai/chat`.
 
 ---
+
+<a id="summary"></a>
 
 ## What FLO does (summary)
 
@@ -213,6 +237,8 @@ FLO is designed against the Indonesian AI and data-protection frame so that an I
 The presentation deck's *Sovereignty* slide ([team-site/src/components/PresentationDeck.tsx:155-194](team-site/src/components/PresentationDeck.tsx)) is the canonical source for this regulatory framing.
 
 ---
+
+<a id="for-ai-reviewers"></a>
 
 ## For AI reviewers
 
@@ -284,6 +310,8 @@ Canonical source: the *Sovereignty* slide in [team-site/src/components/Presentat
 
 ---
 
+<a id="feature-map"></a>
+
 ## Feature map
 
 | Domain | Route | One-line purpose |
@@ -317,6 +345,8 @@ Canonical source: the *Sovereignty* slide in [team-site/src/components/Presentat
 
 ---
 
+<a id="quick-start"></a>
+
 ## Quick start
 
 Full requirements and the one-line automated installer are at the top under **Install on your laptop**. Short version:
@@ -333,6 +363,8 @@ The `build` script runs `prisma migrate deploy` and `db:seed` automatically, so 
 Demo warehouse: **Blok M Square**. Order coordinates are validated against Greater Jakarta (Jabodetabek) bounds. Generate sample CSVs at `/admin/mockup-data`. Guided computer-vision walkthrough (no webcam): `/computer-vision/tour`. Admin-only business-process visualization (swimlane with live stats): `/admin/process-map`. Admin-only FLO Designer (generate, save designs, export JSON): `/admin/designer`.
 
 ---
+
+<a id="configuration"></a>
 
 ## Configuration
 
@@ -369,6 +401,8 @@ npm run db:reset
 
 ---
 
+<a id="deploy"></a>
+
 ## Production & deploy
 
 Health probe: `GET /api/health` → `{ ok, db, provider }`.
@@ -378,6 +412,8 @@ The public OSRM demo server (`router.project-osrm.org`) has no SLA. For producti
 Deployment is documented in [deploy/README.md](deploy/README.md): a VPS at `radr.nxtdev.xyz` runs the team site (port 3010) and the FLO demo (port 3011) under Node + systemd behind nginx + Let's Encrypt. An alternative Docker Compose path is provided via [deploy/docker-compose.yml](deploy/docker-compose.yml) and [team-site/Dockerfile](team-site/Dockerfile). On the VPS the sovereign assistant is the default — no `AI_API_KEY` is set.
 
 ---
+
+<a id="development"></a>
 
 ## Development
 
@@ -392,6 +428,8 @@ npm run db:reset   # Migrate reset + reseed
 ```
 
 ---
+
+<a id="learn-more"></a>
 
 ## Learn more
 
