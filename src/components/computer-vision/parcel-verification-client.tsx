@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element -- barcode fixtures must remain pixel-exact for native scanning. */
 
 import * as React from "react";
+import { BrowserMultiFormatReader } from "@zxing/browser";
 import Link from "next/link";
 import { AlertTriangle, Barcode, Camera, CameraOff, CheckCircle2, ExternalLink, FileImage, PackageCheck, RefreshCw, ScanBarcode, ShieldCheck, TriangleAlert, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -22,8 +23,14 @@ type Detector = { detect(source: CanvasImageSource): Promise<DetectorResult[]> }
 type DetectorConstructor = new (options?: { formats?: string[] }) => Detector;
 type CameraState = "idle" | "active" | "error";
 
+type DecodedLabel = { value: string; format: "BARCODE" | "QR_CODE"; decoder: "BarcodeDetector" | "ZXing" };
+
 function barcodeDetectorConstructor() {
   return (globalThis as typeof globalThis & { BarcodeDetector?: DetectorConstructor }).BarcodeDetector;
+}
+
+function mapDecodedFormat(format: string | undefined): "BARCODE" | "QR_CODE" {
+  return format?.toLowerCase().includes("qr") ? "QR_CODE" : "BARCODE";
 }
 
 function outcomeVariant(outcome: BarcodeVerification["outcome"]) {
@@ -42,6 +49,7 @@ export function ParcelVerificationClient() {
   const { locale, t } = useI18n();
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const streamRef = React.useRef<MediaStream | null>(null);
+  const zxingControlsRef = React.useRef<{ stop: () => void } | null>(null);
   const detectorRef = React.useRef<Detector | null>(null);
   const scanTimerRef = React.useRef<number | null>(null);
   const scanBusyRef = React.useRef(false);
@@ -57,6 +65,39 @@ export function ParcelVerificationClient() {
   const [exceptionCreated, setExceptionCreated] = React.useState(false);
   const [uploadedName, setUploadedName] = React.useState<string | null>(null);
   const [history, setHistory] = React.useState<Array<{ id: string; code: string; format: string; outcome: string; source: string; message: string; createdAt: string; actorName: string }>>([]);
+
+  /**
+   * Decode the actual pixels in an uploaded photograph. BarcodeDetector is
+   * preferred because it is native; ZXing is the reliable browser fallback
+   * for browsers that expose no BarcodeDetector or fail on a difficult frame.
+   */
+  async function decodePhoto(file: File): Promise<DecodedLabel> {
+    const imageUrl = URL.createObjectURL(file);
+    try {
+      const image = new Image();
+      image.src = imageUrl;
+      await image.decode();
+      const Constructor = barcodeDetectorConstructor();
+      if (Constructor) {
+        try {
+          const detections = await new Constructor({ formats: ["code_128", "ean_13", "ean_8", "qr_code"] }).detect(image);
+          const detection = detections.find((item) => item.rawValue?.trim());
+          if (detection?.rawValue?.trim()) {
+            return { value: detection.rawValue.trim(), format: mapDecodedFormat(detection.format), decoder: "BarcodeDetector" };
+          }
+        } catch {
+          // Continue to ZXing for low-light, perspective, or browser-specific images.
+        }
+      }
+      const reader = new BrowserMultiFormatReader();
+      const result = await reader.decodeFromImageElement(image);
+      const value = result.getText()?.trim();
+      if (!value) throw new Error("The image was read, but no QR code or barcode value was found.");
+      return { value, format: mapDecodedFormat(result.getBarcodeFormat()?.toString()), decoder: "ZXing" };
+    } finally {
+      URL.revokeObjectURL(imageUrl);
+    }
+  }
 
   const selectedFixture = BARCODE_FIXTURES.find((fixture) => fixture.id === selectedFixtureId) ?? BARCODE_FIXTURES[0];
 
@@ -82,6 +123,8 @@ export function ParcelVerificationClient() {
   const stopCamera = React.useCallback(() => {
     if (scanTimerRef.current !== null) window.clearTimeout(scanTimerRef.current);
     scanTimerRef.current = null;
+    zxingControlsRef.current?.stop();
+    zxingControlsRef.current = null;
     stopMediaStream(streamRef.current);
     streamRef.current = null;
     if (videoRef.current) videoRef.current.srcObject = null;
@@ -113,8 +156,26 @@ export function ParcelVerificationClient() {
     const Constructor = barcodeDetectorConstructor();
     setDetectorSupported(Boolean(Constructor));
     if (!Constructor) {
-      setCameraError("This browser does not expose BarcodeDetector. Use a generated fixture or type the code manually.");
-      return;
+      try {
+        if (!videoRef.current) throw new Error("Camera preview is unavailable");
+        const reader = new BrowserMultiFormatReader();
+        const controls = await reader.decodeFromVideoDevice(selectedDeviceId || undefined, videoRef.current, async (result, _error, scannerControls) => {
+          if (!result) return;
+          scannerControls.stop();
+          zxingControlsRef.current = null;
+          setCameraState("idle");
+          await verify(result.getText(), "live", undefined, mapDecodedFormat(result.getBarcodeFormat()?.toString()));
+        });
+        zxingControlsRef.current = controls;
+        setCameraState("active");
+        setCameraError("Native BarcodeDetector is unavailable; camera scanning is using the ZXing fallback.");
+        return;
+      } catch (error) {
+        stopCamera();
+        setCameraState("error");
+        setCameraError(error instanceof Error ? error.message : "Unable to open the camera scanner.");
+        return;
+      }
     }
     try {
       detectorRef.current = new Constructor({ formats: ["code_128", "ean_13", "ean_8", "qr_code"] });
@@ -150,19 +211,12 @@ export function ParcelVerificationClient() {
   async function scanUploadedImage(file: File) {
     const Constructor = barcodeDetectorConstructor();
     setUploadedName(file.name); setCameraError(null); setDetectorSupported(Boolean(Constructor));
-    if (!Constructor) { setCameraError("This browser cannot decode image files natively. Use a generated fixture or type the code manually."); return; }
     setLoading(true);
     try {
-      const image = new Image();
-      image.src = URL.createObjectURL(file);
-      await image.decode();
-      const detections = await new Constructor({ formats: ["code_128", "ean_13", "ean_8", "qr_code"] }).detect(image);
-      const detection = detections.find((item) => item.rawValue?.trim());
-      const value = detection?.rawValue;
-      if (!value) throw new Error("No barcode was detected in that image. Try a closer, brighter image.");
-      await verify(value, "live", undefined, detection?.format === "qr_code" ? "QR_CODE" : "BARCODE");
-      URL.revokeObjectURL(image.src);
-    } catch (error) { setCameraError(error instanceof Error ? error.message : "Unable to scan image"); }
+      const decoded = await decodePhoto(file);
+      await verify(decoded.value, "live", undefined, decoded.format);
+      setCameraError(`Decoded from photo using ${decoded.decoder}.`);
+    } catch (error) { setCameraError(error instanceof Error ? error.message : "Unable to decode this photo. Try a brighter, closer image with the label flat in frame."); }
     finally { setLoading(false); }
   }
 
