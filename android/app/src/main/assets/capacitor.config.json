@@ -1,0 +1,13 @@
+{
+	"appId": "xyz.nxtdev.flo",
+	"appName": "FLO",
+	"webDir": "public",
+	"server": {
+		"url": "https://radr.nxtdev.xyz/flo-logistics/demo",
+		"cleartext": false
+	},
+	"android": {
+		"allowMixedContent": false,
+		"webContentsDebuggingEnabled": false
+	}
+}

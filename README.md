@@ -14,9 +14,96 @@ Built by **Quasarian Radr-Lyon Dynasty** for the **AI Open Innovation Challenge 
 | Team site / final hub | [radr.nxtdev.xyz/flo-logistics/](https://radr.nxtdev.xyz/flo-logistics/) · [/final](https://radr.nxtdev.xyz/flo-logistics/final) |
 | Source | [github.com/JustHackr/flo-logistics](https://github.com/JustHackr/flo-logistics) |
 
+**On this page:**
+
+- [Install](#install)
+- [Requirements](#requirements)
+- [Team](#team)
+- [Features](#features)
+- [Predict](#predict)
+- [Route](#route)
+- [Verify](#verify)
+- [Flo Designer](#flo-designer)
+- [Process map](#process-map)
+- [Sovereign AI](#sovereign-ai)
+- [Summary](#summary)
+- [For AI reviewers](#for-ai-reviewers)
+- [Feature map](#feature-map)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Deploy](#deploy)
+- [Development](#development)
+- [Learn more](#learn-more)
+
+<a id="install"></a>
+
+### Install on your laptop
+
+<a id="requirements"></a>
+
+#### Requirements
+
+| Requirement | Notes |
+|-------------|--------|
+| **Node.js 20+** (LTS) | [nodejs.org](https://nodejs.org/) — installer checks this |
+| **npm 10+** | Bundled with Node |
+| **Git** | To clone the repo |
+| **OS** | macOS, Linux, or Windows (WSL2 recommended) |
+| **Disk** | ~500 MB for `node_modules` + SQLite |
+| **Ollama** (optional) | Local LLM — [ollama.com/download](https://ollama.com/download) |
+| **OpenAI-compatible API key** (optional) | Cloud / self-hosted LLM |
+| **Google Maps API keys** (optional) | Live traffic — see [`.env.example`](.env.example) |
+
+Webcam is only needed for live Load Detection / Hub Congestion demos; the [CV tour](https://radr.nxtdev.xyz/flo-logistics/demo/computer-vision/tour) works without a camera.
+
+#### Automated install (one command)
+
+Clones `main`, writes `.env.local`, runs `npm ci`, migrates SQLite, and seeds demo data (Sovereign AI by default — no API key):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JustHackr/flo-logistics/main/scripts/bootstrap.sh | bash
+cd flo-logistics
+npm run dev
+```
+
+With local Ollama (if installed):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JustHackr/flo-logistics/main/scripts/bootstrap.sh | bash -s -- --mode=ollama --pull-ollama
+```
+
+Already cloned the repo?
+
+```bash
+npm run install:flo -- --yes
+# or: npm run install:flo -- --yes --mode=ollama --pull-ollama
+# or: npm run install:flo -- --yes --mode=openai_compatible --api-key=sk-… --base-url=https://api.openai.com/v1 --model=gpt-4o-mini
+```
+
+#### Interactive install
+
+```bash
+git clone https://github.com/JustHackr/flo-logistics.git
+cd flo-logistics
+npm run install:flo
+npm run dev
+```
+
+Then open [http://localhost:3000/login](http://localhost:3000/login):
+
+| Account | Email | Password |
+|---------|-------|----------|
+| Bootstrap admin | `admin@flo.demo` | value of `FLO_BOOTSTRAP_PASSWORD` |
+
+Create operators (ops, driver, warehouse) at `/admin/users` after signing in as admin. There is no public signup.
+
+Configure Ollama or an OpenAI-compatible endpoint anytime at `/ai/settings` (Demo Admin). SQLite settings override the `.env.local` bootstrap from the installer.
+
 ![FLO login — role-based demo personas](docs/screenshots/01-login.png)
 
 ---
+
+<a id="team"></a>
 
 ## Why Quasarian built FLO
 
@@ -40,13 +127,17 @@ Competition journey: [pre-selection](https://radr.nxtdev.xyz/flo-logistics/pre-s
 
 ---
 
+<a id="features"></a>
+
 ## Features
 
 ### Operations home
 
-Role-aware dashboard: route progress, fleet VQI, and “needs attention” maintenance signals in one place. Personas (Admin, Ops Manager, Driver, Warehouse) share password `demo1234` in the demo.
+Role-aware dashboard: route progress, fleet VQI, and “needs attention” maintenance signals in one place. Administrators create operator accounts at `/admin/users`.
 
 ![Home dashboard — Today at FLO](docs/screenshots/02-home.png)
+
+<a id="predict"></a>
 
 ### Predict — fleet health & maintenance
 
@@ -55,6 +146,8 @@ Role-aware dashboard: route progress, fleet VQI, and “needs attention” maint
 ![Fleet vehicles with VQI risk badges](docs/screenshots/04-fleet-vehicles.png)
 
 Code: [src/lib/vqi.ts](src/lib/vqi.ts), [src/lib/predictor.ts](src/lib/predictor.ts), routes `/vehicles`, `/dashboard`, `/reports`.
+
+<a id="route"></a>
 
 ### Route — traffic-aware, low-carbon planning
 
@@ -108,6 +201,8 @@ Route-specific condition observations are persisted with source, freshness,
 distance-to-route, relevance, and nearest affected stop through
 `/api/intelligence/routes/[routeId]`.
 
+<a id="verify"></a>
+
 ### Verify — on-device computer vision
 
 Load detection and hub congestion / dwell run **in the browser** — frames never upload. ODOL Detection is coming soon. Judges can walk Load and Hub without a webcam via the [CV tour](https://radr.nxtdev.xyz/flo-logistics/demo/computer-vision/tour).
@@ -150,6 +245,8 @@ guide is `public/cv/parcel-qr-sample-guide.png`. All fixture results are clearly
 synthetic; live checks require the normal authenticated demo session and OMS/WMS
 fixture sync.
 
+<a id="flo-designer"></a>
+
 ### Flo Designer — prompt → graph → save → JSON
 
 Admin workspace: describe a process in natural language, get a validated node graph, integrate with FLO’s process map, **save designs in SQLite**, export deterministic JSON. Drag nodes, inspect in a permanent detail pane, highlight what’s new after Refine.
@@ -158,23 +255,29 @@ Admin workspace: describe a process in natural language, get a validated node gr
 
 Code: [src/lib/designer/](src/lib/designer/), route `/admin/designer` (ADMIN).
 
+<a id="process-map"></a>
+
 ### Process map — system self-description
 
-Schema of the whole FLO pipeline with live stats, drag, and a permanent detail pane — architecture readable without leaving the app.
+Swimlane of the whole FLO pipeline with live stats, drag, and a permanent detail pane — architecture readable without leaving the app.
 
-![Admin process map schema](docs/screenshots/07-process-map.png)
+![Admin process map swimlane](docs/screenshots/07-process-map.png)
 
 Code: [src/lib/process-map/](src/lib/process-map/), route `/admin/process-map` (ADMIN).
 
+<a id="sovereign-ai"></a>
+
 ### Sovereign AI
 
-System is designed to be able to deployed on-premise, with system prompt available without connecting to external (rule-based ops assistant over live SQLite). Operators may opt into any OpenAI-compatible / open-weight endpoint (Ollama, vLLM, …). Aligned with Stranas KA, UU PDP, UU ITE — see [SECURITY.md](SECURITY.md).
+Prompts stay on the deployment by default (rule-based ops assistant over live SQLite). Operators may opt into any OpenAI-compatible / open-weight endpoint (Ollama, vLLM, …). Aligned with Stranas KA, UU PDP, UU ITE — see [SECURITY.md](SECURITY.md).
 
 ![Sovereign AI posture page](docs/screenshots/08-sovereign-ai.png)
 
 Route: `/sovereign-ai` · assistant: `/ai/chat`.
 
 ---
+
+<a id="summary"></a>
 
 ## What FLO does (summary)
 
@@ -225,6 +328,8 @@ FLO is designed against the Indonesian AI and data-protection frame so that an I
 The presentation deck's *Sovereignty* slide ([team-site/src/components/PresentationDeck.tsx:155-194](team-site/src/components/PresentationDeck.tsx)) is the canonical source for this regulatory framing.
 
 ---
+
+<a id="for-ai-reviewers"></a>
 
 ## For AI reviewers
 
@@ -299,6 +404,8 @@ Canonical source: the *Sovereignty* slide in [team-site/src/components/Presentat
 
 ---
 
+<a id="feature-map"></a>
+
 ## Feature map
 
 | Domain | Route | One-line purpose |
@@ -331,26 +438,25 @@ Canonical source: the *Sovereignty* slide in [team-site/src/components/Presentat
 | Admin | `/admin/designer` | FLO Designer (prompt → graph → integrate → save/load → export JSON). |
 | Admin | `/admin/mockup-data` | Mockup data generator for demo seeding. |
 | Meta | `/methodology` | VQI methodology deep-dive (benefits, references, factor table). |
-| Meta | `/login` | Persona login (RBAC). Live demo CTAs on the team site land here first. |
+| Meta | `/login` | Email/password login (RBAC). |
 | Meta | Team site `/final` | Final-round hub: live demo (via login), presentation, GitHub source, local install package (Coming soon). |
 
 ---
 
+<a id="quick-start"></a>
+
 ## Quick start
 
+Full requirements and the one-line automated installer are at the top under **Install on your laptop**. Short version:
+
 ```bash
-npm install
-npm run dev
+curl -fsSL https://raw.githubusercontent.com/JustHackr/flo-logistics/main/scripts/bootstrap.sh | bash
+cd flo-logistics && npm run dev
 ```
 
-Open [http://localhost:3000/login](http://localhost:3000/login) (or the public demo login at [radr.nxtdev.xyz/flo-logistics/demo/login](https://radr.nxtdev.xyz/flo-logistics/demo/login)) and pick a demo persona (all accounts share the password `demo1234`):
+Or: `git clone … && npm run install:flo -- --yes && npm run dev`.
 
-| Persona | Email | Role |
-|---------|-------|------|
-| Demo Admin | admin@flo.demo | ADMIN |
-| Ops Manager | ops@flo.demo | OPS_MANAGER |
-| Bima Nugraha (driver) | driver@flo.demo | DRIVER |
-| Warehouse Lead | warehouse@flo.demo | WAREHOUSE |
+Open [http://localhost:3000/login](http://localhost:3000/login) (or the public demo login at [radr.nxtdev.xyz/flo-logistics/demo/login](https://radr.nxtdev.xyz/flo-logistics/demo/login)) with `admin@flo.demo` and `FLO_BOOTSTRAP_PASSWORD`. Create additional users at `/admin/users`.
 
 After signing in, the demo lands on the role's default workspace (`/routing/plan` for drivers, `/computer-vision/load-detection` for warehouse, `/control-tower` for ops).
 
@@ -359,6 +465,8 @@ The `build` script runs `prisma migrate deploy` but does not mutate operational 
 Demo warehouse: **Blok M Square**. Order coordinates are validated against Greater Jakarta (Jabodetabek) bounds. Generate sample CSVs at `/admin/mockup-data`. Guided computer-vision walkthrough (no webcam): `/computer-vision/tour`. Admin-only business-process visualization (swimlane with live stats): `/admin/process-map`. Admin-only FLO Designer (generate, save designs, export JSON): `/admin/designer`.
 
 ---
+
+<a id="configuration"></a>
 
 ## Configuration
 
@@ -405,6 +513,8 @@ npm run db:reset
 
 ---
 
+<a id="deploy"></a>
+
 ## Production & deploy
 
 Health probe: `GET /api/health` → `{ ok, db, provider }`.
@@ -415,9 +525,12 @@ Deployment is documented in [deploy/README.md](deploy/README.md): a VPS at `radr
 
 ---
 
+<a id="development"></a>
+
 ## Development
 
 ```bash
+npm run install:flo # Laptop wizard (.env.local, migrate, seed, optional Ollama)
 npm run dev        # Start dev server
 npm run lint       # ESLint
 npm run test       # Unit tests (no network)
@@ -427,7 +540,19 @@ npm run db:seed:demo # Explicitly reset and reseed the demo dataset
 npm run db:reset   # Migrate reset + reseed
 ```
 
+### Android APK
+
+Signed release build (Capacitor WebView → live demo):
+
+```bash
+npm run apk:release
+```
+
+Output: `android/app/build/outputs/apk/release/app-release.apk`. App id `xyz.nxtdev.flo`. Signing keystore stays local (`android/keystores/`, gitignored).
+
 ---
+
+<a id="learn-more"></a>
 
 ## Learn more
 
@@ -467,4 +592,4 @@ npm run db:seed:demo
 npm run dev
 ```
 
-Open `http://localhost:3000/returns` and sign in with `ops@flo.demo` / `demo1234` or `warehouse@flo.demo` / `demo1234`. The worker can be run once with `RETURNS_WORKER_ONCE=true npm run returns:worker`, or continuously at the five-minute default with `npm run returns:worker`.
+Open `http://localhost:3000/returns` after an admin has created an ops or warehouse user at `/admin/users`. The worker can be run once with `RETURNS_WORKER_ONCE=true npm run returns:worker`, or continuously at the five-minute default with `npm run returns:worker`.

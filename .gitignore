@@ -49,3 +49,9 @@ next-env.d.ts
 *.db-journal
 
 /src/generated/prisma
+
+# Android signing secrets
+android/keystores/
+android/keystore.properties
+*.jks
+

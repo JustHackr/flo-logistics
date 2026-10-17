@@ -10,6 +10,14 @@ set -euo pipefail
 DEMO_ONLY=0
 SKIP_SEED=0
 HOST="ubuntu@43.134.182.44"
+SSH_KEY="${FLO_SSH_KEY:-$HOME/Downloads/lighthouse.pem}"
+SSH=(ssh)
+SCP=(scp)
+if [[ -f "$SSH_KEY" ]]; then
+  chmod 600 "$SSH_KEY" 2>/dev/null || true
+  SSH=(ssh -i "$SSH_KEY" -o IdentitiesOnly=yes)
+  SCP=(scp -i "$SSH_KEY" -o IdentitiesOnly=yes)
+fi
 for arg in "$@"; do
   case "$arg" in
     --demo-only) DEMO_ONLY=1 ;;
@@ -26,9 +34,10 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 REMOTE_SRC="/opt/flo-logistics-src"
 
 echo "==> Syncing source to ${HOST}:${REMOTE_SRC}"
-ssh "$HOST" "sudo mkdir -p ${REMOTE_SRC} && sudo chown -R ubuntu:ubuntu ${REMOTE_SRC}"
+"${SSH[@]}" "$HOST" "sudo mkdir -p ${REMOTE_SRC} && sudo chown -R ubuntu:ubuntu ${REMOTE_SRC}"
 
-rsync -az --delete \
+RSYNC_RSH="${SSH[*]}"
+rsync -az --delete -e "$RSYNC_RSH" \
   --exclude node_modules \
   --exclude .next \
   --exclude '**/*.db' \
@@ -36,14 +45,19 @@ rsync -az --delete \
   --exclude .git \
   --exclude team-site/node_modules \
   --exclude team-site/.next \
+  --exclude android/keystores \
+  --exclude android/keystore.properties \
+  --exclude .env \
+  --exclude .env.local \
+  --exclude '*.pem' \
   "$ROOT/" "${HOST}:${REMOTE_SRC}/"
 
 echo "==> Installing nginx snippet + systemd units"
-scp "$ROOT/deploy/nginx-flo-logistics.conf" "$HOST:/tmp/flo-logistics.conf"
-scp "$ROOT/deploy/systemd/flo-team-site.service" "$HOST:/tmp/flo-team-site.service"
-scp "$ROOT/deploy/systemd/flo-demo.service" "$HOST:/tmp/flo-demo.service"
+"${SCP[@]}" "$ROOT/deploy/nginx-flo-logistics.conf" "$HOST:/tmp/flo-logistics.conf"
+"${SCP[@]}" "$ROOT/deploy/systemd/flo-team-site.service" "$HOST:/tmp/flo-team-site.service"
+"${SCP[@]}" "$ROOT/deploy/systemd/flo-demo.service" "$HOST:/tmp/flo-demo.service"
 
-ssh "$HOST" bash -s <<'REMOTE'
+"${SSH[@]}" "$HOST" bash -s <<'REMOTE'
 set -euo pipefail
 sudo mkdir -p /etc/nginx/snippets
 sudo mv /tmp/flo-logistics.conf /etc/nginx/snippets/flo-logistics.conf
@@ -72,7 +86,7 @@ REMOTE
 
 if [[ "$DEMO_ONLY" -eq 0 ]]; then
   echo "==> Building team site on VPS"
-  ssh "$HOST" bash -s <<'REMOTE'
+  "${SSH[@]}" "$HOST" bash -s <<'REMOTE'
 set -euo pipefail
 export NODE_OPTIONS=--max-old-space-size=1536
 cd /opt/flo-logistics-src/team-site
@@ -90,25 +104,31 @@ else
 fi
 
 echo "==> Building FLO demo on VPS"
-ssh "$HOST" bash -s <<REMOTE
+"${SSH[@]}" "$HOST" bash -s <<REMOTE
 set -euo pipefail
 export NODE_OPTIONS=--max-old-space-size=1536
+set -a
+# Secrets live on the VPS only (Postgres URL, session secret, bootstrap password).
+if [[ -f /etc/flo-logistics/demo.env ]]; then
+  # shellcheck disable=SC1091
+  source /etc/flo-logistics/demo.env
+fi
+set +a
 export NEXT_BASE_PATH=/flo-logistics/demo
-export DATABASE_URL=file:./dev.db
-export FLO_SESSION_SECRET=flo-prod-change-me-radr-2026
 cd /opt/flo-logistics-src
 if [[ "${SKIP_SEED}" -eq 1 ]]; then
   export SKIP_SEED=true
-  echo "SKIP_SEED=true — keeping existing SQLite (if any)"
-else
-  # Drop leftover SQLite from prior final-round deploys so migrate/seed match baseline schema
-  # (seed itself also no-ops when a route was updated in the last hour unless FORCE_SEED=1)
-  rm -f dev.db dev.db-journal prisma/dev.db prisma/dev.db-journal
+  echo "SKIP_SEED=true — keeping existing database"
 fi
-npm ci
+# Keep install from omitting TypeScript/tsx when demo.env sets NODE_ENV=production.
+NODE_ENV= npm ci --include=dev
 npx prisma generate
-npx prisma migrate deploy
-npm run db:seed
+# Schema is PostgreSQL; checked-in migration history is still SQLite.
+# Push the current schema onto a fresh Postgres database.
+npx prisma db push
+if [[ "${SKIP_SEED}" -eq 0 ]]; then
+  npm run db:seed
+fi
 node node_modules/next/dist/bin/next build
 sudo systemctl daemon-reload
 sudo systemctl enable --now flo-demo
@@ -117,7 +137,6 @@ sleep 3
 systemctl is-active flo-demo
 curl -sI -o /dev/null -w "demo home %{http_code}\n" http://127.0.0.1:3011/flo-logistics/demo/ || true
 curl -sI -o /dev/null -w "demo login %{http_code}\n" http://127.0.0.1:3011/flo-logistics/demo/login || true
-curl -s -o /dev/null -w "demo api %{http_code}\n" http://127.0.0.1:3011/flo-logistics/demo/api/vehicles || true
 curl -s -o /dev/null -w "demo health %{http_code}\n" http://127.0.0.1:3011/flo-logistics/demo/api/health || true
 REMOTE
 

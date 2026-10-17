@@ -34,5 +34,5 @@ npm run db:seed:demo
 npm run dev
 ```
 
-Sign in with `ops@flo.demo` / `demo1234`, then visit `http://localhost:3000/custody`. No external credentials are required for the synthetic demo. The APIs are under `/api/custody`; mutations enforce server-side role checks.
+Sign in as an ops user created at `/admin/users`, then visit `http://localhost:3000/custody`. No external credentials are required for the synthetic fixtures. The APIs are under `/api/custody`; mutations enforce server-side role checks.
 
