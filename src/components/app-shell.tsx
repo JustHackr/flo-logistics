@@ -23,10 +23,15 @@ import {
   PackageSearch,
   Warehouse,
   ShieldCheck,
+  ShieldAlert,
   Clapperboard,
   LogOut,
   Workflow,
   PencilRuler,
+  BarChart3,
+  ScanBarcode,
+  RotateCcw,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -72,6 +77,34 @@ const navGroups: NavGroup[] = [
         href: "/routing/dashboard",
         labelKey: "nav.items.logistics",
         icon: Truck,
+      },
+      {
+        href: "/control-tower",
+        labelKey: "nav.items.controlTower",
+        icon: ShieldAlert,
+      },
+      {
+        href: "/returns",
+        labelKey: "nav.items.returns",
+        icon: RotateCcw,
+        badgeKey: "nav.badges.demo",
+      },
+      {
+        href: "/custody",
+        labelKey: "nav.items.custody",
+        icon: Network,
+        badgeKey: "nav.badges.demo",
+      },
+      {
+        href: "/demo/scenario",
+        labelKey: "nav.items.demoScenario",
+        icon: Clapperboard,
+        badgeKey: "nav.badges.demo",
+      },
+      {
+        href: "/impact",
+        labelKey: "nav.items.impactDashboard",
+        icon: BarChart3,
       },
       {
         href: "/sovereign-ai",
@@ -120,6 +153,12 @@ const navGroups: NavGroup[] = [
         href: "/computer-vision/hub-congestion-detection",
         labelKey: "nav.items.hubCongestion",
         icon: Warehouse,
+      },
+      {
+        href: "/computer-vision/parcel-verification",
+        labelKey: "nav.items.parcelVerification",
+        icon: ScanBarcode,
+        badgeKey: "nav.badges.demo",
       },
     ],
   },

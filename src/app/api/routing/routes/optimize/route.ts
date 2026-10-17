@@ -40,6 +40,8 @@ import {
 } from "@/lib/rate-limit";
 import { apiError } from "@/lib/i18n/api-errors";
 import { getLocaleFromRequest } from "@/lib/i18n/get-locale";
+import { assessRouteConditions } from "@/lib/intelligence/service";
+import { adjustedDurationMin } from "@/lib/intelligence/risk";
 
 export async function POST(request: Request) {
   const locale = getLocaleFromRequest(request);
@@ -164,6 +166,7 @@ export async function POST(request: Request) {
       };
       totalDistanceKm: number;
       totalDurationMin: number;
+      conditionAssessment: Awaited<ReturnType<typeof assessRouteConditions>>;
       estimatedEmissionsKg: number;
       trafficSource: TrafficSource;
       fuelCostIdr: number;
@@ -198,6 +201,7 @@ export async function POST(request: Request) {
       driverId: string;
       totalDistanceKm: number;
       totalDurationMin: number;
+      conditionAssessment: Awaited<ReturnType<typeof assessRouteConditions>>;
       estimatedEmissionsKg: number;
       stops: Array<{
         sequence: number;
@@ -234,14 +238,33 @@ export async function POST(request: Request) {
         );
 
         const totalDistanceKm = optimized.totalDistanceKm;
-        const totalDurationMin = optimized.totalDurationMin;
+        const conditionAssessment = await assessRouteConditions({
+          points: [warehouseCoord, ...routableStops.map((stop) => ({ lat: stop.lat, lng: stop.lng }))],
+        });
+        const conditionedStops: Array<{
+          sequence: number;
+          orderId: string;
+          etaAt: Date;
+          distanceKm: number;
+          durationMin: number;
+          serviceTimeMin: number;
+        }> = [];
+        let conditionClock = new Date(routeStartAt);
+        for (const stop of optimized.orderedStops) {
+          const durationMin = adjustedDurationMin(stop.durationMin, conditionAssessment, true);
+          const etaAt = new Date(conditionClock.getTime() + durationMin * 60_000);
+          conditionedStops.push({ ...stop, etaAt, durationMin });
+          conditionClock = new Date(etaAt.getTime() + stop.serviceTimeMin * 60_000);
+        }
+        const adjustedReturnDuration = adjustedDurationMin(optimized.returnLegDurationMin, conditionAssessment, true);
+        const totalDurationMin = conditionedStops.reduce((sum, stop) => sum + stop.durationMin + stop.serviceTimeMin, 0) + adjustedReturnDuration;
         routeTrafficSource = optimized.trafficSource;
         const estimatedEmissionsKg = estimateEmissionsKg(
-          driver.vehicle.engineType as any,
+          driver.vehicle.engineType as EngineType,
           totalDistanceKm
         );
 
-        const stops = optimized.orderedStops.map((s) => {
+        const stops = conditionedStops.map((s) => {
           const order = orderById.get(s.orderId);
           return {
             sequence: s.sequence,
@@ -267,11 +290,11 @@ export async function POST(request: Request) {
           stops,
           {
             distanceKm: optimized.departureLegDistanceKm,
-            durationMin: optimized.departureLegDurationMin,
+            durationMin: adjustedDurationMin(optimized.departureLegDurationMin, conditionAssessment, true),
           },
           {
             distanceKm: optimized.returnLegDistanceKm,
-            durationMin: optimized.returnLegDurationMin,
+            durationMin: adjustedReturnDuration,
           }
         );
 
@@ -315,6 +338,7 @@ export async function POST(request: Request) {
           },
           totalDistanceKm,
           totalDurationMin,
+          conditionAssessment,
           estimatedEmissionsKg,
           trafficSource: optimized.trafficSource,
           fuelCostIdr: fuelSavings.optimized.fuelCostIdr,
@@ -339,7 +363,8 @@ export async function POST(request: Request) {
           totalDurationMin,
           estimatedEmissionsKg,
           vehicleId: driver.vehicle.id,
-          stops: optimized.orderedStops.map((s) => ({
+          conditionAssessment,
+          stops: conditionedStops.map((s) => ({
             sequence: s.sequence,
             orderId: s.orderId,
             etaAt: s.etaAt,
@@ -372,7 +397,13 @@ export async function POST(request: Request) {
 
     // Persist: multiple route plans may be created when splitting chunks.
     const createdPlans = await prisma.$transaction(async (tx) => {
-      const results: any[] = [];
+      const results: Array<{
+        routePlanId: string;
+        driverId: string;
+        totalDistanceKm: number;
+        totalDurationMin: number;
+        estimatedEmissionsKg: number;
+      }> = [];
 
       for (const plan of persistResults) {
         const routePlan = await tx.routePlan.create({
@@ -404,6 +435,18 @@ export async function POST(request: Request) {
             data: { routePlanId: routePlan.id },
           });
         }
+
+        await tx.routeConditionAssessment.create({
+          data: {
+            routePlanId: routePlan.id,
+            riskLevel: plan.conditionAssessment.riskLevel,
+            trafficPenaltyFactor: plan.conditionAssessment.trafficPenaltyFactor,
+            weatherPenaltyFactor: plan.conditionAssessment.weatherPenaltyFactor,
+            incidentPenaltyFactor: plan.conditionAssessment.incidentPenaltyFactor,
+            reasonsJson: JSON.stringify(plan.conditionAssessment.reasons),
+            snapshotIdsJson: JSON.stringify(plan.conditionAssessment.snapshotIds),
+          },
+        });
 
         results.push({
           routePlanId: routePlan.id,

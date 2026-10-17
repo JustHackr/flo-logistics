@@ -91,12 +91,11 @@ npm run dev
 
 Then open [http://localhost:3000/login](http://localhost:3000/login):
 
-| Persona | Email | Password |
+| Account | Email | Password |
 |---------|-------|----------|
-| Demo Admin | `admin@flo.demo` | `demo1234` |
-| Ops Manager | `ops@flo.demo` | `demo1234` |
-| Driver | `driver@flo.demo` | `demo1234` |
-| Warehouse | `warehouse@flo.demo` | `demo1234` |
+| Bootstrap admin | `admin@flo.demo` | value of `FLO_BOOTSTRAP_PASSWORD` |
+
+Create operators (ops, driver, warehouse) at `/admin/users` after signing in as admin. There is no public signup.
 
 Configure Ollama or an OpenAI-compatible endpoint anytime at `/ai/settings` (Demo Admin). SQLite settings override the `.env.local` bootstrap from the installer.
 
@@ -134,7 +133,7 @@ Competition journey: [pre-selection](https://radr.nxtdev.xyz/flo-logistics/pre-s
 
 ### Operations home
 
-Role-aware dashboard: route progress, fleet VQI, and “needs attention” maintenance signals in one place. Personas (Admin, Ops Manager, Driver, Warehouse) share password `demo1234` in the demo.
+Role-aware dashboard: route progress, fleet VQI, and “needs attention” maintenance signals in one place. Administrators create operator accounts at `/admin/users`.
 
 ![Home dashboard — Today at FLO](docs/screenshots/02-home.png)
 
@@ -158,6 +157,50 @@ Jakarta-aware optimization with **DTI** (delivery time), **CFI** (carbon), fuel 
 
 Code: [src/lib/routing/](src/lib/routing/), routes `/routing/orders`, `/routing/plan`, `/routing/dashboard`.
 
+### Control Tower — exception-led operations
+
+The Ops Manager workspace opens on a persistent exception queue that connects unassigned orders, customer promise risk, late route stops, WMS fulfillment blocks, and at-risk vehicles. Alerts are ranked with transparent rule-based thresholds, can be acknowledged or resolved, and link directly to the next operational action. The tower also reports delivered-on-time/in-full (OTIF) performance when promised and delivered timestamps exist.
+
+Code: [src/lib/control-tower.ts](src/lib/control-tower.ts), route `/control-tower`, APIs `/api/control-tower` and `/api/control-tower/exceptions/[id]`.
+
+### Blibli OMS/WMS integration — local-first demo contract
+
+The `/connectors` workspace includes seeded **Blibli OMS** and **Blibli WMS** connectors. Admins configure connectors; Ops and Warehouse users can run the sample fixture, upload CSV/JSON, download templates, and inspect recent sync runs. OMS rows idempotently upsert orders by `(sourceSystem, externalOrderId)` with customer promise, service level, and priority. WMS rows append an event history, update the current `fulfillmentStatus`, reject unknown OMS orders with a row-level report, and surface `EXCEPTION` events in the Control Tower. No Blibli credentials are required for the demo.
+
+### Integrated traffic & weather intelligence
+
+The intelligence layer normalizes Google traffic, Open-Meteo weather, and TomTom Orbis incidents into region-scoped snapshots. A five-minute Node worker refreshes enabled regions, caches the latest state, marks missed feeds stale, and records ingestion history. SQLite fixtures work without provider credentials: run `npm run intelligence:worker` with `INTELLIGENCE_FIXTURES=true`, or use **Run demo conditions** in Control Tower. Route planning applies weather and incident penalties separately from traffic-aware ETA, explains every factor, and lets Ops preview then approve or reject a revision without automatic route replacement.
+
+Code: [src/lib/intelligence/](src/lib/intelligence/), worker [scripts/intelligence-worker.ts](scripts/intelligence-worker.ts), APIs `/api/intelligence/*`, and revision APIs under `/api/routing/routes/[id]/revisions/`.
+
+### Predictive SLA risk — intervene before the promise is missed
+
+FLO also calculates an explainable late-delivery risk for every active order with a promised delivery time. The score is a weighted rule engine, not a black-box claim: promise pressure (30%), fulfillment readiness from WMS (20%), traffic (20%), weather (10%), driver/vehicle/workload (10%), and historical delivery delay (10%). For example, an order that is still `PACKED`, has only a small promise buffer, and is travelling through heavy congestion will rise to `WATCH`, `HIGH`, or `CRITICAL` before it becomes late. Each prediction stores the score, risk band, confidence, dominant cause, separate factor values, recommendation, source snapshots, data age, and score change from the previous run.
+
+The flow is: OMS/WMS and route data establish the order context → the five-minute worker reads region-scoped traffic, weather, incidents, fleet, and delivery history → the engine validates and scores the order → a persistent predictive exception is created or superseded in Control Tower → Ops sees the reasons and recommended action, acknowledges/monitors it, or previews a safer route. A route is never replaced automatically. Live provider data remains server-side; fixture mode is available for a repeatable synthetic demo, and fallback/stale data lowers confidence and is shown explicitly.
+
+Use `/routing/dashboard` for the active risk queue, `/control-tower` for persistent exceptions, and `/impact` for early-warning, accuracy, and prevented-late-delivery estimates. The API surface is `/api/risk/sla`, `/api/risk/sla/[orderId]`, `/api/risk/sla/recalculate`, `/api/risk/sla/metrics`, and the order `acknowledge`/`monitor` actions. Run `npm run intelligence:worker` (with `INTELLIGENCE_FIXTURES=true` for a credential-free demo) to refresh conditions and produce predictions. Tests for the deterministic engine live in [src/lib/sla-risk.test.ts](src/lib/sla-risk.test.ts).
+
+### Judge-ready disruption scenario, impact KPIs, and trust layer
+
+The `/demo/scenario` page runs a deterministic, clearly labelled `SYNTHETIC`
+rain-disruption story: baseline route → heavy rain and incident feed → route
+risk alert → revised-route preview → operator approve/reject. It changes the
+active plan only after approval and can be reset without deleting its audit
+history. `/impact` reports the measurable operational story (route deltas,
+protected promises, OTIF, distance/fuel/CO₂, provider uptime, stale feeds, and
+open exceptions). Every ingestion, configuration change, integration sync,
+exception decision, scenario step, and route revision is persisted in the
+`AuditEvent` table and can be read through `/api/audit`.
+
+The connector console also includes an OMS/WMS reconciliation scan. It links
+Blibli-style order IDs to fulfillment events and flags OMS-only orders, unknown
+WMS rows, duplicate events, stale updates, and delivery/warehouse status
+conflicts. Operators can resolve an issue with a note; the action is audited.
+Route-specific condition observations are persisted with source, freshness,
+distance-to-route, relevance, and nearest affected stop through
+`/api/intelligence/routes/[routeId]`.
+
 <a id="verify"></a>
 
 ### Verify — on-device computer vision
@@ -173,6 +216,34 @@ Load detection and hub congestion / dwell run **in the browser** — frames neve
 ![FLO hub congestion session](docs/screenshots/hub-congestion.gif)
 
 Code: [src/lib/computer-vision/](src/lib/computer-vision/), routes `/computer-vision/tour`, `/computer-vision/load-detection`, `/computer-vision/hub-congestion-detection`.
+
+### Parcel label & barcode verification
+
+The `/computer-vision/parcel-verification` page adds a lightweight warehouse
+gate check. FLO ships eight deterministic Code 128 fixture labels covering
+verified, not-ready, unknown, duplicate, and damaged-package review paths.
+It also ships eight deterministic QR fixture labels, with the same outcome
+paths. Testers can click a fixture, type a value, upload a label image, or use
+a webcam. Chrome/Edge use the browser's on-device `BarcodeDetector`; older
+browsers retain deterministic fixture and manual verification fallbacks.
+Live values are checked against OMS identity, WMS dispatch readiness, route
+assignment, and a 15-minute duplicate-scan window. Every decision persists a
+scan record and audit event containing the format, source, checks, and outcome.
+A non-verified result can create a persistent `BARCODE_MISMATCH` Control Tower
+exception. Camera frames stay in the browser and are not uploaded.
+
+Regenerate the exact fixture images after changing the fixture catalog with:
+
+```bash
+npm run cv:generate-barcode-fixtures
+npm run cv:generate-qr-fixtures
+```
+
+The test page is available at `/computer-vision/parcel-verification`. Exact
+QR SVG samples are under `public/cv/qr/`, while the generated parcel photo
+guide is `public/cv/parcel-qr-sample-guide.png`. All fixture results are clearly
+synthetic; live checks require the normal authenticated demo session and OMS/WMS
+fixture sync.
 
 <a id="flo-designer"></a>
 
@@ -214,6 +285,7 @@ Route: `/sovereign-ai` · assistant: `/ai/chat`.
 |--------|---------------------|--------|
 | **Predict** | Which vehicle is at risk, and when is the next service window? | VQI + predictor · `/vehicles`, `/dashboard` |
 | **Route** | Lowest-time / carbon / cost assignment of orders to drivers? | [src/lib/routing/](src/lib/routing/) · `/routing/*` |
+| **Control Tower** | What needs intervention now, why, and where should an operator act? | [src/lib/control-tower.ts](src/lib/control-tower.ts) · `/control-tower` |
 | **Verify** | Right load? Hub congested? Compliance without uploading video? | [src/lib/computer-vision/](src/lib/computer-vision/) · `/computer-vision/*` |
 
 Shared data layer: SQLite + [src/lib/master-overview.ts](src/lib/master-overview.ts) + [src/lib/routing-overview.ts](src/lib/routing-overview.ts).
@@ -267,9 +339,10 @@ This section is structured for fast LLM parsing. Each subsection is a self-conta
 
 1. **Predictive SLA scoring** — VQI health index for the fleet, 90-day maintenance window, pluggable predictor.
 2. **Low-carbon routing** — Jakarta traffic-aware optimization with explicit CFI (Carbon Footprint Index) and fuel-cost reporting.
-3. **Visual fleet compliance** — on-device computer vision (load, hub congestion, ODOL) with zero upload.
-4. **Sovereign AI** — local-first default, opt-in external LLM, regulatory alignment documented in this README.
-5. **Pluggable expansion** — FLO Designer (prompt → graph → integrate → save → export JSON) so non-engineers can propose and keep new integrations; data connectors registry (`/connectors`); admin process map at `/admin/process-map`.
+3. **Exception-led operations** — Control Tower ranks unassigned orders, SLA exposure, and fleet risk with explainable thresholds so operators can intervene before delivery failure.
+4. **Visual fleet compliance** — on-device computer vision (load, hub congestion, ODOL) with zero upload.
+5. **Sovereign AI** — local-first default, opt-in external LLM, regulatory alignment documented in this README.
+6. **Pluggable expansion** — OMS/WMS integration contracts and sync history, plus FLO Designer (prompt → graph → integrate → save → export JSON) so non-engineers can propose and keep new integrations; data connectors registry (`/connectors`); admin process map at `/admin/process-map`.
 
 ### Engineering rigor evidence
 
@@ -277,6 +350,8 @@ This section is structured for fast LLM parsing. Each subsection is a self-conta
 - **Pluggable predictor strategy.** `PredictorStrategy` interface lets a future ML-based predictor replace `RuleBasedPredictor` without touching callers — [src/lib/predictor.ts](src/lib/predictor.ts).
 - **Hand-rolled validator for untrusted LLM output.** `parseDesignerGraph` rejects shape / empty / duplicate-id / unknown-kind / edge-target-missing / self-loop — [src/lib/designer/schema.ts](src/lib/designer/schema.ts).
 - **Unit tests on the load-bearing paths.** See [src/lib/designer/exporter.test.ts](src/lib/designer/exporter.test.ts), [src/lib/designer/designs.test.ts](src/lib/designer/designs.test.ts), [src/lib/designer/integrate.test.ts](src/lib/designer/integrate.test.ts), [src/lib/ai-reasoning.test.ts](src/lib/ai-reasoning.test.ts), [src/lib/workflow-onboarding.test.ts](src/lib/workflow-onboarding.test.ts), [src/lib/base-path.test.ts](src/lib/base-path.test.ts), [src/lib/rate-limit.test.ts](src/lib/rate-limit.test.ts).
+- **Control Tower risk rules.** Unassigned-order age, SLA promise, route-stop delay, fulfillment, and VQI thresholds are isolated and covered by [src/lib/control-tower.test.ts](src/lib/control-tower.test.ts); exception records persist in SQLite for acknowledge/resolve actions.
+- **Blibli OMS/WMS contract.** Idempotent OMS upserts, append-only WMS fulfillment events, validation, rejected-row reporting, integration-run history, and downloadable demo templates live under [src/lib/integrations/](src/lib/integrations/).
 - **Per-client rate limiting** on the AI chat endpoint — [src/lib/rate-limit.ts](src/lib/rate-limit.ts).
 - **Role-based access control** at the proxy layer (`src/proxy.ts`) and per-page (`defaultHomeForRole` in [src/lib/auth/roles.ts](src/lib/auth/roles.ts)), with admin defence-in-depth at `/admin/process-map` and `/admin/designer`.
 - **Process map self-description.** A hand-curated, 5-lane × 3-column swimlane (Fleet / Routing / Warehouse / Assistant / Platform) with live stat pills — [src/lib/process-map/graph.ts](src/lib/process-map/graph.ts), live stats from [src/lib/process-map/live-stats.ts](src/lib/process-map/live-stats.ts), rendered at `/admin/process-map`.
@@ -339,6 +414,7 @@ Canonical source: the *Sovereignty* slide in [team-site/src/components/Presentat
 | Routing | `/routing/drivers` | Driver roster with VQI risk per assigned vehicle. |
 | Routing | `/routing/plan` | Plan routes (traffic + fuel + driver matching), preview, save. |
 | Routing | `/routing/dashboard` | Live monitor for in-progress routes (progress, next stop, ETA, fuel, emissions). |
+| Operations | `/control-tower` | Exception queue for unassigned orders, SLA exposure, and fleet risks with direct action links. |
 | Routing | `/routing/reports` | Per-route + per-delivery CSV export + KPI charts. |
 | Routing | `/routing/methodology` | Driver-side VQI methodology view. |
 | Fleet | `/vehicles` | Fleet list with VQI badges + fuel-mix breakdown. |
@@ -349,17 +425,20 @@ Canonical source: the *Sovereignty* slide in [team-site/src/components/Presentat
 | Computer Vision | `/computer-vision/tour` | Guided tour of the on-device inference story (static samples, no camera). |
 | Computer Vision | `/computer-vision/load-detection` | Bag load detection (count kraft cartons through a bag opening). |
 | Computer Vision | `/computer-vision/hub-congestion-detection` | Hub congestion / dwell-time detection (yellow-platform calibration). |
+| Computer Vision | `/computer-vision/parcel-verification` | On-device barcode scan matched to OMS/WMS readiness. |
 | Computer Vision | `/computer-vision/odol-detection` | ODOL detection (overdimension / overload) — placeholder. |
 | AI | `/ai/chat` | Sovereign ops assistant (intent router + optional external LLM). |
 | AI | `/ai/settings` | Sovereign / external status, test connection. |
 | AI | `/sovereign-ai` | Sovereign AI manifesto page. |
 | System | `/system/gas-price` | Fuel price snapshot from Pertamina. |
 | Integrations | `/connectors` | Data connectors registry (IoT, REST, Webhook, OMS, WMS, ...). |
+| Demo | `/demo/scenario` | Guided synthetic rain-disruption scenario with approve/reject gate. |
+| Impact | `/impact` | KPI, intervention, provider-health, and sustainability dashboard. |
 | Admin | `/admin/process-map` | FLO process map (swimlane with live stats, drag, permanent detail pane). |
 | Admin | `/admin/designer` | FLO Designer (prompt → graph → integrate → save/load → export JSON). |
 | Admin | `/admin/mockup-data` | Mockup data generator for demo seeding. |
 | Meta | `/methodology` | VQI methodology deep-dive (benefits, references, factor table). |
-| Meta | `/login` | Persona login (RBAC). Live demo CTAs on the team site land here first. |
+| Meta | `/login` | Email/password login (RBAC). |
 | Meta | Team site `/final` | Final-round hub: live demo (via login), presentation, GitHub source, local install package (Coming soon). |
 
 ---
@@ -375,9 +454,13 @@ curl -fsSL https://raw.githubusercontent.com/JustHackr/flo-logistics/main/script
 cd flo-logistics && npm run dev
 ```
 
-Or: `git clone … && npm run install:flo -- --yes && npm run dev`. Demo login: `admin@flo.demo` / `demo1234`. Public demo: [radr.nxtdev.xyz/flo-logistics/demo/login](https://radr.nxtdev.xyz/flo-logistics/demo/login).
+Or: `git clone … && npm run install:flo -- --yes && npm run dev`.
 
-The `build` script runs `prisma migrate deploy` and `db:seed` automatically, so production builds also include demo warehouse, drivers, and orders. Seed skips if a route plan was updated in the last hour (set `FORCE_SEED=true` to override, or `SKIP_SEED=true` to never reseed).
+Open [http://localhost:3000/login](http://localhost:3000/login) (or the public demo login at [radr.nxtdev.xyz/flo-logistics/demo/login](https://radr.nxtdev.xyz/flo-logistics/demo/login)) with `admin@flo.demo` and `FLO_BOOTSTRAP_PASSWORD`. Create additional users at `/admin/users`.
+
+After signing in, the demo lands on the role's default workspace (`/routing/plan` for drivers, `/computer-vision/load-detection` for warehouse, `/control-tower` for ops).
+
+The `build` script runs `prisma migrate deploy` but does not mutate operational data. Run `npm run db:seed` only on an empty database, or use `npm run db:seed:demo` when you explicitly want to reset the local demo dataset. To demo the Blibli flow, sign in as Ops or Warehouse, open `/connectors`, run the **OMS sample sync** first, then the **WMS sample sync**, and open `/control-tower` to see the fulfillment exception. WMS rows for unknown OMS IDs are intentionally rejected and shown in the sync history. For the strongest judge flow, open `/demo/scenario`, click **Start scenario**, advance through disruption and route preview, then approve or reject the revision; `/impact` shows the resulting KPI story. The connector page's **Scan now** action runs OMS/WMS reconciliation and lets an operator resolve an issue with an audit note.
 
 Demo warehouse: **Blok M Square**. Order coordinates are validated against Greater Jakarta (Jabodetabek) bounds. Generate sample CSVs at `/admin/mockup-data`. Guided computer-vision walkthrough (no webcam): `/computer-vision/tour`. Admin-only business-process visualization (swimlane with live stats): `/admin/process-map`. Admin-only FLO Designer (generate, save designs, export JSON): `/admin/designer`.
 
@@ -396,6 +479,16 @@ To enable live Google traffic and interactive maps on a deployment, set **server
 | `GOOGLE_MAPS_API_KEY` | Routes API (traffic + polylines) |
 | `GOOGLE_DISTANCE_MATRIX_API_KEY` | Optional Distance Matrix fallback |
 | `GOOGLE_MAPS_JS_API_KEY` | Optional referrer-restricted Maps JS key (falls back to `GOOGLE_MAPS_API_KEY`) |
+
+For incident intelligence, optionally set `TOMTOM_API_KEY`. Open-Meteo weather requires no key. Provider enablement, priority, region bounds, refresh interval, and risk thresholds are managed by Admins from `/connectors`; keys are never sent to the browser or stored in SQLite.
+
+To run the dedicated refresh worker locally:
+
+```bash
+INTELLIGENCE_FIXTURES=true npm run intelligence:worker
+```
+
+For live providers, omit `INTELLIGENCE_FIXTURES` and set `GOOGLE_MAPS_API_KEY` and/or `TOMTOM_API_KEY`. The worker defaults to a five-minute interval; override it with `INTELLIGENCE_REFRESH_INTERVAL_SEC` (minimum 60 seconds). A worker-only refresh endpoint can be protected with `INTELLIGENCE_WORKER_TOKEN`.
 
 The browser loads the Maps JS key only from `/api/routing/maps/js-config` after mount. Route geometry is computed server-side via `/api/routing/routes/polyline`.
 
@@ -443,8 +536,19 @@ npm run lint       # ESLint
 npm run test       # Unit tests (no network)
 npm run test:watch # Vitest in watch mode
 npm run db:seed    # Seed demo data
+npm run db:seed:demo # Explicitly reset and reseed the demo dataset
 npm run db:reset   # Migrate reset + reseed
 ```
+
+### Android APK
+
+Signed release build (Capacitor WebView → live demo):
+
+```bash
+npm run apk:release
+```
+
+Output: `android/app/build/outputs/apk/release/app-release.apk`. App id `xyz.nxtdev.flo`. Signing keystore stays local (`android/keystores/`, gitignored).
 
 ---
 
@@ -462,3 +566,30 @@ npm run db:reset   # Migrate reset + reseed
 - Pre-selection proposal: [Google Drive](https://drive.google.com/file/d/1c8f-1THAi4TozxX7LcI1pnTgPu5breM9/view)
 - [SECURITY.md](SECURITY.md) — Sovereign AI & security posture
 - [deploy/README.md](deploy/README.md) — Deployment guide
+# Reverse Logistics & Returns Intelligence
+
+The `GoldenBough` branch includes a return-control workflow at `/returns`. It is intentionally fixture-first so judges and testers can run the full experience without credentials:
+
+`return requested → QR scanned → hub received → inspection → fraud assessment → refund preview → disposition preview → operator approval → OMS/WMS handoff`
+
+The return case `BLI-RET-DEMO-001` is linked to the existing OMS order `BLI-DEMO-1003` and hub `JKT-01`. The page labels synthetic data as `SYNTHETIC`; optional server-side OMS/WMS adapters use `BLIBLI_OMS_RETURNS_URL` and `BLIBLI_INTEGRATION_TOKEN`, and fall back to fixtures when a provider is unavailable. No credentials are sent to the browser or stored in SQLite.
+
+What is persisted:
+
+- append-only return custody events and QR scans with duplicate/wrong-hub checks;
+- structured inspection results using safe, lightweight fixture/manual/on-device-CV signals;
+- explainable 0–100 fraud scoring with reasons and human approval gates;
+- refund and disposition recommendations as separate operator decisions;
+- estimated return cost, recovery value, net recovery, and carbon footprint;
+- return-specific Control Tower exceptions linked to the return case and audit events.
+
+Useful commands:
+
+```bash
+npm install
+npx prisma migrate deploy
+npm run db:seed:demo
+npm run dev
+```
+
+Open `http://localhost:3000/returns` after an admin has created an ops or warehouse user at `/admin/users`. The worker can be run once with `RETURNS_WORKER_ONCE=true npm run returns:worker`, or continuously at the five-minute default with `npm run returns:worker`.

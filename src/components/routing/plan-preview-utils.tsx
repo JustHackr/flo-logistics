@@ -243,6 +243,26 @@ export function OptimizedRoutePreview({
           )}
         </div>
 
+        {plan.conditionAssessment && (
+          <div className="rounded-lg border bg-muted/30 p-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold">{t("routing.plan.conditionTitle")}</span>
+              <Badge variant={plan.conditionAssessment.riskLevel === "CRITICAL" ? "destructive" : plan.conditionAssessment.riskLevel === "HIGH" ? "secondary" : "outline"}>
+                {plan.conditionAssessment.riskLevel}
+              </Badge>
+              <span className="text-xs text-muted-foreground">{t("routing.plan.conditionSources")}</span>
+            </div>
+            <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-3">
+              <span>{t("routing.plan.trafficFactor", { factor: plan.conditionAssessment.trafficPenaltyFactor })}</span>
+              <span>{t("routing.plan.weatherFactor", { factor: plan.conditionAssessment.weatherPenaltyFactor })}</span>
+              <span>{t("routing.plan.incidentFactor", { factor: plan.conditionAssessment.incidentPenaltyFactor })}</span>
+            </div>
+            <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-muted-foreground">
+              {plan.conditionAssessment.reasons.map((reason) => <li key={reason}>{reason}</li>)}
+            </ul>
+          </div>
+        )}
+
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-lg border p-3">
             <div className="text-xs text-muted-foreground">{t("routing.plan.totalDistance")}</div>

@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 enum OrderStatus {
@@ -33,49 +33,194 @@ enum UserRole {
   WAREHOUSE
 }
 
+enum FulfillmentStatus {
+  NOT_STARTED
+  PICKING
+  PACKED
+  READY_FOR_DISPATCH
+  LOADED
+  EXCEPTION
+}
+
+enum IntegrationRunKind {
+  OMS_ORDERS
+  WMS_FULFILLMENT
+  INTELLIGENCE
+}
+
+enum IntegrationRunStatus {
+  RUNNING
+  SUCCEEDED
+  PARTIAL
+  FAILED
+}
+
+enum ControlTowerExceptionKind {
+  UNASSIGNED_ORDER
+  SLA_RISK
+  LATE_STOP
+  FULFILLMENT_BLOCKED
+  FLEET_RISK
+  CONGESTION_RISK
+  WEATHER_RISK
+  INCIDENT_NEAR_ROUTE
+  STALE_TRAFFIC
+  STALE_WEATHER
+  BARCODE_MISMATCH
+  PREDICTIVE_SLA_RISK
+  RETURN_QR_MISMATCH
+  RETURN_DUPLICATE_SCAN
+  RETURN_WRONG_HUB
+  RETURN_DAMAGE_DETECTED
+  RETURN_SERIAL_MISMATCH
+  RETURN_FRAUD_REVIEW
+  RETURN_REFUND_HELD
+  RETURN_MISSING_CUSTODY
+  RETURN_DISPOSITION_OVERDUE
+  RETURN_OMS_WMS_CONFLICT
+  RETURN_STALLED
+  CUSTODY_MISSING_HANDOFF
+  CUSTODY_WRONG_HUB
+  CUSTODY_WRONG_CUSTODIAN
+  CUSTODY_DUPLICATE_SCAN
+  CUSTODY_LOCATION_CONFLICT
+  CUSTODY_TIME_CONFLICT
+  CUSTODY_SERIAL_MISMATCH
+  CUSTODY_CONDITION_CONFLICT
+  CUSTODY_REPEATED_ANOMALY
+  CUSTODY_INVESTIGATION_REQUIRED
+}
+
+enum ControlTowerSeverity {
+  WATCH
+  HIGH
+  CRITICAL
+}
+
+enum ControlTowerExceptionStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum RouteRevisionStatus {
+  DRAFT
+  APPROVED
+  REJECTED
+}
+
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  role         UserRole
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                      String                   @id @default(cuid())
+  email                   String                   @unique
+  name                    String
+  passwordHash            String
+  role                    UserRole
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  acknowledgedExceptions  ControlTowerException[]  @relation("ExceptionAcknowledgedBy")
+  resolvedExceptions      ControlTowerException[]  @relation("ExceptionResolvedBy")
+  auditEvents             AuditEvent[]
+  parcelVerificationScans ParcelVerificationScan[]
+  returnCases             ReturnCase[]
+  returnEvents            ReturnEvent[]
+  returnScans             ReturnScan[]
+  returnInspections       ReturnInspection[]
+  fraudAssessments        ReturnFraudAssessment[]
+  refundDecisions         RefundDecision[]
+  dispositionDecisions    DispositionDecision[]
+  custodyEvents           CustodyEvent[]
+  custodyEvidence         CustodyEvidence[]
+  assignedInvestigations  CustodyInvestigation[]   @relation("CustodyInvestigator")
 }
 
 model Vehicle {
-  id                    String         @id @default(cuid())
-  name                  String
-  vehicleType           String
-  engineType            String
-  vehicleAgeYears       Float
-  odometerKm            Float
-  kilometersPerFleet    Float
-  vehicleLifetimeYears  Float
-  expectedLifetimeKm    Float
-  maintenanceCostUnit   Float
-  lastMaintenanceDate   DateTime?
-  nextMaintenanceDate   DateTime?
-  maintenanceIntervalKm Float
-  notes                 String?
-  dataSource            String         @default("manual")
-  connectorId           String?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
-  connector             DataConnector? @relation(fields: [connectorId], references: [id], onDelete: SetNull)
-  drivers               Driver[]
+  id                     String                  @id @default(cuid())
+  name                   String
+  vehicleType            String
+  engineType             String
+  vehicleAgeYears        Float
+  odometerKm             Float
+  kilometersPerFleet     Float
+  vehicleLifetimeYears   Float
+  expectedLifetimeKm     Float
+  maintenanceCostUnit    Float
+  lastMaintenanceDate    DateTime?
+  nextMaintenanceDate    DateTime?
+  maintenanceIntervalKm  Float
+  notes                  String?
+  dataSource             String                  @default("manual")
+  connectorId            String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  connector              DataConnector?          @relation(fields: [connectorId], references: [id], onDelete: SetNull)
+  drivers                Driver[]
+  controlTowerExceptions ControlTowerException[]
 }
 
 model DataConnector {
-  id          String    @id @default(cuid())
+  id              String           @id @default(cuid())
+  name            String
+  type            String
+  status          String           @default("disabled")
+  config          String?
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  vehicles        Vehicle[]
+  integrationRuns IntegrationRun[]
+  auditEvents     AuditEvent[]
+}
+
+model IntelligenceRegion {
+  id          String   @id @default(cuid())
   name        String
-  type        String
-  status      String    @default("disabled")
-  config      String?
-  description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  vehicles    Vehicle[]
+  countryCode String
+  timezone    String   @default("Asia/Jakarta")
+  minLat      Float
+  minLng      Float
+  maxLat      Float
+  maxLng      Float
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  config             IntelligenceConfig?
+  ingestionRuns      IntelligenceIngestionRun[]
+  conditionSnapshots ConditionSnapshot[]
+  incidents          TrafficIncident[]
+  routeObservations  RouteConditionObservation[]
+  auditEvents        AuditEvent[]
+
+  @@index([active])
+}
+
+model IntelligenceConfig {
+  id                   String             @id @default(cuid())
+  regionId             String             @unique
+  region               IntelligenceRegion @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  enabled              Boolean            @default(true)
+  refreshIntervalSec   Int                @default(300)
+  providerPriorityJson String             @default("[\"google\",\"open_meteo\",\"tomtom\"]")
+  thresholdsJson       String             @default("{}")
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+}
+
+model IntelligenceIngestionRun {
+  id            String             @id @default(cuid())
+  regionId      String
+  region        IntelligenceRegion @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  mode          String
+  status        String
+  startedAt     DateTime           @default(now())
+  completedAt   DateTime?
+  providersJson String
+  snapshotCount Int                @default(0)
+  incidentCount Int                @default(0)
+  errorJson     String?
+  auditEvents   AuditEvent[]
+
+  @@index([regionId, startedAt])
 }
 
 model Warehouse {
@@ -117,14 +262,30 @@ model Order {
   etaAt       DateTime?
   deliveredAt DateTime?
 
+  externalOrderId   String?
+  sourceSystem      String            @default("manual")
+  promisedAt        DateTime?
+  serviceLevel      String?
+  priority          String?
+  fulfillmentStatus FulfillmentStatus @default(NOT_STARTED)
+
   routePlanId String?
   routePlan   RoutePlan? @relation(fields: [routePlanId], references: [id], onDelete: SetNull)
 
-  statusEvents OrderStatusEvent[]
+  statusEvents            OrderStatusEvent[]
+  fulfillmentEvents       FulfillmentEvent[]
+  controlTowerExceptions  ControlTowerException[]
+  reconciliationIssues    ReconciliationIssue[]
+  parcelVerificationScans ParcelVerificationScan[]
+  slaRiskPredictions      SlaRiskPrediction[]
+  returnCases             ReturnCase[]
+  custodyParcels          CustodyParcel[]
 
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   routeStop RouteStop?
+
+  @@unique([sourceSystem, externalOrderId])
 }
 
 model OrderStatusEvent {
@@ -135,6 +296,22 @@ model OrderStatusEvent {
   timestamp DateTime    @default(now())
 
   @@index([orderId])
+}
+
+model FulfillmentEvent {
+  id              String            @id @default(cuid())
+  orderId         String
+  order           Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sourceSystem    String
+  externalEventId String?
+  status          FulfillmentStatus
+  occurredAt      DateTime
+  receivedAt      DateTime          @default(now())
+  reason          String?
+  payloadJson     String?
+
+  @@unique([sourceSystem, externalEventId])
+  @@index([orderId, occurredAt])
 }
 
 model RoutePlan {
@@ -159,8 +336,107 @@ model RoutePlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  controlTowerExceptions  ControlTowerException[]
+  conditionAssessments    RouteConditionAssessment[]
+  revisionPreviews        RouteRevision[]
+  conditionObservations   RouteConditionObservation[]
+  auditEvents             AuditEvent[]
+  parcelVerificationScans ParcelVerificationScan[]
+  slaRiskPredictions      SlaRiskPrediction[]
+
   @@index([driverId])
   @@index([warehouseId])
+}
+
+model ConditionSnapshot {
+  id                     String             @id @default(cuid())
+  regionId               String
+  region                 IntelligenceRegion @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  dataType               String
+  observedAt             DateTime
+  expiresAt              DateTime
+  source                 String
+  trafficLevel           String?
+  congestionRatio        Float?
+  precipitationMmPerHour Float?
+  visibilityMeters       Float?
+  windKmh                Float?
+  incidentCount          Int?
+  stale                  Boolean            @default(false)
+  payloadJson            String?
+  createdAt              DateTime           @default(now())
+
+  routeObservations RouteConditionObservation[]
+  auditEvents       AuditEvent[]
+
+  @@unique([regionId, source, dataType, observedAt])
+  @@index([regionId, observedAt])
+  @@index([expiresAt, stale])
+}
+
+model TrafficIncident {
+  id          String             @id @default(cuid())
+  regionId    String
+  region      IntelligenceRegion @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  externalId  String
+  source      String
+  observedAt  DateTime
+  expiresAt   DateTime?
+  category    String
+  severity    String
+  lat         Float
+  lng         Float
+  description String?
+  roadClosed  Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  auditEvents AuditEvent[]
+
+  @@unique([source, externalId])
+  @@index([regionId, observedAt])
+  @@index([lat, lng])
+}
+
+model RouteConditionAssessment {
+  id                    String       @id @default(cuid())
+  routePlanId           String
+  routePlan             RoutePlan    @relation(fields: [routePlanId], references: [id], onDelete: Cascade)
+  riskLevel             String
+  trafficPenaltyFactor  Float        @default(1)
+  weatherPenaltyFactor  Float        @default(1)
+  incidentPenaltyFactor Float        @default(1)
+  reasonsJson           String
+  snapshotIdsJson       String
+  assessedAt            DateTime     @default(now())
+  auditEvents           AuditEvent[]
+
+  @@index([routePlanId, assessedAt])
+}
+
+model RouteRevision {
+  id                  String              @id @default(cuid())
+  routePlanId         String
+  routePlan           RoutePlan           @relation(fields: [routePlanId], references: [id], onDelete: Cascade)
+  status              RouteRevisionStatus @default(DRAFT)
+  originalDurationMin Float
+  revisedDurationMin  Float
+  originalDistanceKm  Float
+  revisedDistanceKm   Float
+  affectedStops       Int                 @default(0)
+  reasonsJson         String
+  previewJson         String
+  createdByUserId     String?
+  approvedByUserId    String?
+  rejectedByUserId    String?
+  createdAt           DateTime            @default(now())
+  approvedAt          DateTime?
+  rejectedAt          DateTime?
+  scenarioKey         String?
+  auditEvents         AuditEvent[]
+
+  @@index([routePlanId, status])
+  @@index([scenarioKey, createdAt])
 }
 
 model RouteStop {
@@ -177,8 +453,10 @@ model RouteStop {
   distanceKm  Float
   durationMin Float
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+  conditionObservations RouteConditionObservation[]
+  slaRiskPredictions    SlaRiskPrediction[]
 
   @@unique([routePlanId, sequence])
   @@index([routePlanId])
@@ -231,4 +509,655 @@ model DesignerDesign {
   updatedAt DateTime @updatedAt
 
   @@index([updatedAt])
+}
+
+model IntegrationRun {
+  id                   String                @id @default(cuid())
+  connectorId          String
+  connector            DataConnector         @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  kind                 IntegrationRunKind
+  mode                 String                @default("fixture")
+  status               IntegrationRunStatus  @default(RUNNING)
+  startedAt            DateTime              @default(now())
+  completedAt          DateTime?
+  createdCount         Int                   @default(0)
+  updatedCount         Int                   @default(0)
+  rejectedCount        Int                   @default(0)
+  errorsJson           String?
+  reconciliationIssues ReconciliationIssue[]
+  auditEvents          AuditEvent[]
+
+  @@index([connectorId, startedAt])
+}
+
+model ControlTowerException {
+  id                   String                      @id @default(cuid())
+  kind                 ControlTowerExceptionKind
+  severity             ControlTowerSeverity
+  status               ControlTowerExceptionStatus @default(OPEN)
+  dedupeKey            String                      @unique
+  sourceSystem         String?
+  reason               String
+  resolutionNote       String?
+  detectedAt           DateTime                    @default(now())
+  acknowledgedAt       DateTime?
+  resolvedAt           DateTime?
+  acknowledgedByUserId String?
+  acknowledgedBy       User?                       @relation("ExceptionAcknowledgedBy", fields: [acknowledgedByUserId], references: [id], onDelete: SetNull)
+  resolvedByUserId     String?
+  resolvedBy           User?                       @relation("ExceptionResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  orderId              String?
+  order                Order?                      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  routePlanId          String?
+  routePlan            RoutePlan?                  @relation(fields: [routePlanId], references: [id], onDelete: Cascade)
+  vehicleId            String?
+  vehicle              Vehicle?                    @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  slaRiskPredictionId  String?
+  slaRiskPrediction    SlaRiskPrediction?          @relation(fields: [slaRiskPredictionId], references: [id], onDelete: SetNull)
+  returnCaseId         String?
+  returnCase           ReturnCase?                 @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  custodyParcelId      String?
+  custodyParcel        CustodyParcel?              @relation(fields: [custodyParcelId], references: [id], onDelete: Cascade)
+  updatedAt            DateTime                    @updatedAt
+  auditEvents          AuditEvent[]
+
+  @@index([status, severity])
+  @@index([orderId])
+  @@index([routePlanId])
+  @@index([custodyParcelId])
+}
+
+model SlaRiskPrediction {
+  id                     String                  @id @default(cuid())
+  orderId                String
+  order                  Order                   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  routePlanId            String?
+  routePlan              RoutePlan?              @relation(fields: [routePlanId], references: [id], onDelete: SetNull)
+  routeStopId            String?
+  routeStop              RouteStop?              @relation(fields: [routeStopId], references: [id], onDelete: SetNull)
+  score                  Float
+  riskLevel              String
+  confidence             String
+  promisedAt             DateTime
+  predictedDeliveryAt    DateTime?
+  remainingBufferMin     Float?
+  factorsJson            String
+  reasonsJson            String
+  recommendation         String
+  sourceSnapshotIdsJson  String
+  dataSourcesJson        String                  @default("[]")
+  generatedAt            DateTime
+  expiresAt              DateTime
+  stale                  Boolean                 @default(false)
+  previousScore          Float?
+  previousRiskLevel      String?
+  scoreChange            Float?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  auditEvents            AuditEvent[]
+  controlTowerExceptions ControlTowerException[]
+
+  @@index([orderId, generatedAt])
+  @@index([riskLevel, generatedAt])
+  @@index([routePlanId])
+  @@index([expiresAt, stale])
+}
+
+model ParcelVerificationScan {
+  id          String     @id @default(cuid())
+  code        String
+  format      String     @default("BARCODE")
+  outcome     String
+  source      String
+  message     String
+  checksJson  String
+  fixtureId   String?
+  orderId     String?
+  order       Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  routePlanId String?
+  routePlan   RoutePlan? @relation(fields: [routePlanId], references: [id], onDelete: SetNull)
+  actorUserId String?
+  actorUser   User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  createdAt   DateTime   @default(now())
+
+  @@index([code, createdAt])
+  @@index([outcome, createdAt])
+  @@index([orderId])
+}
+
+model DemoScenarioRun {
+  id                  String    @id
+  scenarioKey         String
+  status              String    @default("IDLE")
+  step                Int       @default(0)
+  synthetic           Boolean   @default(true)
+  baselineRoutePlanId String?
+  baselineJson        String?
+  startedAt           DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@unique([scenarioKey, status])
+  @@index([updatedAt])
+}
+
+model ReturnCase {
+  id                String    @id @default(cuid())
+  externalReturnId  String    @unique
+  orderId           String?
+  order             Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  parcelId          String?
+  customerReference String?
+  reason            String
+  state             String    @default("REQUESTED")
+  expectedHub       String
+  sourceSystem      String    @default("fixture")
+  dataSource        String    @default("SYNTHETIC")
+  riskLevel         String    @default("LOW")
+  riskScore         Float     @default(0)
+  currentSku        String?
+  expectedSku       String?
+  expectedSerial    String?
+  currentSerial     String?
+  expectedWeightKg  Float?
+  observedWeightKg  Float?
+  openedAt          DateTime  @default(now())
+  closedAt          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  parcel                 ReturnParcel?
+  events                 ReturnEvent[]
+  scans                  ReturnScan[]
+  inspections            ReturnInspection[]
+  fraudAssessments       ReturnFraudAssessment[]
+  refundDecisions        RefundDecision[]
+  dispositionDecisions   DispositionDecision[]
+  costEstimates          ReturnCostEstimate[]
+  carbonEstimates        ReturnCarbonEstimate[]
+  exceptions             ReturnException[]
+  policies               ReturnPolicy[]
+  controlTowerExceptions ControlTowerException[]
+  custodyParcels         CustodyParcel[]
+  user                   User?                   @relation(fields: [userId], references: [id])
+  userId                 String?
+
+  @@index([state, updatedAt])
+  @@index([orderId])
+  @@index([parcelId])
+  @@index([expectedHub, state])
+  @@index([riskLevel, updatedAt])
+}
+
+model ReturnParcel {
+  id             String     @id @default(cuid())
+  returnCaseId   String     @unique
+  returnCase     ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  code           String
+  qrPayload      String?
+  barcodePayload String?
+  sku            String?
+  serialNumber   String?
+  expectedHub    String
+  currentHub     String?
+  weightKg       Float?
+  dimensionsJson String?
+  custodyStatus  String     @default("EXPECTED")
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@unique([code])
+  @@index([expectedHub, currentHub])
+}
+
+model ReturnEvent {
+  id              String     @id @default(cuid())
+  returnCaseId    String
+  returnCase      ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  eventType       String
+  fromState       String?
+  toState         String?
+  externalEventId String?
+  sourceSystem    String     @default("flo")
+  dataSource      String     @default("LIVE")
+  location        String?
+  payloadJson     String?
+  actorUserId     String?
+  actorUser       User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  occurredAt      DateTime
+  createdAt       DateTime   @default(now())
+
+  @@unique([sourceSystem, externalEventId])
+  @@index([returnCaseId, occurredAt])
+}
+
+model ReturnScan {
+  id           String     @id @default(cuid())
+  returnCaseId String
+  returnCase   ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  code         String
+  format       String     @default("QR_CODE")
+  stage        String
+  outcome      String
+  hubCode      String?
+  expectedHub  String?
+  source       String     @default("SYNTHETIC")
+  reason       String?
+  metadataJson String?
+  actorUserId  String?
+  actorUser    User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  createdAt    DateTime   @default(now())
+
+  @@index([returnCaseId, createdAt])
+  @@index([code, outcome])
+}
+
+model ReturnInspection {
+  id            String     @id @default(cuid())
+  returnCaseId  String
+  returnCase    ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  result        String
+  checklistJson String
+  cvResultJson  String?
+  notes         String?
+  evidenceCount Int        @default(0)
+  source        String     @default("MANUAL_AND_FIXTURE")
+  actorUserId   String?
+  actorUser     User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  createdAt     DateTime   @default(now())
+
+  evidence InspectionEvidence[]
+
+  @@index([returnCaseId, createdAt])
+}
+
+model InspectionEvidence {
+  id           String           @id @default(cuid())
+  inspectionId String
+  inspection   ReturnInspection @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+  evidenceType String
+  label        String
+  score        Float?
+  metadataJson String?
+  storageRef   String?
+  createdAt    DateTime         @default(now())
+}
+
+model ReturnFraudAssessment {
+  id                 String     @id @default(cuid())
+  returnCaseId       String
+  returnCase         ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  score              Float
+  riskLevel          String
+  confidence         String
+  reasonsJson        String
+  signalsJson        String
+  recommendation     String
+  requiresApproval   Boolean    @default(false)
+  sourceEventIdsJson String
+  createdAt          DateTime   @default(now())
+  actorUserId        String?
+  actorUser          User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([returnCaseId, createdAt])
+  @@index([riskLevel, createdAt])
+}
+
+model RefundDecision {
+  id           String     @id @default(cuid())
+  returnCaseId String
+  returnCase   ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  decision     String
+  amount       Float
+  currency     String     @default("IDR")
+  rationale    String
+  status       String     @default("PREVIEW")
+  source       String     @default("RULE_ENGINE")
+  actorUserId  String?
+  actorUser    User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  createdAt    DateTime   @default(now())
+  decidedAt    DateTime?
+
+  @@index([returnCaseId, createdAt])
+}
+
+model DispositionDecision {
+  id            String     @id @default(cuid())
+  returnCaseId  String
+  returnCase    ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  disposition   String
+  status        String     @default("PREVIEW")
+  rationale     String
+  recoveryValue Float      @default(0)
+  totalCost     Float      @default(0)
+  netRecovery   Float      @default(0)
+  source        String     @default("RULE_ENGINE")
+  actorUserId   String?
+  actorUser     User?      @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  createdAt     DateTime   @default(now())
+  decidedAt     DateTime?
+
+  @@index([returnCaseId, createdAt])
+}
+
+model ReturnCostEstimate {
+  id              String     @id @default(cuid())
+  returnCaseId    String
+  returnCase      ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  pickupCost      Float      @default(0)
+  transportCost   Float      @default(0)
+  hubLaborCost    Float      @default(0)
+  inspectionCost  Float      @default(0)
+  repackCost      Float      @default(0)
+  repairCost      Float      @default(0)
+  recycleCost     Float      @default(0)
+  refundCost      Float      @default(0)
+  totalCost       Float      @default(0)
+  recoveryValue   Float      @default(0)
+  netRecovery     Float      @default(0)
+  isEstimate      Boolean    @default(true)
+  assumptionsJson String
+  createdAt       DateTime   @default(now())
+
+  @@index([returnCaseId, createdAt])
+}
+
+model ReturnCarbonEstimate {
+  id              String     @id @default(cuid())
+  returnCaseId    String
+  returnCase      ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  reverseRouteKg  Float      @default(0)
+  handlingKg      Float      @default(0)
+  repairKg        Float      @default(0)
+  recycleKg       Float      @default(0)
+  totalKg         Float      @default(0)
+  isEstimate      Boolean    @default(true)
+  assumptionsJson String
+  createdAt       DateTime   @default(now())
+
+  @@index([returnCaseId, createdAt])
+}
+
+model ReturnException {
+  id               String     @id @default(cuid())
+  returnCaseId     String
+  returnCase       ReturnCase @relation(fields: [returnCaseId], references: [id], onDelete: Cascade)
+  kind             String
+  severity         String
+  status           String     @default("OPEN")
+  reason           String
+  explanation      String
+  source           String
+  evidenceJson     String?
+  recommendation   String?
+  acknowledgedAt   DateTime?
+  resolvedAt       DateTime?
+  resolvedByUserId String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@index([status, severity])
+  @@index([returnCaseId, createdAt])
+}
+
+model ReturnPolicy {
+  id                      String      @id @default(cuid())
+  name                    String
+  active                  Boolean     @default(true)
+  refundWindowDays        Int         @default(30)
+  autoRestock             Boolean     @default(false)
+  requireHighRiskApproval Boolean     @default(true)
+  thresholdsJson          String      @default("{}")
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+  returnCaseId            String?
+  returnCase              ReturnCase? @relation(fields: [returnCaseId], references: [id], onDelete: SetNull)
+
+  @@index([active])
+}
+
+/// Relational representation of the parcel custody graph. Events are immutable
+/// observations; graph edges are reconstructed from from/to actor references.
+model CustodyParcel {
+  id                 String                  @id @default(cuid())
+  externalParcelId   String                  @unique
+  orderId            String?
+  order              Order?                  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  returnCaseId       String?
+  returnCase         ReturnCase?             @relation(fields: [returnCaseId], references: [id], onDelete: SetNull)
+  barcode            String?
+  qrPayload          String?
+  sku                String?
+  serialNumber       String?
+  originHub          String?
+  destinationHub     String?
+  currentState       String                  @default("CREATED")
+  currentLocation    String?
+  currentCustodianId String?
+  currentCustodian   CustodyActor?           @relation("CurrentCustodyActor", fields: [currentCustodianId], references: [id], onDelete: SetNull)
+  confidenceScore    Float                   @default(0)
+  riskLevel          String                  @default("CRITICAL")
+  dataSource         String                  @default("SYNTHETIC")
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  events             CustodyEvent[]
+  evidence           CustodyEvidence[]
+  anomalies          CustodyAnomaly[]
+  investigations     CustodyInvestigation[]
+  exceptions         ControlTowerException[]
+
+  @@index([orderId])
+  @@index([returnCaseId])
+  @@index([currentCustodianId])
+  @@index([riskLevel, updatedAt])
+}
+
+model CustodyActor {
+  id             String           @id @default(cuid())
+  actorType      String
+  externalId     String
+  name           String
+  hubCode        String?
+  vehicleCode    String?
+  active         Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  currentParcels CustodyParcel[]  @relation("CurrentCustodyActor")
+  outgoingEvents CustodyEvent[]   @relation("CustodyFromActor")
+  incomingEvents CustodyEvent[]   @relation("CustodyToActor")
+  candidateFor   CustodyAnomaly[]
+
+  @@unique([actorType, externalId])
+  @@index([actorType, active])
+  @@index([hubCode])
+}
+
+model CustodyEvent {
+  id               String            @id @default(cuid())
+  parcelId         String
+  parcel           CustodyParcel     @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  eventType        String
+  externalEventId  String
+  sourceSystem     String
+  source           String?
+  dataSource       String            @default("SYNTHETIC")
+  fromActorId      String?
+  fromActor        CustodyActor?     @relation("CustodyFromActor", fields: [fromActorId], references: [id], onDelete: SetNull)
+  toActorId        String?
+  toActor          CustodyActor?     @relation("CustodyToActor", fields: [toActorId], references: [id], onDelete: SetNull)
+  actorUserId      String?
+  actorUser        User?             @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  hubCode          String?
+  lat              Float?
+  lng              Float?
+  scanMethod       String?
+  correlationId    String?
+  validationStatus String            @default("MANUAL_REVIEW")
+  validationJson   String?
+  confidenceDelta  Int               @default(0)
+  payloadJson      String?
+  observedAt       DateTime
+  receivedAt       DateTime          @default(now())
+  evidence         CustodyEvidence[]
+  anomalies        CustodyAnomaly[]
+
+  @@unique([sourceSystem, externalEventId])
+  @@index([parcelId, observedAt])
+  @@index([validationStatus, observedAt])
+  @@index([hubCode, observedAt])
+}
+
+model CustodyEvidence {
+  id              String        @id @default(cuid())
+  parcelId        String
+  parcel          CustodyParcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  eventId         String?
+  event           CustodyEvent? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  evidenceType    String
+  reference       String
+  metadataJson    String?
+  capturedAt      DateTime?
+  createdByUserId String?
+  createdByUser   User?         @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime      @default(now())
+
+  @@index([parcelId, createdAt])
+  @@index([eventId])
+}
+
+model CustodyAnomaly {
+  id                        String         @id @default(cuid())
+  parcelId                  String
+  parcel                    CustodyParcel  @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  eventId                   String?
+  event                     CustodyEvent?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  kind                      String
+  severity                  String
+  status                    String         @default("OPEN")
+  dedupeKey                 String         @unique
+  reason                    String
+  explanation               String
+  sourceEventIdsJson        String         @default("[]")
+  candidateCustodianIdsJson String         @default("[]")
+  recommendedAction         String
+  dataSource                String         @default("SYNTHETIC")
+  createdAt                 DateTime       @default(now())
+  acknowledgedAt            DateTime?
+  resolvedAt                DateTime?
+  resolvedByUserId          String?
+  candidateCustodianIds     CustodyActor[]
+
+  @@index([parcelId, status])
+  @@index([kind, severity])
+}
+
+model CustodyInvestigation {
+  id               String        @id @default(cuid())
+  parcelId         String
+  parcel           CustodyParcel @relation(fields: [parcelId], references: [id], onDelete: Cascade)
+  status           String        @default("OPEN")
+  finding          String?
+  confidence       Int?
+  assignedToUserId String?
+  assignedTo       User?         @relation("CustodyInvestigator", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  notesJson        String        @default("[]")
+  resolutionNote   String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  resolvedAt       DateTime?
+
+  @@index([parcelId, status])
+  @@index([assignedToUserId, status])
+}
+
+model RouteConditionObservation {
+  id                String             @id @default(cuid())
+  routePlanId       String
+  routePlan         RoutePlan          @relation(fields: [routePlanId], references: [id], onDelete: Cascade)
+  routeStopId       String?
+  routeStop         RouteStop?         @relation(fields: [routeStopId], references: [id], onDelete: Cascade)
+  snapshotId        String
+  snapshot          ConditionSnapshot  @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  regionId          String
+  region            IntelligenceRegion @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  distanceToRouteKm Float
+  affected          Boolean            @default(false)
+  relevanceScore    Float              @default(0)
+  createdAt         DateTime           @default(now())
+
+  @@unique([routePlanId, snapshotId, routeStopId])
+  @@index([routePlanId, affected])
+  @@index([regionId, createdAt])
+}
+
+model ReconciliationIssue {
+  id               String          @id @default(cuid())
+  issueType        String
+  status           String          @default("OPEN")
+  orderId          String?
+  order            Order?          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  integrationRunId String?
+  integrationRun   IntegrationRun? @relation(fields: [integrationRunId], references: [id], onDelete: SetNull)
+  externalOrderId  String
+  omsStatus        String?
+  wmsStatus        String?
+  detailsJson      String
+  firstDetectedAt  DateTime        @default(now())
+  lastDetectedAt   DateTime        @default(now())
+  resolutionNote   String?
+  resolvedByUserId String?
+  resolvedAt       DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@unique([issueType, externalOrderId, status])
+  @@index([status, issueType])
+  @@index([externalOrderId])
+}
+
+model AuditEvent {
+  id                    String                    @id @default(cuid())
+  eventType             String
+  action                String
+  summary               String
+  reason                String?
+  actorUserId           String?
+  actorRole             String?
+  entityType            String
+  entityId              String
+  beforeJson            String?
+  afterJson             String?
+  metadataJson          String?
+  sourceSystem          String?
+  provider              String?
+  regionId              String?
+  region                IntelligenceRegion?       @relation(fields: [regionId], references: [id], onDelete: SetNull)
+  user                  User?                     @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  routePlanId           String?
+  routePlan             RoutePlan?                @relation(fields: [routePlanId], references: [id], onDelete: SetNull)
+  routeRevisionId       String?
+  routeRevision         RouteRevision?            @relation(fields: [routeRevisionId], references: [id], onDelete: SetNull)
+  exceptionId           String?
+  exception             ControlTowerException?    @relation(fields: [exceptionId], references: [id], onDelete: SetNull)
+  snapshotId            String?
+  snapshot              ConditionSnapshot?        @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  ingestionRunId        String?
+  ingestionRun          IntelligenceIngestionRun? @relation(fields: [ingestionRunId], references: [id], onDelete: SetNull)
+  integrationRunId      String?
+  integrationRun        IntegrationRun?           @relation(fields: [integrationRunId], references: [id], onDelete: SetNull)
+  connectorId           String?
+  connector             DataConnector?            @relation(fields: [connectorId], references: [id], onDelete: SetNull)
+  conditionAssessmentId String?
+  conditionAssessment   RouteConditionAssessment? @relation(fields: [conditionAssessmentId], references: [id], onDelete: SetNull)
+  trafficIncidentId     String?
+  trafficIncident       TrafficIncident?          @relation(fields: [trafficIncidentId], references: [id], onDelete: SetNull)
+  slaRiskPredictionId   String?
+  slaRiskPrediction     SlaRiskPrediction?        @relation(fields: [slaRiskPredictionId], references: [id], onDelete: SetNull)
+  createdAt             DateTime                  @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([regionId, createdAt])
 }

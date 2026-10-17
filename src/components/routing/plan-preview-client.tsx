@@ -11,6 +11,7 @@ import { GoogleMapsStatusBanner } from "./google-maps-status-banner";
 import { OptimizedRoutePreview } from "./plan-preview-utils";
 import { DispatchMatchingPanel } from "./dispatch-matching-panel";
 import type { DriverMatchingResult } from "@/lib/routing/driver-matching";
+import type { RouteConditionAssessment } from "@/lib/intelligence/types";
 
 export type RoutingPlanStop = {
   sequence: number;
@@ -54,6 +55,7 @@ export type RoutingPlanPreview = {
   fuelCostSavingsPercent?: number;
   fuelProductName?: string;
   trafficSource?: TrafficSource;
+  conditionAssessment?: RouteConditionAssessment;
   stops: RoutingPlanStop[];
   waypoints?: RouteWaypoint[];
   encodedPolyline?: string | null;
@@ -94,12 +96,6 @@ export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
     [orderIds]
   );
 
-  useEffect(() => {
-    if (orderIdsNormalized.length === 0) return;
-    void preview();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderIdsNormalized.join(","), routeStartAt]);
-
   async function preview() {
     setError(null);
     setLoading(true);
@@ -125,6 +121,14 @@ export function PlanPreviewClient({ orderIds }: { orderIds: string[] }) {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (orderIdsNormalized.length === 0) return;
+    // The preview is an intentional server synchronization after selection changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void preview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderIdsNormalized.join(","), routeStartAt]);
 
   async function save() {
     setError(null);

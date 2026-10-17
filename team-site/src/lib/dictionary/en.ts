@@ -153,14 +153,14 @@ export const en = {
       {
         title: "Presentation",
         description:
-          "Final slide deck — keyboard navigation, ready to export to PDF.",
+          "Final Canva slide deck for jury evaluation.",
         cta: "Open Presentation",
       },
       {
-        title: "Download Package",
+        title: "Install on your laptop",
         description:
-          "Install FLO Logistics on your machine — a local Node + SQLite package you can run offline when it ships.",
-        cta: "Coming soon",
+          "Clone main, install dependencies, migrate SQLite, and seed demo data. Full steps from the repository install guide.",
+        cta: "Install guide",
       },
       {
         title: "Source Code",
@@ -169,10 +169,54 @@ export const en = {
         cta: "View on GitHub",
       },
     ],
+    install: {
+      title: "Install on your laptop",
+      sourceLabel: "GitHub install guide",
+      sourceHref: "https://github.com/JustHackr/flo-logistics#install",
+      requirementsTitle: "Requirements",
+      requirements: [
+        ["Node.js 20+ (LTS)", "nodejs.org — the installer checks this"],
+        ["npm 10+", "Bundled with Node"],
+        ["Git", "To clone the repo"],
+        ["OS", "macOS, Linux, or Windows (WSL2 recommended)"],
+        ["Disk", "~500 MB for node_modules + SQLite"],
+        ["Ollama (optional)", "Local LLM — ollama.com/download"],
+        ["OpenAI-compatible API key (optional)", "Cloud or self-hosted LLM"],
+        ["Google Maps API keys (optional)", "Live traffic — see .env.example"],
+      ],
+      webcam:
+        "A webcam is only needed for live Load Detection / Hub Congestion demos. The CV tour works without a camera.",
+      automatedTitle: "Automated install (one command)",
+      automatedBody:
+        "Clones main, writes .env.local, runs npm ci, migrates SQLite, and seeds demo data (Sovereign AI by default — no API key).",
+      ollamaTitle: "With local Ollama (if installed)",
+      clonedTitle: "Already cloned the repo?",
+      interactiveTitle: "Interactive install",
+      loginLead: "Then open http://localhost:3000/login",
+      personaHeaders: ["Persona", "Email", "Password"],
+      personas: [
+        ["Demo Admin", "admin@flo.demo", "demo1234"],
+        ["Ops Manager", "ops@flo.demo", "demo1234"],
+        ["Driver", "driver@flo.demo", "demo1234"],
+        ["Warehouse", "warehouse@flo.demo", "demo1234"],
+      ],
+      configure:
+        "Configure Ollama or an OpenAI-compatible endpoint anytime at /ai/settings (Demo Admin). SQLite settings override the .env.local bootstrap from the installer.",
+    },
+    androidTitle: "Android app (beta)",
+    androidBody: "Install the FLO Logistics Android build on a phone or emulator. This is a beta and still a work in progress.",
+    androidCta: "Download APK",
     homeLink: "homepage",
     profileLink: "team profile",
     contact: (home: string, profile: string) =>
       `Return to the ${home} or view the ${profile}.`,
+  },
+  presentation: {
+    title: "Final presentation",
+    lede:
+      "The final-round Canva deck for FLO — Fab Logistics Operations.",
+    embedTitle: "FLO final presentation — Quasarian Radr-Lyon Dynasty",
+    openCanva: "Open in Canva",
   },
   footer: {
     tagline:

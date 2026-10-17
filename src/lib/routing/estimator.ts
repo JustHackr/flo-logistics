@@ -13,6 +13,7 @@ import {
   JAKARTA_ROAD_DISTANCE_FACTOR,
   toTrafficDepartureTime,
 } from "./traffic";
+import type { RouteConditionAssessment } from "@/lib/intelligence/types";
 
 export type TrafficSource =
   | "google_traffic"
@@ -23,7 +24,10 @@ export type TrafficSource =
 export interface LegEstimate {
   distanceKm: number;
   durationMin: number;
+  providerDurationMin?: number;
+  adjustedDurationMin?: number;
   source: TrafficSource;
+  conditionAssessment?: RouteConditionAssessment;
 }
 
 const OSRM_BASE = "https://router.project-osrm.org";
@@ -40,6 +44,8 @@ function googleLegToEstimate(leg: GoogleRouteLeg): LegEstimate {
   return {
     distanceKm: leg.distanceKm,
     durationMin: leg.durationMin,
+    providerDurationMin: leg.durationMin,
+    adjustedDurationMin: leg.durationMin,
     source: leg.hasTraffic ? "google_traffic" : "google",
   };
 }
@@ -64,6 +70,8 @@ function buildOsrmLegEstimate(
   return {
     distanceKm: round1(distanceKmValue),
     durationMin: round1(durationMin),
+    providerDurationMin: round1(durationMin),
+    adjustedDurationMin: round1(durationMin),
     source: "osrm_traffic",
   };
 }
@@ -154,6 +162,8 @@ function estimateLegWithJakartaModel(
   return {
     distanceKm: round1(roadDistanceKm),
     durationMin: round1(durationMin),
+    providerDurationMin: round1(durationMin),
+    adjustedDurationMin: round1(durationMin),
     source: "estimated",
   };
 }

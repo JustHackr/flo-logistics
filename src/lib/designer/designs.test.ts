@@ -39,7 +39,7 @@ describe("serializeStoredDesignerGraph", () => {
         ...baseGraph.edges,
         { source: "b", target: "proc-ai", label: "integrated with" },
       ],
-    } as DesignerGraph;
+    } as unknown as DesignerGraph;
     const raw = JSON.parse(serializeStoredDesignerGraph(withFlo));
     expect(raw.nodes[1]._floId).toBe("proc-ai");
     expect(raw.edges).toHaveLength(2);

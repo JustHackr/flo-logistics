@@ -1,0 +1,20 @@
+[Unit]
+Description=Quasarian FLO GoldenBough app (Next.js)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/flo-app-src
+EnvironmentFile=-/etc/flo-logistics/app.env
+Environment=NODE_ENV=production
+Environment=PORT=3012
+Environment=NEXT_BASE_PATH=/flo-logistics/app
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3012
+Restart=on-failure
+RestartSec=5
+MemoryMax=768M
+
+[Install]
+WantedBy=multi-user.target

@@ -155,14 +155,14 @@ export const id = {
       {
         title: "Presentasi",
         description:
-          "Deck slide final — navigasi keyboard, siap diekspor PDF.",
+          "Deck slide final di Canva untuk evaluasi juri.",
         cta: "Buka Presentasi",
       },
       {
-        title: "Paket Unduhan",
+        title: "Instal di laptop",
         description:
-          "Instal FLO Logistics di mesin Anda — paket lokal Node + SQLite yang dapat dijalankan offline saat tersedia.",
-        cta: "Segera hadir",
+          "Clone main, pasang dependensi, migrasi SQLite, dan isi data demo. Langkah lengkap dari panduan instal repositori.",
+        cta: "Panduan instal",
       },
       {
         title: "Kode Sumber",
@@ -171,10 +171,54 @@ export const id = {
         cta: "Lihat di GitHub",
       },
     ],
+    install: {
+      title: "Instal di laptop",
+      sourceLabel: "Panduan instal di GitHub",
+      sourceHref: "https://github.com/JustHackr/flo-logistics#install",
+      requirementsTitle: "Kebutuhan",
+      requirements: [
+        ["Node.js 20+ (LTS)", "nodejs.org — installer memeriksa ini"],
+        ["npm 10+", "Sudah termasuk bersama Node"],
+        ["Git", "Untuk clone repositori"],
+        ["OS", "macOS, Linux, atau Windows (WSL2 disarankan)"],
+        ["Disk", "~500 MB untuk node_modules + SQLite"],
+        ["Ollama (opsional)", "LLM lokal — ollama.com/download"],
+        ["API key kompatibel OpenAI (opsional)", "LLM cloud atau self-hosted"],
+        ["API key Google Maps (opsional)", "Lalu lintas live — lihat .env.example"],
+      ],
+      webcam:
+        "Webcam hanya diperlukan untuk demo Load Detection / Hub Congestion secara live. Tur CV tetap berjalan tanpa kamera.",
+      automatedTitle: "Instal otomatis (satu perintah)",
+      automatedBody:
+        "Meng-clone main, menulis .env.local, menjalankan npm ci, migrasi SQLite, dan mengisi data demo (Sovereign AI secara bawaan — tanpa API key).",
+      ollamaTitle: "Dengan Ollama lokal (jika terpasang)",
+      clonedTitle: "Repositori sudah di-clone?",
+      interactiveTitle: "Instal interaktif",
+      loginLead: "Lalu buka http://localhost:3000/login",
+      personaHeaders: ["Persona", "Email", "Kata sandi"],
+      personas: [
+        ["Demo Admin", "admin@flo.demo", "demo1234"],
+        ["Ops Manager", "ops@flo.demo", "demo1234"],
+        ["Driver", "driver@flo.demo", "demo1234"],
+        ["Warehouse", "warehouse@flo.demo", "demo1234"],
+      ],
+      configure:
+        "Atur Ollama atau endpoint kompatibel OpenAI kapan saja di /ai/settings (Demo Admin). Pengaturan SQLite menimpa bootstrap .env.local dari installer.",
+    },
+    androidTitle: "Aplikasi Android (beta)",
+    androidBody: "Pasang build Android FLO Logistics di ponsel atau emulator. Ini versi beta dan masih dalam pengerjaan.",
+    androidCta: "Unduh APK",
     homeLink: "beranda",
     profileLink: "profil tim",
     contact: (home: string, profile: string) =>
       `Kembali ke ${home} atau lihat ${profile}.`,
+  },
+  presentation: {
+    title: "Presentasi final",
+    lede:
+      "Deck Canva babak final untuk FLO — Fab Logistics Operations.",
+    embedTitle: "Presentasi final FLO — Quasarian Radr-Lyon Dynasty",
+    openCanva: "Buka di Canva",
   },
   footer: {
     tagline:

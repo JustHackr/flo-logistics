@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Camera, PackageSearch, Warehouse } from "lucide-react";
+import { Camera, PackageSearch, ScanBarcode, Warehouse } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,7 +95,7 @@ export function CvSessionReportsPanel({
   }, []);
 
   React.useEffect(() => {
-    refresh();
+    const timer = window.setTimeout(refresh, 0);
     const onStorage = (event: StorageEvent) => {
       if (event.key === null || event.key === "flo.cvSessionHistory") {
         refresh();
@@ -105,6 +105,7 @@ export function CvSessionReportsPanel({
     window.addEventListener("focus", refresh);
     window.addEventListener("flo:cv-session-saved", refresh);
     return () => {
+      window.clearTimeout(timer);
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("focus", refresh);
       window.removeEventListener("flo:cv-session-saved", refresh);
@@ -142,6 +143,14 @@ export function CvSessionReportsPanel({
           >
             <Warehouse className="h-4 w-4" />
             {t("cv.sessions.hubCongestion")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link href="/computer-vision/parcel-verification" />}
+          >
+            <ScanBarcode className="h-4 w-4" />
+            {t("cv.sessions.parcelVerification")}
           </Button>
           {summary.totalSessions > 0 && (
             <Button

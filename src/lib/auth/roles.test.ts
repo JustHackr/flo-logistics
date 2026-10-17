@@ -46,7 +46,7 @@ describe("rbac paths", () => {
     expect(defaultHomeForRole("WAREHOUSE")).toBe(
       "/computer-vision/load-detection",
     );
-    expect(defaultHomeForRole("OPS_MANAGER")).toBe("/routing/dashboard");
+    expect(defaultHomeForRole("OPS_MANAGER")).toBe("/control-tower");
     expect(defaultHomeForRole("ADMIN")).toBe("/");
   });
 

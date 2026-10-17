@@ -3,14 +3,14 @@
 import { withBasePath } from "@/lib/base-path";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { FileBarChart } from "lucide-react";
+import { Check, FileBarChart, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RiskBadge } from "@/components/risk-badge";
 import { formatCurrency, formatCurrencyShort, formatNumber } from "@/lib/format";
 import type { RoutingLogisticsOverview } from "@/lib/routing-overview";
-import { RouteWaypointRow } from "@/components/routing/plan-preview-utils";
+import { formatMinutes, RouteWaypointRow } from "@/components/routing/plan-preview-utils";
 import { RouteMapView, GoogleMapsProvider } from "@/components/routing/route-map-view";
 import { DtiBadge } from "@/components/dti-badge";
 import { CfiBadge } from "@/components/cfi-badge";
@@ -20,6 +20,41 @@ import { CvSessionReportsPanel } from "@/components/computer-vision/cv-session-r
 import { useI18n } from "@/components/i18n/use-i18n";
 import { toIntlLocale, type Locale } from "@/lib/i18n/config";
 import type { TranslationParams } from "@/lib/i18n/t";
+import type { ConditionSnapshotView } from "@/lib/intelligence/types";
+
+type IntelligenceOverview = {
+  snapshots: ConditionSnapshotView[];
+  incidents: Array<{ id: string; severity: string; roadClosed: boolean; description: string | null }>;
+};
+
+type SlaRiskPrediction = {
+  id: string;
+  orderId: string;
+  externalOrderId: string | null;
+  recipientAddress: string;
+  routePlanId: string | null;
+  score: number;
+  riskLevel: "LOW" | "WATCH" | "HIGH" | "CRITICAL";
+  confidence: "LOW" | "MEDIUM" | "HIGH";
+  predictedDeliveryAt: string | null;
+  remainingBufferMin: number | null;
+  reasons: string[];
+  recommendation: string;
+  dataSources: string[];
+  generatedAt: string;
+  stale: boolean;
+};
+
+type RouteRevisionPreview = {
+  id: string;
+  originalDurationMin: number;
+  revisedDurationMin: number;
+  originalDistanceKm: number;
+  revisedDistanceKm: number;
+  affectedStops: number;
+  reasons: string[];
+  status: "DRAFT" | "APPROVED" | "REJECTED";
+};
 
 type DriverInfo = RoutingLogisticsOverview["roster"][number];
 
@@ -118,10 +153,14 @@ function DriverVehicleCard({
   );
 }
 
-export function LogisticsDashboardClient() {
+export function LogisticsDashboardClient({ canApproveRevisions = false, canRefreshRisk = false }: { canApproveRevisions?: boolean; canRefreshRisk?: boolean }) {
   const { t, locale } = useI18n();
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<RoutingLogisticsOverview | null>(null);
+  const [intelligence, setIntelligence] = useState<IntelligenceOverview | null>(null);
+  const [slaRisks, setSlaRisks] = useState<SlaRiskPrediction[]>([]);
+  const [revisions, setRevisions] = useState<Record<string, RouteRevisionPreview>>({});
+  const [revisionBusy, setRevisionBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -139,10 +178,77 @@ export function LogisticsDashboardClient() {
     }
   }
 
+  async function loadIntelligence() {
+    try {
+      const res = await fetch(withBasePath("/api/intelligence/overview"), { cache: "no-store" });
+      const json = await res.json();
+      if (res.ok) setIntelligence(json);
+    } catch {
+      // The routing dashboard remains usable when intelligence is unavailable.
+    }
+  }
+
+  async function loadSlaRisk() {
+    try {
+      const res = await fetch(withBasePath("/api/risk/sla"), { cache: "no-store" });
+      const json = await res.json();
+      if (res.ok) setSlaRisks(json.predictions ?? []);
+    } catch {
+      // Risk data is additive; the route dashboard remains usable if it is unavailable.
+    }
+  }
+
+  async function refreshSlaRisk() {
+    if (!canRefreshRisk) return loadSlaRisk();
+    try {
+      const res = await fetch(withBasePath("/api/risk/sla/recalculate"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error ?? "Unable to recalculate SLA risk");
+      setSlaRisks(json.predictions ?? []);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Unable to recalculate SLA risk");
+    }
+  }
+
   useEffect(() => {
+    // These loaders synchronize the client with server data after mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
+    void loadIntelligence();
+    void loadSlaRisk();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function previewRevision(routePlanId: string) {
+    setRevisionBusy(routePlanId);
+    setError(null);
+    try {
+      const res = await fetch(withBasePath(`/api/routing/routes/${routePlanId}/revisions/preview`), { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error ?? "Unable to preview revised route");
+      setRevisions((current) => ({ ...current, [routePlanId]: json }));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to preview revised route");
+    } finally {
+      setRevisionBusy(null);
+    }
+  }
+
+  async function decideRevision(routePlanId: string, revisionId: string, decision: "approve" | "reject") {
+    setRevisionBusy(routePlanId);
+    setError(null);
+    try {
+      const res = await fetch(withBasePath(`/api/routing/routes/${routePlanId}/revisions/${revisionId}/${decision}`), { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error ?? "Unable to update route revision");
+      setRevisions((current) => ({ ...current, [routePlanId]: { ...current[routePlanId], status: json.status } }));
+      if (decision === "approve") await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to update route revision");
+    } finally {
+      setRevisionBusy(null);
+    }
+  }
 
   async function setDelivered(orderId: string) {
     setError(null);
@@ -183,7 +289,7 @@ export function LogisticsDashboardClient() {
             <FileBarChart className="mr-2 h-4 w-4" />
             {t("routing.dashboard.reports")}
           </Button>
-          <Button variant="outline" onClick={() => void load()} disabled={loading}>
+          <Button variant="outline" onClick={() => { void load(); void loadIntelligence(); void loadSlaRisk(); }} disabled={loading}>
             {t("common.refresh")}
           </Button>
         </div>
@@ -201,6 +307,60 @@ export function LogisticsDashboardClient() {
 
       {data && (
         <>
+          {intelligence && (
+            <Card>
+              <CardHeader className="pb-2"><CardTitle className="text-base">FLO condition intelligence</CardTitle></CardHeader>
+              <CardContent className="flex flex-wrap items-center gap-3 text-sm">
+                {intelligence.snapshots.filter((snapshot) => snapshot.dataType !== "INCIDENT").map((snapshot) => (
+                  <Badge key={`${snapshot.regionId}-${snapshot.dataType}-${snapshot.source}`} variant={snapshot.stale ? "destructive" : "outline"}>
+                    {snapshot.dataType === "TRAFFIC" ? "Traffic" : "Weather"}: {snapshot.stale ? "stale" : snapshot.source}
+                    {snapshot.congestionRatio != null ? ` ${snapshot.congestionRatio.toFixed(2)}x` : snapshot.precipitationMmPerHour != null ? ` ${snapshot.precipitationMmPerHour.toFixed(1)} mm/h` : ""}
+                  </Badge>
+                ))}
+                <Badge variant={intelligence.incidents.length > 0 ? "secondary" : "outline"}>{intelligence.incidents.length} active incidents</Badge>
+                <span className="text-xs text-muted-foreground">Refreshes every five minutes; route changes require approval.</span>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="border-primary/20">
+            <CardHeader className="pb-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle className="text-base">Predictive SLA risk</CardTitle>
+                  <p className="text-xs text-muted-foreground">A forward-looking estimate from promise pressure, WMS readiness, route conditions, driver/fleet capacity, and delivery history.</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => void refreshSlaRisk()}>Refresh predictions</Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {slaRisks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No active predictions yet. Run the intelligence worker or use the SLA risk API as an Admin/Ops Manager.</p>
+              ) : (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {[...slaRisks].sort((a, b) => b.score - a.score).slice(0, 6).map((risk) => (
+                    <div key={risk.id} className="rounded-lg border p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="font-semibold">{risk.externalOrderId ?? risk.orderId}</div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={risk.riskLevel === "CRITICAL" ? "destructive" : risk.riskLevel === "HIGH" ? "secondary" : "outline"}>{risk.riskLevel} · {risk.score.toFixed(0)}%</Badge>
+                          <Badge variant="outline">{risk.confidence} confidence</Badge>
+                        </div>
+                      </div>
+                      <div className="mt-1 text-xs text-muted-foreground">{risk.recipientAddress}</div>
+                      <div className="mt-2 grid gap-1 text-xs sm:grid-cols-3">
+                        <span>Predicted: <strong>{formatDateTime(risk.predictedDeliveryAt, locale)}</strong></span>
+                        <span>Buffer: <strong>{risk.remainingBufferMin == null ? "—" : `${risk.remainingBufferMin.toFixed(0)} min`}</strong></span>
+                        <span>Data: <strong>{risk.stale ? "STALE/FALLBACK" : risk.dataSources.join(" + ")}</strong></span>
+                      </div>
+                      <p className="mt-2 text-xs text-muted-foreground">{risk.reasons.slice(0, 2).join(" ")}</p>
+                      <p className="mt-1 text-xs font-medium text-primary">Next action: {risk.recommendation}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
           <CvSessionReportsPanel
             title={t("routing.dashboard.cvTitle")}
             description={t("routing.dashboard.cvDescription")}
@@ -435,6 +595,9 @@ export function LogisticsDashboardClient() {
                       <DtiBadge score={route.totals.avgDti} risk={route.totals.avgDti >= 70 ? "low" : route.totals.avgDti >= 40 ? "medium" : "high"} />
                     )}
                     <CfiBadge score={route.totals.routeCfi} engineType={route.driver.vehicle.engineType} />
+                    {canApproveRevisions && <Button size="sm" variant="outline" onClick={() => void previewRevision(route.routePlanId)} disabled={revisionBusy === route.routePlanId}>
+                      {revisionBusy === route.routePlanId ? "Previewing…" : "Preview revised route"}
+                    </Button>}
                     </div>
                   </div>
                 </CardHeader>
@@ -457,6 +620,26 @@ export function LogisticsDashboardClient() {
                           eta: formatDateTime(route.nextStop.etaAt, locale),
                           status: route.nextStop.orderStatus,
                         })}
+                      </div>
+                    </div>
+                  )}
+
+                  {revisions[route.routePlanId] && (
+                    <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="font-semibold">Route revision preview · {revisions[route.routePlanId].status}</div>
+                        {revisions[route.routePlanId].status === "DRAFT" && (
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={() => void decideRevision(route.routePlanId, revisions[route.routePlanId].id, "approve")} disabled={revisionBusy === route.routePlanId}><Check className="mr-1 h-3 w-3" />Approve</Button>
+                            <Button size="sm" variant="outline" onClick={() => void decideRevision(route.routePlanId, revisions[route.routePlanId].id, "reject")} disabled={revisionBusy === route.routePlanId}><X className="mr-1 h-3 w-3" />Reject</Button>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-4">
+                        <span>ETA: {formatMinutes(revisions[route.routePlanId].originalDurationMin, t)} → {formatMinutes(revisions[route.routePlanId].revisedDurationMin, t)}</span>
+                        <span>Distance: {revisions[route.routePlanId].originalDistanceKm.toFixed(1)} → {revisions[route.routePlanId].revisedDistanceKm.toFixed(1)} km</span>
+                        <span>Affected stops: {revisions[route.routePlanId].affectedStops}</span>
+                        <span>{revisions[route.routePlanId].reasons.join(" ")}</span>
                       </div>
                     </div>
                   )}
