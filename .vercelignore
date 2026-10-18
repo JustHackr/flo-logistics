@@ -1,2 +1,10 @@
 .env
 .env.*
+android
+deploy
+docs
+.cursor
+**/.DS_Store
+dev.db
+*.db
+team-site/public/downloads

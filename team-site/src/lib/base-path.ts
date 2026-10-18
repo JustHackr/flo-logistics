@@ -1,7 +1,8 @@
-export const BASE_PATH = "/flo-logistics";
+export const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "/flo-logistics";
 
 export function withBasePath(path: string) {
   if (!path) return BASE_PATH;
+  if (!BASE_PATH) return path.startsWith("/") ? path : `/${path}`;
   if (
     path.startsWith("http://") ||
     path.startsWith("https://") ||

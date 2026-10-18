@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "node node_modules/next/dist/bin/next dev",
     "postinstall": "prisma generate",
-    "build": "prisma generate && prisma migrate deploy && node node_modules/next/dist/bin/next build",
+    "build": "prisma generate && node scripts/migrate-if-db.mjs && node node_modules/next/dist/bin/next build",
     "start": "node node_modules/next/dist/bin/next start",
     "lint": "eslint",
     "test": "vitest run",
